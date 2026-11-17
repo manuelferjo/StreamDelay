@@ -8,7 +8,13 @@ on:
   pull_request:
   release:
     types: [published]
+  # A mano (Actions → Compilar → Run workflow): si se indica una etiqueta, adjunta el ZIP a esa Release.
   workflow_dispatch:
+    inputs:
+      etiqueta:
+        description: "Release a la que adjuntar el ZIP (por ejemplo v3.0). Vacío: solo compilar."
+        required: false
+        default: ""
 
 permissions:
   contents: write   # para adjuntar el ZIP a la Release
@@ -46,10 +52,10 @@ jobs:
           "Pruebas del chat: $($salida.Count) líneas idénticas al resultado esperado."
 
       - name: Comprobar que la versión coincide con la etiqueta
-        if: github.event_name == 'release'
+        if: github.event_name == 'release' || inputs.etiqueta != ''
         shell: pwsh
         env:
-          ETIQUETA: ${{ github.event.release.tag_name }}
+          ETIQUETA: ${{ github.event.release.tag_name || inputs.etiqueta }}
         run: |
           $v = (Select-String -Path src\MainForm.cs -Pattern 'const string Version = "([^"]+)"').Matches[0].Groups[1].Value
           if ("v$v" -ne $env:ETIQUETA) { throw "La etiqueta es $env:ETIQUETA pero src\MainForm.cs dice Version = $v. Cámbialo para que coincidan." }
@@ -66,11 +72,11 @@ jobs:
           path: dist/*.zip
 
       - name: Adjuntar el ZIP a la Release
-        if: github.event_name == 'release'
+        if: github.event_name == 'release' || inputs.etiqueta != ''
         shell: pwsh
         env:
           GH_TOKEN: ${{ github.token }}
-          ETIQUETA: ${{ github.event.release.tag_name }}
+          ETIQUETA: ${{ github.event.release.tag_name || inputs.etiqueta }}
         run: |
           $zip = (Get-Item dist\*.zip).FullName
           gh release upload $env:ETIQUETA $zip --clobber --repo $env:GITHUB_REPOSITORY
