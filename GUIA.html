@@ -150,6 +150,34 @@
     <p class="note">La clave de Twitch la puede poner OBS (servicio Twitch + Transmisión mejorada). Las de Kick, YouTube, TikTok y Otro tienen que estar guardadas en StreamDelay.</p>
     <p class="note"><b>TikTok:</b> solo algunas cuentas tienen clave de emisión. Si la tuya la tiene, está en <b>TikTok LIVE Producer</b> (en la web): copia el “Server URL” y la “Stream Key” en Ajustes → Destinos → TikTok → Editar. TikTok suele dar una clave nueva en cada directo, así que revísala antes de empezar.</p>
   </section>
+  <section id="tiktok-vertical">
+    <h2>TikTok en vertical (con delay) <span class="tag">NUEVO</span></h2>
+    <p style="margin-top:0">StreamDelay <b>no vuelve a codificar el vídeo</b>: reenvía lo que le manda OBS. Por eso, si activas TikTok en Destinos, TikTok recibe <b>la misma imagen horizontal</b> que Twitch, Kick y YouTube (TikTok la enseña con bandas negras). Para tener en TikTok una <b>versión vertical (9:16) propia</b>, OBS tiene que crear esa imagen vertical y mandarla a una <b>segunda copia de StreamDelay</b>, que le pone el delay y la envía solo a TikTok.</p>
+    <h3 style="margin:16px 0 8px">Lo que hace falta</h3>
+    <ul>
+      <li><b>Cuenta de TikTok con acceso a la clave de emisión.</b> Normalmente hace falta tener 18 años o más y al menos 1.000 seguidores, y aun así TikTok no se la da a todo el mundo. La clave está en <b>TikTok LIVE Producer</b> (en la web, livecenter.tiktok.com/producer). Si ahí no aparece, la cuenta todavía no la tiene.</li>
+      <li><b>OBS 30 o más reciente</b> con el plugin gratuito <b>Aitum Vertical</b> (aitum.tv u obsproject.com): añade un segundo lienzo vertical con sus propias escenas y su propia salida de emisión.</li>
+      <li><b>Dos copias de StreamDelay</b> en dos carpetas distintas: una para Twitch, Kick y YouTube (horizontal) y otra solo para TikTok (vertical).</li>
+      <li><b>Más subida y más trabajo para el PC:</b> OBS codifica dos vídeos a la vez. Suma lo que gaste TikTok (unos 4–6 Mbps) a lo que ya usas.</li>
+    </ul>
+    <h3 style="margin:16px 0 8px">Pasos</h3>
+    <ol>
+      <li><b>OBS (horizontal):</b> como siempre, emite a la primera copia de StreamDelay: servidor <code>rtmp://127.0.0.1:1935/app</code>.</li>
+      <li><b>Instala Aitum Vertical</b> y reinicia OBS. En <b>Docks</b> activa <b>Vertical Scenes</b> y <b>Vertical Sources</b>, pon el lienzo vertical a <b>1080x1920</b> y monta tus escenas verticales (cámara arriba, juego abajo, chat…).</li>
+      <li><b>Segunda copia de StreamDelay:</b> copia la carpeta entera de StreamDelay a otra (por ejemplo <code>StreamDelay TikTok</code>) y abre el <code>StreamDelay.exe</code> de esa carpeta. Cada copia guarda sus propios ajustes en su carpeta.</li>
+      <li>En esa segunda copia, <b>Ajustes → OBS → Puerto: 1936</b>. En <b>Destinos</b> apaga Twitch, Kick, YouTube y Otro y deja solo <b>TikTok</b>: con <b>Editar</b> pega el <b>Server URL</b> y la <b>Stream Key</b> de TikTok LIVE Producer.</li>
+      <li>En <b>Aitum Vertical → Settings</b> añade una salida de emisión con servidor <code>rtmp://127.0.0.1:1936/app</code> y como clave cualquier texto (por ejemplo <code>vertical</code>).</li>
+      <li>Pon <b>el mismo delay</b> en las dos copias de StreamDelay y pulsa <b>Iniciar</b> en las dos.</li>
+      <li>En OBS, inicia la emisión normal y la de Aitum Vertical (su botón está en el dock vertical).</li>
+    </ol>
+    <h3 style="margin:16px 0 8px">Ten en cuenta</h3>
+    <ul>
+      <li>Las dos copias van por separado: si cambias el delay, <b>cámbialo en las dos</b> (o usa los botones de delays guardados de cada una). Los atajos <kbd>Ctrl</kbd>+<kbd>Alt</kbd> solo funcionan en la copia que abras primero; el Mando de la segunda copia tiene su propia dirección (pestaña Mando de esa copia).</li>
+      <li>La clave de TikTok <b>cambia en cada directo</b> (y caduca si tardas en empezar): genérala en LIVE Producer justo antes y pégala en la segunda copia.</li>
+      <li>Si TikTok sale en negro o recortado, el lienzo vertical no es 1080x1920 o la salida de Aitum va al puerto equivocado.</li>
+      <li>Si solo quieres TikTok con la misma imagen horizontal, no hace falta nada de esto: activa TikTok en Destinos de la única copia.</li>
+    </ul>
+  </section>
 
   <section>
     <h2><span class="n">4</span>Cada vez que transmitas</h2>
