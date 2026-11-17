@@ -140,6 +140,10 @@
   .step::before { counter-increment: paso; content: counter(paso); display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--brand); color: #15121c; font: 700 17px/1 var(--display); margin-bottom: 14px; }
   .step h3 { margin: 0 0 6px; font: 700 18px/1.3 var(--display); }
   .step p { margin: 0; color: var(--muted); font-size: 15px; }
+  .notice { margin-top: 28px; padding: 20px 22px; border-radius: var(--radius); border: 1px solid rgba(237,225,3,.35); background: rgba(237,225,3,.06); }
+  .notice strong { display: block; font: 700 17px/1.3 var(--display); margin-bottom: 6px; color: var(--yellow); }
+  .notice p { margin: 8px 0 0; color: var(--muted); font-size: 15px; }
+  .notice b { color: var(--text); }
   code { font: 500 13px/1.4 var(--mono); background: var(--input); border: 1px solid var(--border); border-radius: 8px; padding: 2px 7px; color: var(--violet-pale); white-space: nowrap; }
 
   /* Privacidad */
@@ -269,11 +273,16 @@
       <h2>Listo en tres pasos</h2>
       <p class="intro">No hace falta instalar nada ni crear cuentas. Tus claves de emisión se guardan cifradas en tu PC.</p>
       <div class="steps">
-        <div class="step"><h3>Descarga y descomprime</h3><p>Baja el ZIP, descomprímelo en una carpeta (por ejemplo, Documentos) y abre <code>StreamDelay.exe</code>.</p></div>
+        <div class="step"><h3>Descarga y descomprime</h3><p>Baja el ZIP, descomprímelo en una carpeta (por ejemplo, Documentos) y abre <code>StreamDelay.exe</code>. Si Windows avisa, pulsa <b>Más información → Ejecutar de todas formas</b>.</p></div>
         <div class="step"><h3>Pon tu destino</h3><p>En Ajustes → Destinos, activa tus plataformas y pega la clave de emisión de cada una.</p></div>
         <div class="step"><h3>Apunta OBS a StreamDelay</h3><p>En OBS, servidor personalizado <code>rtmp://127.0.0.1:1935/app</code>. Pulsa Iniciar en StreamDelay y emite como siempre.</p></div>
       </div>
       <p class="intro" style="margin-top:24px">¿Varias calidades en Twitch, dos PCs o el Stream Deck? Está todo en la <a href="guia.html">guía completa</a>.</p>
+      <div class="notice">
+        <strong>¿Por qué avisa Windows la primera vez?</strong>
+        <p>StreamDelay todavía no tiene firma digital (los certificados son de pago), así que al abrirlo por primera vez Windows puede mostrar «Windows protegió su PC». Pulsa <b>Más información</b> y después <b>Ejecutar de todas formas</b>. Solo pasa con la primera descarga: las actualizaciones automáticas no lo muestran.</p>
+        <p>Para que puedas fiarte: el <a href="https://github.com/manuelferjo/StreamDelay">código está en GitHub</a>, cada versión la compila GitHub a partir de él y su huella SHA-256 aparece en la <a href="https://github.com/manuelferjo/StreamDelay/releases">página de versiones</a>. También puedes compilarlo tú mismo.</p>
+      </div>
     </div>
   </section>
 

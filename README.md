@@ -29,6 +29,8 @@ Descarga la última versión en **[Releases](https://github.com/manuelferjo/Stre
 
 Requisitos: Windows 10 u 11 y OBS Studio.
 
+> **Aviso de Windows:** StreamDelay todavía no tiene firma digital, así que la primera vez que lo abras Windows puede mostrar «Windows protegió su PC». Pulsa **Más información → Ejecutar de todas formas**. Solo pasa con la primera descarga: las actualizaciones automáticas no lo muestran. Más detalles en [Firma digital](#firma-digital).
+
 ## Compilar desde el código
 
 No hace falta instalar nada: `build.bat` usa el compilador de C# (.NET Framework 4) que ya trae Windows.
@@ -53,14 +55,17 @@ La web está en `web/` y se publica sola en GitHub Pages al subir cambios (`.git
 
 GitHub compila, comprueba que la versión coincide con la etiqueta y **adjunta el ZIP de descarga a la Release** él solo.
 
-## Code signing policy
+## Firma digital
 
-Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org).
+StreamDelay **todavía no está firmado digitalmente**: los certificados de firma de código son de pago, y el programa gratuito de SignPath para código abierto solo admite proyectos más conocidos (se volverá a pedir más adelante).
 
-- **Committers and reviewers:** [manuelferjo](https://github.com/manuelferjo)
-- **Approvers:** [manuelferjo](https://github.com/manuelferjo)
+Por eso Windows puede avisar la primera vez que abres el `.exe` descargado («Windows protegió su PC» → **Más información → Ejecutar de todas formas**). Para que puedas fiarte igualmente:
 
-Only binaries built from this repository's source code are signed.
+- Todo el código está en este repositorio, y el ZIP de cada [Release](https://github.com/manuelferjo/StreamDelay/releases) lo compila **GitHub Actions** a partir de él (puedes ver cada compilación en la pestaña **Actions**).
+- Cada ZIP tiene su huella **SHA-256** en la página de la Release. El actualizador automático la comprueba antes de instalar nada.
+- Si lo prefieres, puedes compilarlo tú mismo con `build.bat` (ver arriba).
+
+*English:* StreamDelay isn't code-signed yet, so Windows SmartScreen may warn the first time you run the downloaded `.exe` (click **More info → Run anyway**). Every release ZIP is built from this repository's source by GitHub Actions and has its SHA-256 shown on the release page; automatic updates don't show the warning.
 
 ## Privacy policy
 

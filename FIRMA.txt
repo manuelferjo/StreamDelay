@@ -1,26 +1,38 @@
 FIRMA DIGITAL DE STREAMDELAY.EXE (opciones gratuitas)
 =====================================================
 
-Para qué sirve
---------------
+Estado actual (noviembre de 2026)
+---------------------------------
+StreamDelay NO está firmado. SignPath Foundation rechazó la solicitud porque
+su programa gratuito solo admite proyectos que ya son conocidos (estrellas y
+forks en GitHub, artículos, conversaciones en Reddit o YouTube...). Dicen que
+se puede volver a pedir cuando el proyecto sea más conocido.
+
+Mientras tanto: el README y la web explican el aviso de Windows y cómo
+pasarlo, y las actualizaciones automáticas no lo muestran (el actualizador
+descarga el archivo él mismo, así que Windows no lo marca como "descargado
+de internet").
+
+Para qué sirve la firma
+-----------------------
 Sin firma, Windows no sabe quién ha hecho el programa:
 - SmartScreen avisa ("Windows protegió su PC").
 - El Control inteligente de aplicaciones de Windows 11 puede bloquearlo sin
   opción de ejecutarlo.
 - Google Drive y algunos antivirus lo marcan como sospechoso.
 
-Opción 1 - SignPath Foundation (GRATIS, firma de verdad)
---------------------------------------------------------
-SignPath firma gratis programas de CÓDIGO ABIERTO. Requisitos:
-- El código tiene que estar publicado en GitHub en un repositorio público,
-  con una licencia de código abierto (por ejemplo MIT).
-- Se pide en signpath.org y revisan el proyecto antes de aprobarlo.
-- La firma la hace GitHub al publicar una versión (no se usa firmar.ps1).
-Importante: tu código quedaría público para cualquiera. StreamDelay ya es
-gratuito y el ZIP incluye el código, así que encaja bien.
+Opción 1 - SignPath Foundation (GRATIS, firma de verdad) - volver a pedirla
+---------------------------------------------------------------------------
+SignPath firma gratis programas de CÓDIGO ABIERTO que ya tienen cierta
+visibilidad. Antes de volver a pedirlo conviene tener:
+- Estrellas, forks y, si puede ser, alguien más que contribuya en GitHub.
+- Menciones fuera de GitHub: Reddit (r/obs, r/Twitch), vídeos de YouTube,
+  artículos o foros donde se hable de StreamDelay.
+- Actividad continuada (versiones nuevas, issues resueltos).
+Se pide en signpath.org. La firma la haría GitHub al publicar una versión.
 
-Opción 2 - Sin firma, pero con menos avisos (GRATIS)
-----------------------------------------------------
+Opción 2 - Sin firma, pero con menos avisos (GRATIS) - lo que se hace ahora
+---------------------------------------------------------------------------
 1. Envía el .exe a Microsoft para que lo analice: microsoft.com/wdsi/filesubmission
    (como "Software developer"). Si lo marcan como seguro, Defender y SmartScreen
    avisan menos. Hay que repetirlo con cada versión nueva.
