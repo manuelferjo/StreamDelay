@@ -84,9 +84,9 @@ namespace StreamDelay
 			}
 			int sp = text.IndexOf(' ');
 			string cmd = ((sp < 0) ? text : text.Substring(0, sp)).ToLowerInvariant();
-			if (cmd == "!clip")
+			if (cmd == ClipCommand)
 			{
-				// Comando fijo: guarda los últimos 60 s (con su propia espera entre clips).
+				// Comando fijo: guarda los últimos 60 s en tu PC, solo si lo escribe el dueño del canal.
 				ChatClip(it, (it.p == "twitch") ? "Twitch" : ((it.p == "kick") ? "Kick" : "YouTube"));
 				return;
 			}

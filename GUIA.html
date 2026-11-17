@@ -59,7 +59,7 @@
     <img src="res/logo.png" alt="">
     <div>
       <h1>Stream <span>Delay</span></h1>
-      <div class="by">by Vortexs · v3.2</div>
+      <div class="by">by Vortexs · v3.2.1</div>
     </div>
   </header>
   <p class="sub">Delay dinámico y gratuito para tus directos con OBS: cámbialo, actívalo o desactívalo sin cortar el stream. Ahora conserva todas las calidades de la <b>Transmisión mejorada</b> de Twitch.</p>
@@ -170,7 +170,7 @@
       <tr><td>Otro valor</td><td>Barra y después <b>Aplicar</b></td></tr>
       <tr><td>Activar / desactivar</td><td>Interruptor “Activado”, o <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>D</kbd></td></tr>
       <tr><td>Sumar / restar 5 s</td><td><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>↑</kbd> / <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>↓</kbd></td></tr>
-      <tr><td>Guardar un clip</td><td>Botón <b>Clip</b> de Directo, <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>C</kbd>, el Mando o <code>!clip</code> en el chat. Guarda los <b>últimos 60 s que ha visto el público</b> (con el delay ya aplicado) en <b>Vídeos\StreamDelay</b>, en MP4 si tienes ffmpeg y si no en FLV (se abre con VLC). Registro → <b>Clips</b> abre la carpeta.</td></tr>
+      <tr><td>Guardar un clip</td><td>Botón <b>Clip</b> de Directo, <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>C</kbd>, el Mando o <code>!guardar</code> en el chat (solo tú). Guarda los <b>últimos 60 s que ha visto el público</b> (con el delay ya aplicado) en <b>Vídeos\StreamDelay</b>, en MP4 si tienes ffmpeg y si no en FLV (se abre con VLC). Registro → <b>Clips</b> abre la carpeta.</td></tr>
       <tr><td>Ventana encima del juego</td><td>Ajustes → “Ventana siempre visible”</td></tr>
       <tr><td>Desde el móvil o el Stream Deck</td><td>Pestaña <b>Mando</b> (apartado 11)</td></tr>
     </table>
@@ -304,7 +304,7 @@
 !horario = 📅 Directos de lunes a viernes a las 18:00, {user}</pre>
     <ul>
       <li><code>{delay}</code> se cambia por “El directo va con 30 s de delay.” o “Ahora mismo no hay delay…”; <code>{s}</code> por los segundos; <code>{user}</code> por quien lo pregunta; <code>{plataforma}</code> por Twitch, Kick o YouTube.</li>
-      <li><code>!clip</code> viene incluido: cualquiera puede usarlo, guarda los últimos 60 s y contesta “🎬 Clip guardado”. Entre dos clips tienen que pasar al menos 15 s. Si tienes otro bot con <code>!clip</code> (StreamElements, Nightbot…), quítaselo para que no contesten los dos.</li>
+      <li><code>!guardar</code> viene incluido y <b>solo funciona si lo escribes tú</b> (el dueño del canal, en Twitch, Kick o YouTube): guarda los últimos 60 s en tu PC sin escribir nada en el chat (sale en el Registro). Si lo escribe otra persona, no pasa nada. <code>!clip</code> no es de StreamDelay: déjaselo a tu bot de clips de Twitch (StreamElements, Nightbot…).</li>
       <li>Cada comando contesta como mucho una vez cada 20 s por plataforma (así no se llena el chat). Los mensajes antiguos que llegan al conectar el chat no se contestan.</li>
       <li>Hace falta el chat activado y la cuenta de esa plataforma conectada en <b>Título</b>. En YouTube cada respuesta gasta cupo de la API (50 de 10.000 diarias).</li>
     </ul>

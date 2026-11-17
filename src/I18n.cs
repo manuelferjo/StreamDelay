@@ -523,7 +523,7 @@ namespace StreamDelay
 			"Comandos del chat", "Chat commands",
 			"Respuestas automáticas, una por línea: !comando = respuesta", "Automatic replies, one per line: !command = reply",
 			"Contestar a los comandos", "Reply to commands",
-			"{delay} = si hay delay y cuánto · {s} segundos · {user} quién pregunta. Contesta en la plataforma donde se escribe (como mucho una vez cada 20 s). !clip guarda los últimos 60 s (carpeta Vídeos, StreamDelay).", "{delay} = whether there's delay and how much · {s} seconds · {user} who asks. Replies on the platform where it's written (at most once every 20 s). !clip saves the last 60 s (Videos folder, StreamDelay).",
+			"{delay} = si hay delay y cuánto · {s} segundos · {user} quién pregunta. Contesta en la plataforma donde se escribe (como mucho una vez cada 20 s). !guardar (solo tú, el dueño del canal) guarda los últimos 60 s en tu PC. !clip no es de StreamDelay: déjaselo a tu bot de clips de Twitch.", "{delay} = whether there's delay and how much · {s} seconds · {user} who asks. Replies on the platform where it's written (at most once every 20 s). !guardar (only you, the channel owner) saves the last 60 s on your PC. !clip isn't StreamDelay's: leave it to your Twitch clips bot.",
 			"Se enviará ahora a los chats elegidos el mensaje del estado actual (", "The message for the current state will be sent now to the chosen chats (",
 			"delay activado", "delay on",
 			"delay desactivado", "delay off",

@@ -1,7 +1,7 @@
 // Clips: guarda los últimos 60 s que ha visto el público (con el delay ya aplicado) en
-// Vídeos\StreamDelay. Se pide con !clip en el chat, Ctrl+Alt+C, el botón Clip de Directo, el
-// Mando o el Stream Deck. Si hay ffmpeg en el PC, el clip se pasa a MP4 (sin volver a codificar);
-// si no, se queda en FLV (se abre con VLC).
+// Vídeos\StreamDelay. Se pide con el botón Clip de Directo, Ctrl+Alt+C, el Mando, el Stream Deck
+// o !guardar en el chat (solo el dueño del canal). Si hay ffmpeg en el PC, el clip se pasa a MP4
+// (sin volver a codificar); si no, se queda en FLV (se abre con VLC).
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -14,7 +14,10 @@ namespace StreamDelay
 	{
 		private const int ClipSeconds = 60;
 
-		// Entre dos clips tiene que pasar al menos esto (si diez personas escriben !clip, se guarda uno).
+		// Comando del chat para guardar el clip (solo el dueño del canal).
+		private const string ClipCommand = "!guardar";
+
+		// Entre dos clips tiene que pasar al menos esto (por si se pulsa varias veces seguidas).
 		private const int ClipCooldownSec = 15;
 
 		private DateTime lastClipAt = DateTime.MinValue;
@@ -142,31 +145,16 @@ namespace StreamDelay
 			}
 		}
 
-		// !clip en el chat: guarda el clip y contesta en esa plataforma.
+		// !guardar en el chat: solo el dueño del canal (en Twitch, Kick o YouTube). Los espectadores no
+		// pueden, para que nadie llene tu PC de vídeos. No contesta en el chat: queda en el Registro.
+		// (!clip no es de StreamDelay: es para el bot que hace clips de Twitch, como StreamElements.)
 		private void ChatClip(ChatItem it, string plat)
 		{
-			string target = it.p;
-			string user = it.user ?? "";
-			SaveClip("!clip de " + user + " en " + plat, delegate(bool ok, string message)
+			if (it.roles == null || Array.IndexOf(it.roles, "broadcaster") < 0)
 			{
-				if (!ok)
-				{
-					return;
-				}
-				try
-				{
-					Dictionary<string, object> res = ChatSendAll(I18n.Tr("🎬 Clip guardado: los últimos ") + ClipSeconds + I18n.Tr(" s. ¡Gracias, ") + user + "!", new string[1] { target });
-					object v;
-					if (res.TryGetValue(target, out v) && Convert.ToString(v) != "ok")
-					{
-						LogLater("!clip en " + plat + ": no se pudo contestar (" + v + ").");
-					}
-				}
-				catch (Exception ex)
-				{
-					LogLater("!clip: " + ex.Message);
-				}
-			});
+				return;
+			}
+			SaveClip(ClipCommand + " en " + plat, null);
 		}
 	}
 }
