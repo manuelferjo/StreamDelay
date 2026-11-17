@@ -2462,7 +2462,7 @@ namespace StreamDelay
 
 		public MainForm()
 		{
-			Text = "Stream Delay 2.6 · Vortexs";
+			Text = "Stream Delay " + Version + " · Vortexs";
 			Font = Theme.Body(9f);
 			BackColor = Theme.Bg;
 			ForeColor = Theme.Text;

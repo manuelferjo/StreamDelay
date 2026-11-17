@@ -20,6 +20,11 @@ if errorlevel 1 (
   pause
   exit /b 1
 )
+rem Firma digital: solo si ya configuraste tu certificado (firmar.ps1 -Elegir, ver FIRMA.txt).
+if exist "firma.cfg" (
+  powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0firmar.ps1"
+  if errorlevel 1 echo AVISO: StreamDelay.exe se ha creado pero NO se ha podido firmar.
+)
 echo.
 echo Listo: StreamDelay.exe creado en esta carpeta. Ya puedes abrirlo.
 pause

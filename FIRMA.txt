@@ -1,0 +1,44 @@
+FIRMA DIGITAL DE STREAMDELAY.EXE (opciones gratuitas)
+=====================================================
+
+Para qué sirve
+--------------
+Sin firma, Windows no sabe quién ha hecho el programa:
+- SmartScreen avisa ("Windows protegió su PC").
+- El Control inteligente de aplicaciones de Windows 11 puede bloquearlo sin
+  opción de ejecutarlo.
+- Google Drive y algunos antivirus lo marcan como sospechoso.
+
+Opción 1 - SignPath Foundation (GRATIS, firma de verdad)
+--------------------------------------------------------
+SignPath firma gratis programas de CÓDIGO ABIERTO. Requisitos:
+- El código tiene que estar publicado en GitHub en un repositorio público,
+  con una licencia de código abierto (por ejemplo MIT).
+- Se pide en signpath.org y revisan el proyecto antes de aprobarlo.
+- La firma la hace GitHub al publicar una versión (no se usa firmar.ps1).
+Importante: tu código quedaría público para cualquiera. StreamDelay ya es
+gratuito y el ZIP incluye el código, así que encaja bien.
+
+Opción 2 - Sin firma, pero con menos avisos (GRATIS)
+----------------------------------------------------
+1. Envía el .exe a Microsoft para que lo analice: microsoft.com/wdsi/filesubmission
+   (como "Software developer"). Si lo marcan como seguro, Defender y SmartScreen
+   avisan menos. Hay que repetirlo con cada versión nueva.
+2. Publica las descargas en GitHub (Releases) en vez de Google Drive: GitHub no
+   bloquea los .exe.
+3. Quien tenga el Control inteligente de aplicaciones activado puede compilar
+   el programa con build.bat (no hay que instalar nada).
+
+Lo que NO sirve
+---------------
+Un certificado "autofirmado" (creado por uno mismo) es gratis pero Windows no
+se fía de él: los demás seguirían viendo los mismos avisos.
+
+Si algún día tienes un certificado instalado en Windows
+--------------------------------------------------------
+firmar.ps1 ya está listo: ejecuta
+  powershell -ExecutionPolicy Bypass -File firmar.ps1 -Elegir
+y build.bat firmará solo al compilar. Mientras no exista firma.cfg, build.bat
+compila igual que siempre y no intenta firmar.
+Prueba sin certificado: firmar.ps1 -Prueba (firma una copia con un certificado
+temporal; esa firma no es de confianza).

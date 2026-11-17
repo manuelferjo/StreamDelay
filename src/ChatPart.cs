@@ -1,11 +1,5 @@
 namespace StreamDelay
 {
-	internal class ChatPart
-	{
-		public string x;
-
-		public string e;
-
-		public string n;
-	}
+    // Trozo de un mensaje: texto (x) o emote (e = url de la imagen, n = nombre).
+    class ChatPart { public string x, e, n; }
 }

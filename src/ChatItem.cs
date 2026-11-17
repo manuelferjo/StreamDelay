@@ -2,30 +2,17 @@ using System.Collections.Generic;
 
 namespace StreamDelay
 {
-	internal class ChatItem
-	{
-		public string t;
-
-		public string p;
-
-		public string id;
-
-		public string uid;
-
-		public string user;
-
-		public string color;
-
-		public string kind;
-
-		public string text;
-
-		public string amount;
-
-		public string[] roles;
-
-		public List<ChatPart> parts;
-
-		public Dictionary<string, object> data;
-	}
+    // Lo que recibe la página (nombres cortos: se envía como JSON).
+    class ChatItem
+    {
+        public string t;          // "msg" mensaje · "ev" evento · "del" borrado · "viewers" · "status"
+        public string p;          // "twitch" · "kick" · "youtube"
+        public string id, uid;    // id del mensaje y del usuario (para borrar)
+        public string user, color;
+        public string kind;       // eventos: sub, resub, gift, giftbomb, raid, bits, follow, superchat, sticker, member, giftmember, kicks, announce
+        public string text, amount;
+        public string[] roles;    // broadcaster, mod, vip, sub, founder, member, verified, og
+        public List<ChatPart> parts;
+        public Dictionary<string, object> data;
+    }
 }

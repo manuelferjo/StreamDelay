@@ -1,0 +1,15 @@
+﻿HERRAMIENTAS DE COMPROBACIÓN
+============================
+No forman parte del programa (build.bat solo compila src\).
+
+ILDiff.cs  Compara dos StreamDelay.exe instrucción por instrucción, clase por
+           clase. Sirve para comprobar que un cambio "de limpieza" (renombrar
+           variables, añadir comentarios) no cambia lo que hace el programa.
+           Compilar:  %WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe /out:ildiff.exe ILDiff.cs
+           Usar:      ildiff.exe antes.exe despues.exe [Clase1,Clase2]
+
+VerifyChat.cs  Pasa mensajes de ejemplo de Twitch, Kick, YouTube y donaciones
+           por las clases del chat de un StreamDelay.exe e imprime el resultado.
+           Comparando la salida de dos versiones se ve si el chat cambió.
+           Compilar:  ...csc.exe /out:verifychat.exe /r:System.Web.Extensions.dll VerifyChat.cs
+           Usar:      verifychat.exe StreamDelay.exe > salida.txt

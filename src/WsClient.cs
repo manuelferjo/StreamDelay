@@ -1,3 +1,9 @@
+// Avisos que no llegan por el chat público:
+// - Follows de Twitch: EventSub por websocket con la conexión de Twitch de la pestaña "Título"
+//   (permiso moderator:read:followers; hay que ser el dueño del canal o moderador).
+// - Donaciones de StreamElements (servidor "Astro", con el JWT de la cuenta) y de Streamlabs
+//   (Socket API, con el "Socket API Token"). Si no hay follows de EventSub, sus avisos de follow
+//   de Twitch sirven de alternativa.
 using System;
 using System.Globalization;
 using System.IO;
@@ -7,254 +13,110 @@ using System.Threading;
 
 namespace StreamDelay
 {
-	internal abstract class WsClient
-	{
-		protected readonly ChatHub hub;
+    // Websocket que se reconecta solo, con espera creciente.
+    abstract class WsClient
+    {
+        protected readonly ChatHub hub;
+        protected volatile bool run;
+        protected ClientWebSocket ws;
+        protected int IdleTimeoutMs;        // >0: si no llega nada en este tiempo, reconectar
+        protected int PingMs;               // >0: enviar PingText cada tanto
+        protected string PingText;
+        Thread th;
+        readonly object sendLock = new object();
 
-		protected volatile bool run;
+        protected WsClient(ChatHub h) { hub = h; }
 
-		protected ClientWebSocket ws;
+        protected abstract string Name { get; }
+        protected abstract string Url();
+        protected abstract void OnText(string s);
+        protected virtual void Opened() { }
+        protected abstract void State(string s);
 
-		protected int IdleTimeoutMs;
+        public void Start() { run = true; th = new Thread(Loop) { IsBackground = true, Name = "chat-" + Name }; th.Start(); }
+        public void Stop() { run = false; try { if (ws != null) ws.Abort(); } catch { } }
 
-		protected int PingMs;
+        // Para dejar de reintentar cuando el fallo no se arregla solo (token incorrecto, sin permiso…).
+        protected void Fatal(string s) { State(s); run = false; try { if (ws != null) ws.Abort(); } catch { } }
 
-		protected string PingText;
+        void Loop()
+        {
+            int wait = 2000;
+            while (run && hub.Alive)
+            {
+                try
+                {
+                    ws = new ClientWebSocket();
+                    ws.Options.KeepAliveInterval = TimeSpan.FromSeconds(30);
+                    ws.ConnectAsync(new Uri(Url()), CancellationToken.None).Wait(15000);
+                    if (ws.State != WebSocketState.Open) throw new Exception("no se pudo conectar");
+                    Opened();
+                    if (PingMs > 0)
+                    {
+                        var w = ws;
+                        new Thread(() =>
+                        {
+                            while (run && w.State == WebSocketState.Open)
+                            {
+                                for (int i = 0; i < PingMs / 100 && run && w.State == WebSocketState.Open; i++) Thread.Sleep(100);
+                                if (PingText != null) Send(w, PingText);
+                            }
+                        }) { IsBackground = true }.Start();
+                    }
+                    var buf = new byte[64 * 1024];
+                    var msg = new MemoryStream();
+                    while (run && ws.State == WebSocketState.Open)
+                    {
+                        WebSocketReceiveResult r;
+                        using (var cts = IdleTimeoutMs > 0 ? new CancellationTokenSource(IdleTimeoutMs) : new CancellationTokenSource())
+                        {
+                            try { r = ws.ReceiveAsync(new ArraySegment<byte>(buf), cts.Token).Result; }
+                            catch (AggregateException) { if (cts.IsCancellationRequested) throw new Exception("sin respuesta del servidor"); throw; }
+                        }
+                        if (r.MessageType == WebSocketMessageType.Close) break;
+                        msg.Write(buf, 0, r.Count);
+                        if (!r.EndOfMessage) continue;
+                        string text = Encoding.UTF8.GetString(msg.ToArray());
+                        msg.SetLength(0);
+                        wait = 2000;
+                        try { OnText(text); } catch { }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    var e = ex is AggregateException && ex.InnerException != null ? ex.InnerException : ex;
+                    if (run) State("error: " + e.Message);
+                }
+                try { if (ws != null) ws.Abort(); } catch { }
+                if (!run) break;
+                Thread.Sleep(wait);
+                wait = Math.Min(wait * 2, 30000);
+            }
+        }
 
-		private Thread th;
+        protected void Send(string s) { Send(ws, s); }
 
-		private readonly object sendLock = new object();
+        void Send(ClientWebSocket w, string s)
+        {
+            try
+            {
+                var b = Encoding.UTF8.GetBytes(s);
+                lock (sendLock) w.SendAsync(new ArraySegment<byte>(b), WebSocketMessageType.Text, true, CancellationToken.None).Wait(10000);
+            }
+            catch { }
+        }
 
-		protected abstract string Name { get; }
+        protected static string JsonStr(string s) { return Web.ToJson(s ?? ""); }
 
-		protected WsClient(ChatHub h)
-		{
-			hub = h;
-		}
-
-		protected abstract string Url();
-
-		protected abstract void OnText(string s);
-
-		protected virtual void Opened()
-		{
-		}
-
-		protected abstract void State(string s);
-
-		public void Start()
-		{
-			run = true;
-			th = new Thread(Loop)
-			{
-				IsBackground = true,
-				Name = "chat-" + Name
-			};
-			th.Start();
-		}
-
-		public void Stop()
-		{
-			run = false;
-			try
-			{
-				if (ws != null)
-				{
-					ws.Abort();
-				}
-			}
-			catch
-			{
-			}
-		}
-
-		protected void Fatal(string s)
-		{
-			State(s);
-			run = false;
-			try
-			{
-				if (ws != null)
-				{
-					ws.Abort();
-				}
-			}
-			catch
-			{
-			}
-		}
-
-		private void Loop()
-		{
-			int num = 2000;
-			while (run && hub.Alive)
-			{
-				try
-				{
-					ws = new ClientWebSocket();
-					ws.Options.KeepAliveInterval = TimeSpan.FromSeconds(30.0);
-					ws.ConnectAsync(new Uri(Url()), CancellationToken.None).Wait(15000);
-					if (ws.State != WebSocketState.Open)
-					{
-						throw new Exception("no se pudo conectar");
-					}
-					Opened();
-					if (PingMs > 0)
-					{
-						ClientWebSocket w = ws;
-						Thread thread = new Thread((ThreadStart)delegate
-						{
-							while (run && w.State == WebSocketState.Open)
-							{
-								for (int i = 0; i < PingMs / 100; i++)
-								{
-									if (!run)
-									{
-										break;
-									}
-									if (w.State != WebSocketState.Open)
-									{
-										break;
-									}
-									Thread.Sleep(100);
-								}
-								if (PingText != null)
-								{
-									Send(w, PingText);
-								}
-							}
-						});
-						thread.IsBackground = true;
-						thread.Start();
-					}
-					byte[] array = new byte[65536];
-					MemoryStream memoryStream = new MemoryStream();
-					while (run && ws.State == WebSocketState.Open)
-					{
-						WebSocketReceiveResult result;
-						using (CancellationTokenSource cancellationTokenSource = ((IdleTimeoutMs > 0) ? new CancellationTokenSource(IdleTimeoutMs) : new CancellationTokenSource()))
-						{
-							try
-							{
-								result = ws.ReceiveAsync(new ArraySegment<byte>(array), cancellationTokenSource.Token).Result;
-							}
-							catch (AggregateException)
-							{
-								if (cancellationTokenSource.IsCancellationRequested)
-								{
-									throw new Exception("sin respuesta del servidor");
-								}
-								throw;
-							}
-						}
-						if (result.MessageType == WebSocketMessageType.Close)
-						{
-							break;
-						}
-						memoryStream.Write(array, 0, result.Count);
-						if (result.EndOfMessage)
-						{
-							string s = Encoding.UTF8.GetString(memoryStream.ToArray());
-							memoryStream.SetLength(0L);
-							num = 2000;
-							try
-							{
-								OnText(s);
-							}
-							catch
-							{
-							}
-						}
-					}
-				}
-				catch (Exception ex2)
-				{
-					Exception ex3 = ((ex2 is AggregateException && ex2.InnerException != null) ? ex2.InnerException : ex2);
-					if (run)
-					{
-						State("error: " + ex3.Message);
-					}
-				}
-				try
-				{
-					if (ws != null)
-					{
-						ws.Abort();
-					}
-				}
-				catch
-				{
-				}
-				if (!run)
-				{
-					break;
-				}
-				Thread.Sleep(num);
-				num = Math.Min(num * 2, 30000);
-			}
-		}
-
-		protected void Send(string s)
-		{
-			Send(ws, s);
-		}
-
-		private void Send(ClientWebSocket w, string s)
-		{
-			try
-			{
-				byte[] bytes = Encoding.UTF8.GetBytes(s);
-				lock (sendLock)
-				{
-					w.SendAsync(new ArraySegment<byte>(bytes), WebSocketMessageType.Text, true, CancellationToken.None).Wait(10000);
-				}
-			}
-			catch
-			{
-			}
-		}
-
-		protected static string JsonStr(string s)
-		{
-			return Web.ToJson(s ?? "");
-		}
-
-		protected static string Money(object amount, string currency)
-		{
-			string text = Convert.ToString(amount, CultureInfo.InvariantCulture);
-			double result;
-			if (!double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out result))
-			{
-				return (text + " " + currency).Trim();
-			}
-			string text2 = (currency ?? "").ToUpperInvariant();
-			object obj;
-			switch (text2)
-			{
-			default:
-				obj = text2;
-				break;
-			case "BRL":
-				obj = "R$";
-				break;
-			case "ARS":
-				obj = "AR$";
-				break;
-			case "MXN":
-				obj = "MX$";
-				break;
-			case "GBP":
-				obj = "£";
-				break;
-			case "USD":
-				obj = "$";
-				break;
-			case "EUR":
-				obj = "€";
-				break;
-			}
-			string text3 = (string)obj;
-			return result.ToString("N2", CultureInfo.GetCultureInfo("es-ES")) + " " + text3;
-		}
-	}
+        // "5,00 €" a partir de importe y moneda.
+        protected static string Money(object amount, string currency)
+        {
+            double v;
+            string s = Convert.ToString(amount, CultureInfo.InvariantCulture);
+            if (!double.TryParse(s, NumberStyles.Float, CultureInfo.InvariantCulture, out v)) return (s + " " + currency).Trim();
+            string c = (currency ?? "").ToUpperInvariant();
+            string sym = c == "EUR" ? "€" : c == "USD" ? "$" : c == "GBP" ? "£" : c == "MXN" ? "MX$" : c == "ARS" ? "AR$" : c == "BRL" ? "R$" : c;
+            return v.ToString("N2", CultureInfo.GetCultureInfo("es-ES")) + " " + sym;
+        }
+    }
 }

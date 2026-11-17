@@ -9,530 +9,278 @@ using System.Threading;
 
 namespace StreamDelay
 {
-	internal class TwitchChat
-	{
-		private class Irc
-		{
-			public Dictionary<string, string> Tags = new Dictionary<string, string>();
+    // Chat de Twitch: IRC anónimo (sin iniciar sesión). Subs, regalos, raids y bits llegan por el propio chat.
+    class TwitchChat
+    {
+        readonly ChatHub hub;
+        readonly string channel;
+        volatile bool run;
+        TcpClient tcp;
+        Thread th;
+        string roomId = "";
 
-			public string Prefix = "";
+        public TwitchChat(ChatHub h, string ch) { hub = h; channel = ch; }
 
-			public string Command = "";
+        public void Start() { run = true; th = new Thread(Loop) { IsBackground = true, Name = "chat-twitch" }; th.Start(); }
+        public void Stop() { run = false; try { if (tcp != null) tcp.Close(); } catch { } }
 
-			public string Channel = "";
+        void Loop()
+        {
+            int wait = 2000;
+            while (run && hub.Alive)
+            {
+                try
+                {
+                    tcp = new TcpClient();
+                    tcp.Connect("irc.chat.twitch.tv", 6697);
+                    var ssl = new SslStream(tcp.GetStream());
+                    ssl.AuthenticateAsClient("irc.chat.twitch.tv", null, SslProtocols.Tls12, false);
+                    var rd = new StreamReader(ssl, new UTF8Encoding(false));
+                    var wr = new StreamWriter(ssl, new UTF8Encoding(false)) { NewLine = "\r\n", AutoFlush = true };
+                    wr.WriteLine("CAP REQ :twitch.tv/tags twitch.tv/commands");
+                    wr.WriteLine("PASS SCHMOOPIIE");
+                    wr.WriteLine("NICK justinfan" + new Random().Next(10000, 99999));
+                    wr.WriteLine("JOIN #" + channel);
+                    tcp.ReceiveTimeout = 6 * 60 * 1000; // Twitch manda PING cada ~5 min
+                    string line;
+                    while (run && (line = rd.ReadLine()) != null)
+                    {
+                        wait = 2000;
+                        Handle(line, wr);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    if (run) hub.SetState("twitch", "error: " + ex.Message);
+                }
+                try { if (tcp != null) tcp.Close(); } catch { }
+                if (!run) break;
+                Thread.Sleep(wait);
+                wait = Math.Min(wait * 2, 30000);
+            }
+        }
 
-			public string Trailing;
-		}
+        class Irc
+        {
+            public Dictionary<string, string> Tags = new Dictionary<string, string>();
+            public string Prefix = "", Command = "", Channel = "", Trailing;
+        }
 
-		private readonly ChatHub hub;
+        static Irc Parse(string line)
+        {
+            var m = new Irc();
+            int i = 0;
+            if (line.StartsWith("@"))
+            {
+                int sp = line.IndexOf(' ');
+                foreach (var kv in line.Substring(1, sp - 1).Split(';'))
+                {
+                    int eq = kv.IndexOf('=');
+                    if (eq < 0) m.Tags[kv] = "";
+                    else m.Tags[kv.Substring(0, eq)] = Unescape(kv.Substring(eq + 1));
+                }
+                i = sp + 1;
+            }
+            if (i < line.Length && line[i] == ':')
+            {
+                int sp = line.IndexOf(' ', i);
+                if (sp < 0) return m;
+                m.Prefix = line.Substring(i + 1, sp - i - 1);
+                i = sp + 1;
+            }
+            int t = line.IndexOf(" :", i);
+            string head = t >= 0 ? line.Substring(i, t - i) : line.Substring(i);
+            if (t >= 0) m.Trailing = line.Substring(t + 2);
+            var parts = head.Split(' ');
+            m.Command = parts[0];
+            if (parts.Length > 1) m.Channel = parts[1];
+            return m;
+        }
 
-		private readonly string channel;
+        static string Unescape(string s)
+        {
+            if (s.IndexOf('\\') < 0) return s;
+            var sb = new StringBuilder();
+            for (int i = 0; i < s.Length; i++)
+            {
+                if (s[i] != '\\' || i + 1 >= s.Length) { sb.Append(s[i]); continue; }
+                char c = s[++i];
+                sb.Append(c == 's' ? ' ' : c == ':' ? ';' : c == 'r' ? '\r' : c == 'n' ? '\n' : c);
+            }
+            return sb.ToString();
+        }
 
-		private volatile bool run;
+        string Tag(Irc m, string k) { string v; return m.Tags.TryGetValue(k, out v) ? v : ""; }
 
-		private TcpClient tcp;
+        void Handle(string line, StreamWriter wr)
+        {
+            var m = Parse(line);
+            switch (m.Command)
+            {
+                case "PING": wr.WriteLine("PONG :" + (m.Trailing ?? "tmi.twitch.tv")); break;
+                case "RECONNECT": throw new IOException("Twitch pidió reconectar");
+                case "ROOMSTATE":
+                    string rid = Tag(m, "room-id");
+                    if (rid.Length == 0) break;
+                    hub.SetState("twitch", "conectado");
+                    if (rid != roomId)
+                    {
+                        roomId = rid;
+                        ChatHub.Background(() => hub.Emotes.LoadTwitch(rid, hub.Log));
+                    }
+                    break;
+                case "NOTICE":
+                    if ((m.Trailing ?? "").Length > 0 && Tag(m, "msg-id") == "msg_channel_suspended") hub.SetState("twitch", "error: canal suspendido o inexistente");
+                    break;
+                case "PRIVMSG": Message(m); break;
+                case "USERNOTICE": Notice(m); break;
+                case "CLEARMSG": hub.Emit(new ChatItem { t = "del", p = "twitch", id = Tag(m, "target-msg-id") }); break;
+                case "CLEARCHAT":
+                    string target = Tag(m, "target-user-id");
+                    if (target.Length > 0) hub.Emit(new ChatItem { t = "del", p = "twitch", uid = target });
+                    break;
+            }
+        }
 
-		private Thread th;
+        string UserName(Irc m)
+        {
+            string n = Tag(m, "display-name");
+            if (n.Length == 0) { int ex = m.Prefix.IndexOf('!'); n = ex > 0 ? m.Prefix.Substring(0, ex) : m.Prefix; }
+            return n;
+        }
 
-		private string roomId = "";
+        static string[] Roles(string badges)
+        {
+            var r = new List<string>();
+            foreach (var b in badges.Split(','))
+            {
+                string n = b.Split('/')[0];
+                if (n == "broadcaster") r.Add("broadcaster");
+                else if (n == "moderator") r.Add("mod");
+                else if (n == "vip") r.Add("vip");
+                else if (n == "subscriber") r.Add("sub");
+                else if (n == "founder") r.Add("founder");
+                else if (n == "partner" || n == "verified") r.Add("verified");
+            }
+            return r.ToArray();
+        }
 
-		public TwitchChat(ChatHub h, string ch)
-		{
-			hub = h;
-			channel = ch;
-		}
+        List<ChatPart> Parts(string text, string emotesTag)
+        {
+            var parts = new List<ChatPart>();
+            var map = hub.Emotes.For("twitch");
+            if (string.IsNullOrEmpty(emotesTag)) { Emotes.AddText(parts, text, map); return parts; }
+            // Posiciones de Twitch en puntos de código Unicode: se convierten a índices de la cadena.
+            var cp = new List<int>();
+            for (int i = 0; i < text.Length; i++) { cp.Add(i); if (char.IsHighSurrogate(text[i]) && i + 1 < text.Length) i++; }
+            cp.Add(text.Length);
+            var list = new List<KeyValuePair<int, KeyValuePair<int, string>>>(); // inicio -> (fin, id)
+            foreach (var em in emotesTag.Split('/'))
+            {
+                int c = em.IndexOf(':');
+                if (c < 0) continue;
+                string id = em.Substring(0, c);
+                foreach (var rng in em.Substring(c + 1).Split(','))
+                {
+                    var se = rng.Split('-');
+                    int s, e;
+                    if (se.Length == 2 && int.TryParse(se[0], out s) && int.TryParse(se[1], out e) && s >= 0 && s <= e && e + 1 < cp.Count)
+                        list.Add(new KeyValuePair<int, KeyValuePair<int, string>>(cp[s], new KeyValuePair<int, string>(cp[e + 1], id)));
+                }
+            }
+            list.Sort((a, b) => a.Key.CompareTo(b.Key));
+            int pos = 0;
+            foreach (var r in list)
+            {
+                int start = r.Key, end = r.Value.Key;
+                if (start < pos) continue;
+                Emotes.AddText(parts, text.Substring(pos, start - pos), map);
+                parts.Add(new ChatPart { e = "https://static-cdn.jtvnw.net/emoticons/v2/" + r.Value.Value + "/default/dark/2.0", n = text.Substring(start, end - start) });
+                pos = end;
+            }
+            Emotes.AddText(parts, text.Substring(pos), map);
+            return parts;
+        }
 
-		public void Start()
-		{
-			run = true;
-			th = new Thread(Loop)
-			{
-				IsBackground = true,
-				Name = "chat-twitch"
-			};
-			th.Start();
-		}
+        ChatItem Base(Irc m, string t)
+        {
+            return new ChatItem
+            {
+                t = t, p = "twitch", id = Tag(m, "id"), uid = Tag(m, "user-id"),
+                user = UserName(m), color = Tag(m, "color"), roles = Roles(Tag(m, "badges"))
+            };
+        }
 
-		public void Stop()
-		{
-			run = false;
-			try
-			{
-				if (tcp != null)
-				{
-					tcp.Close();
-				}
-			}
-			catch
-			{
-			}
-		}
+        void Message(Irc m)
+        {
+            string text = m.Trailing ?? "";
+            if (text.StartsWith("\u0001ACTION ") && text.EndsWith("\u0001")) text = text.Substring(8, text.Length - 9);
+            var it = Base(m, "msg");
+            it.parts = Parts(text, Tag(m, "emotes"));
+            string bits = Tag(m, "bits");
+            if (bits.Length > 0 && bits != "0")
+            {
+                it.t = "ev"; it.kind = "bits"; it.amount = bits + " bits";
+                it.text = it.user + " ha enviado " + bits + " bits";
+            }
+            hub.Emit(it);
+        }
 
-		private void Loop()
-		{
-			int num = 2000;
-			while (run && hub.Alive)
-			{
-				try
-				{
-					tcp = new TcpClient();
-					tcp.Connect("irc.chat.twitch.tv", 6697);
-					SslStream sslStream = new SslStream(tcp.GetStream());
-					sslStream.AuthenticateAsClient("irc.chat.twitch.tv", null, SslProtocols.Tls12, false);
-					StreamReader streamReader = new StreamReader(sslStream, new UTF8Encoding(false));
-					StreamWriter streamWriter = new StreamWriter(sslStream, new UTF8Encoding(false));
-					streamWriter.NewLine = "\r\n";
-					streamWriter.AutoFlush = true;
-					StreamWriter streamWriter2 = streamWriter;
-					streamWriter2.WriteLine("CAP REQ :twitch.tv/tags twitch.tv/commands");
-					streamWriter2.WriteLine("PASS SCHMOOPIIE");
-					streamWriter2.WriteLine("NICK justinfan" + new Random().Next(10000, 99999));
-					streamWriter2.WriteLine("JOIN #" + channel);
-					tcp.ReceiveTimeout = 360000;
-					string line;
-					while (run && (line = streamReader.ReadLine()) != null)
-					{
-						num = 2000;
-						Handle(line, streamWriter2);
-					}
-				}
-				catch (Exception ex)
-				{
-					if (run)
-					{
-						hub.SetState("twitch", "error: " + ex.Message);
-					}
-				}
-				try
-				{
-					if (tcp != null)
-					{
-						tcp.Close();
-					}
-				}
-				catch
-				{
-				}
-				if (!run)
-				{
-					break;
-				}
-				Thread.Sleep(num);
-				num = Math.Min(num * 2, 30000);
-			}
-		}
+        void Notice(Irc m)
+        {
+            string id = Tag(m, "msg-id");
+            var it = Base(m, "ev");
+            string user = it.user;
+            if (Tag(m, "login") == "ananonymousgifter") user = it.user = "Anónimo";
+            string plan = Tag(m, "msg-param-sub-plan");
+            string tier = plan == "Prime" ? " con Prime" : plan == "2000" ? " de nivel 2" : plan == "3000" ? " de nivel 3" : "";
+            switch (id)
+            {
+                case "sub":
+                    it.kind = "sub"; it.text = user + " se ha suscrito" + tier; break;
+                case "resub":
+                    it.kind = "resub";
+                    it.text = user + " lleva " + Tag(m, "msg-param-cumulative-months") + " meses suscrito" + tier; break;
+                case "subgift":
+                    // Los regalos de una "lluvia" llegan uno a uno después del aviso general: no se repiten.
+                    if (Tag(m, "msg-param-community-gift-id").Length > 0) return;
+                    it.kind = "gift"; it.text = user + " ha regalado una suscripción a " + Tag(m, "msg-param-recipient-display-name"); break;
+                case "submysterygift":
+                    it.kind = "giftbomb";
+                    string n = Tag(m, "msg-param-mass-gift-count");
+                    it.amount = n;
+                    it.text = user + " ha regalado " + n + (n == "1" ? " suscripción" : " suscripciones") + " al chat"; break;
+                case "raid":
+                    it.kind = "raid";
+                    it.user = Tag(m, "msg-param-displayName").Length > 0 ? Tag(m, "msg-param-displayName") : user;
+                    it.amount = Tag(m, "msg-param-viewerCount");
+                    it.text = it.user + " hace raid con " + it.amount + " espectadores"; break;
+                case "giftpaidupgrade":
+                case "anongiftpaidupgrade":
+                case "primepaidupgrade":
+                    it.kind = "sub"; it.text = user + " continúa su suscripción"; break;
+                case "announcement":
+                    it.t = "msg"; it.kind = "announce"; break;
+                default:
+                    string sys = Tag(m, "system-msg");
+                    if (sys.Length == 0) return;
+                    it.kind = "other"; it.text = sys; break;
+            }
+            if (!string.IsNullOrEmpty(m.Trailing)) it.parts = Parts(m.Trailing, Tag(m, "emotes"));
+            hub.Emit(it);
+        }
 
-		private static Irc Parse(string line)
-		{
-			Irc irc = new Irc();
-			int num = 0;
-			if (line.StartsWith("@"))
-			{
-				int num2 = line.IndexOf(' ');
-				string[] array = line.Substring(1, num2 - 1).Split(';');
-				foreach (string text in array)
-				{
-					int num3 = text.IndexOf('=');
-					if (num3 < 0)
-					{
-						irc.Tags[text] = "";
-					}
-					else
-					{
-						irc.Tags[text.Substring(0, num3)] = Unescape(text.Substring(num3 + 1));
-					}
-				}
-				num = num2 + 1;
-			}
-			if (num < line.Length && line[num] == ':')
-			{
-				int num4 = line.IndexOf(' ', num);
-				if (num4 < 0)
-				{
-					return irc;
-				}
-				irc.Prefix = line.Substring(num + 1, num4 - num - 1);
-				num = num4 + 1;
-			}
-			int num5 = line.IndexOf(" :", num);
-			string text2 = ((num5 >= 0) ? line.Substring(num, num5 - num) : line.Substring(num));
-			if (num5 >= 0)
-			{
-				irc.Trailing = line.Substring(num5 + 2);
-			}
-			string[] array2 = text2.Split(' ');
-			irc.Command = array2[0];
-			if (array2.Length > 1)
-			{
-				irc.Channel = array2[1];
-			}
-			return irc;
-		}
-
-		private static string Unescape(string s)
-		{
-			if (s.IndexOf('\\') < 0)
-			{
-				return s;
-			}
-			StringBuilder stringBuilder = new StringBuilder();
-			for (int i = 0; i < s.Length; i++)
-			{
-				if (s[i] != '\\' || i + 1 >= s.Length)
-				{
-					stringBuilder.Append(s[i]);
-					continue;
-				}
-				char c = s[++i];
-				int value;
-				switch (c)
-				{
-				default:
-					value = c;
-					break;
-				case 'n':
-					value = 10;
-					break;
-				case 'r':
-					value = 13;
-					break;
-				case ':':
-					value = 59;
-					break;
-				case 's':
-					value = 32;
-					break;
-				}
-				stringBuilder.Append((char)value);
-			}
-			return stringBuilder.ToString();
-		}
-
-		private string Tag(Irc m, string k)
-		{
-			string value;
-			if (!m.Tags.TryGetValue(k, out value))
-			{
-				return "";
-			}
-			return value;
-		}
-
-		private void Handle(string line, StreamWriter wr)
-		{
-			Irc irc = Parse(line);
-			switch (irc.Command)
-			{
-			case "PING":
-				wr.WriteLine("PONG :" + (irc.Trailing ?? "tmi.twitch.tv"));
-				break;
-			case "RECONNECT":
-				throw new IOException("Twitch pidió reconectar");
-			case "ROOMSTATE":
-			{
-				string rid = Tag(irc, "room-id");
-				if (rid.Length == 0)
-				{
-					break;
-				}
-				hub.SetState("twitch", "conectado");
-				if (rid != roomId)
-				{
-					roomId = rid;
-					ChatHub.Background(delegate
-					{
-						hub.Emotes.LoadTwitch(rid, hub.Log);
-					});
-				}
-				break;
-			}
-			case "NOTICE":
-				if ((irc.Trailing ?? "").Length > 0 && Tag(irc, "msg-id") == "msg_channel_suspended")
-				{
-					hub.SetState("twitch", "error: canal suspendido o inexistente");
-				}
-				break;
-			case "PRIVMSG":
-				Message(irc);
-				break;
-			case "USERNOTICE":
-				Notice(irc);
-				break;
-			case "CLEARMSG":
-				hub.Emit(new ChatItem
-				{
-					t = "del",
-					p = "twitch",
-					id = Tag(irc, "target-msg-id")
-				});
-				break;
-			case "CLEARCHAT":
-			{
-				string text = Tag(irc, "target-user-id");
-				if (text.Length > 0)
-				{
-					hub.Emit(new ChatItem
-					{
-						t = "del",
-						p = "twitch",
-						uid = text
-					});
-				}
-				break;
-			}
-			}
-		}
-
-		private string UserName(Irc m)
-		{
-			string text = Tag(m, "display-name");
-			if (text.Length == 0)
-			{
-				int num = m.Prefix.IndexOf('!');
-				text = ((num > 0) ? m.Prefix.Substring(0, num) : m.Prefix);
-			}
-			return text;
-		}
-
-		private static string[] Roles(string badges)
-		{
-			List<string> list = new List<string>();
-			string[] array = badges.Split(',');
-			foreach (string text in array)
-			{
-				switch (text.Split('/')[0])
-				{
-				case "broadcaster":
-					list.Add("broadcaster");
-					break;
-				case "moderator":
-					list.Add("mod");
-					break;
-				case "vip":
-					list.Add("vip");
-					break;
-				case "subscriber":
-					list.Add("sub");
-					break;
-				case "founder":
-					list.Add("founder");
-					break;
-				case "partner":
-				case "verified":
-					list.Add("verified");
-					break;
-				}
-			}
-			return list.ToArray();
-		}
-
-		private List<ChatPart> Parts(string text, string emotesTag)
-		{
-			List<ChatPart> list = new List<ChatPart>();
-			Dictionary<string, string> map = hub.Emotes.For("twitch");
-			if (string.IsNullOrEmpty(emotesTag))
-			{
-				Emotes.AddText(list, text, map);
-				return list;
-			}
-			List<int> list2 = new List<int>();
-			for (int i = 0; i < text.Length; i++)
-			{
-				list2.Add(i);
-				if (char.IsHighSurrogate(text[i]) && i + 1 < text.Length)
-				{
-					i++;
-				}
-			}
-			list2.Add(text.Length);
-			List<KeyValuePair<int, KeyValuePair<int, string>>> list3 = new List<KeyValuePair<int, KeyValuePair<int, string>>>();
-			string[] array = emotesTag.Split('/');
-			foreach (string text2 in array)
-			{
-				int num = text2.IndexOf(':');
-				if (num < 0)
-				{
-					continue;
-				}
-				string value = text2.Substring(0, num);
-				string[] array2 = text2.Substring(num + 1).Split(',');
-				foreach (string text3 in array2)
-				{
-					string[] array3 = text3.Split('-');
-					int result;
-					int result2;
-					if (array3.Length == 2 && int.TryParse(array3[0], out result) && int.TryParse(array3[1], out result2) && result >= 0 && result <= result2 && result2 + 1 < list2.Count)
-					{
-						list3.Add(new KeyValuePair<int, KeyValuePair<int, string>>(list2[result], new KeyValuePair<int, string>(list2[result2 + 1], value)));
-					}
-				}
-			}
-			list3.Sort((KeyValuePair<int, KeyValuePair<int, string>> a, KeyValuePair<int, KeyValuePair<int, string>> b) => a.Key.CompareTo(b.Key));
-			int num2 = 0;
-			foreach (KeyValuePair<int, KeyValuePair<int, string>> item in list3)
-			{
-				int key = item.Key;
-				int key2 = item.Value.Key;
-				if (key >= num2)
-				{
-					Emotes.AddText(list, text.Substring(num2, key - num2), map);
-					list.Add(new ChatPart
-					{
-						e = "https://static-cdn.jtvnw.net/emoticons/v2/" + item.Value.Value + "/default/dark/2.0",
-						n = text.Substring(key, key2 - key)
-					});
-					num2 = key2;
-				}
-			}
-			Emotes.AddText(list, text.Substring(num2), map);
-			return list;
-		}
-
-		private ChatItem Base(Irc m, string t)
-		{
-			ChatItem chatItem = new ChatItem();
-			chatItem.t = t;
-			chatItem.p = "twitch";
-			chatItem.id = Tag(m, "id");
-			chatItem.uid = Tag(m, "user-id");
-			chatItem.user = UserName(m);
-			chatItem.color = Tag(m, "color");
-			chatItem.roles = Roles(Tag(m, "badges"));
-			return chatItem;
-		}
-
-		private void Message(Irc m)
-		{
-			string text = m.Trailing ?? "";
-			if (text.StartsWith("\u0001ACTION ") && text.EndsWith("\u0001"))
-			{
-				text = text.Substring(8, text.Length - 9);
-			}
-			ChatItem chatItem = Base(m, "msg");
-			chatItem.parts = Parts(text, Tag(m, "emotes"));
-			string text2 = Tag(m, "bits");
-			if (text2.Length > 0 && text2 != "0")
-			{
-				chatItem.t = "ev";
-				chatItem.kind = "bits";
-				chatItem.amount = text2 + " bits";
-				chatItem.text = chatItem.user + " ha enviado " + text2 + " bits";
-			}
-			hub.Emit(chatItem);
-		}
-
-		private void Notice(Irc m)
-		{
-			string text = Tag(m, "msg-id");
-			ChatItem chatItem = Base(m, "ev");
-			string text2 = chatItem.user;
-			if (Tag(m, "login") == "ananonymousgifter")
-			{
-				text2 = (chatItem.user = "Anónimo");
-			}
-			object obj;
-			switch (Tag(m, "msg-param-sub-plan"))
-			{
-			default:
-				obj = "";
-				break;
-			case "3000":
-				obj = " de nivel 3";
-				break;
-			case "2000":
-				obj = " de nivel 2";
-				break;
-			case "Prime":
-				obj = " con Prime";
-				break;
-			}
-			string text3 = (string)obj;
-			switch (text)
-			{
-			case "sub":
-				chatItem.kind = "sub";
-				chatItem.text = text2 + " se ha suscrito" + text3;
-				break;
-			case "resub":
-				chatItem.kind = "resub";
-				chatItem.text = text2 + " lleva " + Tag(m, "msg-param-cumulative-months") + " meses suscrito" + text3;
-				break;
-			case "subgift":
-				if (Tag(m, "msg-param-community-gift-id").Length > 0)
-				{
-					return;
-				}
-				chatItem.kind = "gift";
-				chatItem.text = text2 + " ha regalado una suscripción a " + Tag(m, "msg-param-recipient-display-name");
-				break;
-			case "submysterygift":
-			{
-				chatItem.kind = "giftbomb";
-				string text5 = (chatItem.amount = Tag(m, "msg-param-mass-gift-count"));
-				chatItem.text = text2 + " ha regalado " + text5 + ((text5 == "1") ? " suscripción" : " suscripciones") + " al chat";
-				break;
-			}
-			case "raid":
-				chatItem.kind = "raid";
-				chatItem.user = ((Tag(m, "msg-param-displayName").Length > 0) ? Tag(m, "msg-param-displayName") : text2);
-				chatItem.amount = Tag(m, "msg-param-viewerCount");
-				chatItem.text = chatItem.user + " hace raid con " + chatItem.amount + " espectadores";
-				break;
-			case "giftpaidupgrade":
-			case "anongiftpaidupgrade":
-			case "primepaidupgrade":
-				chatItem.kind = "sub";
-				chatItem.text = text2 + " continúa su suscripción";
-				break;
-			case "announcement":
-				chatItem.t = "msg";
-				chatItem.kind = "announce";
-				break;
-			default:
-			{
-				string text4 = Tag(m, "system-msg");
-				if (text4.Length == 0)
-				{
-					return;
-				}
-				chatItem.kind = "other";
-				chatItem.text = text4;
-				break;
-			}
-			}
-			if (!string.IsNullOrEmpty(m.Trailing))
-			{
-				chatItem.parts = Parts(m.Trailing, Tag(m, "emotes"));
-			}
-			hub.Emit(chatItem);
-		}
-
-		public int FetchViewers()
-		{
-			string body = "{\"query\":\"query{user(login:\\\"" + channel + "\\\"){id stream{viewersCount}}}\"}";
-			Dictionary<string, string> dictionary = new Dictionary<string, string>();
-			dictionary.Add("Client-Id", "kimne78kx3ncx6brgo4mv6wki5h1ko");
-			Dictionary<string, string> headers = dictionary;
-			object o = Web.PostJson("https://gql.twitch.tv/gql", body, headers, null);
-			string uid = J.S(o, "data", "user", "id");
-			if (uid.Length == 0)
-			{
-				hub.SetState("twitch", "error: el canal \"" + channel + "\" no existe");
-				return -1;
-			}
-			if (roomId.Length == 0)
-			{
-				roomId = uid;
-				ChatHub.Background(delegate
-				{
-					hub.Emotes.LoadTwitch(uid, hub.Log);
-				});
-			}
-			if (J.At(o, "data", "user", "stream") == null)
-			{
-				return -2;
-			}
-			return (int)J.N(o, -1L, "data", "user", "stream", "viewersCount");
-		}
-	}
+        // Espectadores con la API pública de la web de Twitch (sin iniciar sesión).
+        public int FetchViewers()
+        {
+            string body = "{\"query\":\"query{user(login:\\\"" + channel + "\\\"){id stream{viewersCount}}}\"}";
+            var h = new Dictionary<string, string> { { "Client-Id", "kimne78kx3ncx6brgo4mv6wki5h1ko" } };
+            var o = Web.PostJson("https://gql.twitch.tv/gql", body, h, null);
+            string uid = J.S(o, "data", "user", "id");
+            if (uid.Length == 0) { hub.SetState("twitch", "error: el canal \"" + channel + "\" no existe"); return -1; }
+            if (roomId.Length == 0) { roomId = uid; ChatHub.Background(() => hub.Emotes.LoadTwitch(uid, hub.Log)); }
+            if (J.At(o, "data", "user", "stream") == null) return -2;
+            return (int)J.N(o, -1, "data", "user", "stream", "viewersCount");
+        }
+    }
 }
