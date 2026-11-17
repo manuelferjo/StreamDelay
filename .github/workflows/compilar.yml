@@ -24,7 +24,7 @@ jobs:
     runs-on: windows-latest
     steps:
       - name: Descargar el código
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Compilar StreamDelay.exe
         shell: cmd
@@ -66,7 +66,7 @@ jobs:
         run: .\empaquetar.ps1
 
       - name: Guardar el ZIP (descargable desde la página de esta ejecución)
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: StreamDelay
           path: dist/*.zip
