@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#09090c">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<title>Mando · StreamDelay</title>
+<style>
+  :root {
+    --bg: #09090c; --surface: #111116; --elev: #171720; --border: #26262e; --border-hi: #38364a;
+    --text: #f4f4f5; --muted: #a1a1aa; --dim: #71717a;
+    --violet: #c09afd; --pale: #e3d5ff; --yellow: #ede103; --red: #ff4655; --green: #34d399;
+    --grad: linear-gradient(120deg, var(--violet), var(--pale) 45%, var(--yellow));
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; background: var(--bg); color: var(--text); }
+  body { font: 15px/1.4 "Segoe UI", system-ui, -apple-system, sans-serif; min-height: 100vh;
+    padding: max(14px, env(safe-area-inset-top)) 14px max(20px, env(safe-area-inset-bottom)); }
+  .wrap { max-width: 520px; margin: 0 auto; display: flex; flex-direction: column; gap: 12px; }
+  header { display: flex; align-items: center; gap: 10px; }
+  .brand { font: 700 12px Consolas, "JetBrains Mono", monospace; letter-spacing: .18em; color: var(--muted); text-transform: uppercase; }
+  .brand b { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .conn { margin-left: auto; display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--dim); }
+  .conn i { width: 8px; height: 8px; border-radius: 50%; background: var(--dim); }
+  .conn.ok i { background: var(--green); } .conn.bad i { background: var(--red); }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 18px; padding: 14px; }
+  .lbl { font: 700 11px Consolas, monospace; letter-spacing: .14em; color: var(--dim); text-transform: uppercase; margin-bottom: 8px; }
+
+  #alert { display: none; border-color: rgba(255,70,85,.55); background: rgba(255,70,85,.10); }
+  #alert.show { display: block; animation: blink 1.2s ease-in-out 3; }
+  @keyframes blink { 50% { background: rgba(255,70,85,.28); } }
+  #alert .lbl { color: var(--red); }
+  #alert div { font-weight: 600; color: #ffb3ba; }
+
+  #hero { position: relative; overflow: hidden; text-align: center; padding: 18px 14px 16px; }
+  #hero.on { border-color: rgba(255,70,85,.5); box-shadow: 0 0 40px rgba(255,70,85,.12) inset; }
+  #state { font: 800 46px/1 "Segoe UI", system-ui, sans-serif; letter-spacing: -.02em; }
+  #state small { font-size: 22px; margin-left: 4px; font-weight: 700; color: var(--muted); }
+  #hero.on #state { color: #fff; }
+  #hero.off #state { color: var(--muted); font-size: 34px; }
+  #sub { margin-top: 8px; color: var(--muted); font-size: 13px; }
+  #sub .live { color: var(--red); font-weight: 700; }
+  .bar { height: 6px; border-radius: 3px; background: rgba(255,255,255,.08); margin-top: 12px; overflow: hidden; display: none; }
+  .bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--red), #ff8a94); transition: width .9s linear; }
+  #hero.tr .bar { display: block; }
+
+  button { font: inherit; color: inherit; border: 0; cursor: pointer; touch-action: manipulation; }
+  .big { width: 100%; padding: 18px; border-radius: 16px; font-size: 19px; font-weight: 800; }
+  #toggle.go { background: var(--grad); color: #111; }
+  #toggle.stop { background: var(--elev); border: 1px solid var(--red); color: #ff8a94; }
+  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .ghost { padding: 15px 10px; border-radius: 14px; background: var(--elev); border: 1px solid var(--border); font-size: 17px; font-weight: 700; }
+  .ghost:active, .pre:active, .big:active { transform: scale(.98); filter: brightness(1.2); }
+  #presets { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .pre { padding: 13px 6px; border-radius: 999px; background: var(--elev); border: 1px solid var(--border); font-weight: 700; font-size: 15px; color: var(--muted); }
+  .pre.sel { border-color: var(--violet); color: var(--text); background: rgba(192,154,253,.14); }
+  .dest { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--border); }
+  .dest:first-of-type { border-top: 0; }
+  .dest b { flex: 1; }
+  .chip { font-size: 12px; padding: 3px 10px; border-radius: 999px; background: var(--elev); color: var(--muted); white-space: nowrap; }
+  .chip.live { color: #fff; background: rgba(255,70,85,.22); }
+  .chip.retry { color: #111; background: var(--yellow); }
+  .q { font: 600 11px Consolas, monospace; color: var(--dim); }
+  .ev { display: flex; gap: 10px; font-size: 13px; padding: 5px 0; color: var(--muted); }
+  .ev time { font-family: Consolas, monospace; color: var(--dim); flex: none; }
+  .ev.bad span { color: #ff8a94; } .ev.ok span { color: var(--green); }
+  #cut { position: relative; overflow: hidden; width: 100%; padding: 15px; border-radius: 14px; background: transparent; border: 1px solid rgba(255,70,85,.5); color: #ff8a94; font-weight: 800; font-size: 15px; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: none; }
+  #cut i { position: absolute; inset: 0; width: 0; background: rgba(255,70,85,.35); }
+  #cut span { position: relative; }
+  .foot { display: flex; justify-content: space-between; align-items: center; color: var(--dim); font-size: 12px; }
+  .foot label { display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  #toast { position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom)); transform: translateX(-50%) translateY(20px); opacity: 0; transition: .25s; background: var(--elev); border: 1px solid var(--border-hi); padding: 9px 16px; border-radius: 999px; font-weight: 600; font-size: 14px; pointer-events: none; }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .empty { color: var(--dim); font-size: 13px; }
+
+  /* Modo QR (se abre desde el PC para escanear con el móvil) */
+  #qrview { display: none; text-align: center; }
+  body.qr #main { display: none; } body.qr #qrview { display: block; }
+  #qr { background: #fff; padding: 16px; border-radius: 16px; display: inline-block; margin: 14px 0; }
+  #qrurl { font-family: Consolas, monospace; word-break: break-all; color: var(--violet); font-size: 14px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <span class="brand"><b>StreamDelay</b> · Mando</span>
+    <span class="conn" id="conn"><i></i><span id="connTxt">Conectando…</span></span>
+  </header>
+
+  <div id="qrview" class="card">
+    <div class="lbl">Escanea con la cámara del móvil</div>
+    <div id="qr"></div>
+    <div id="qrurl"></div>
+    <p class="empty" id="qrnote">El móvil tiene que estar en la misma wifi que este PC.</p>
+  </div>
+
+  <div id="main" class="wrap" style="padding:0">
+    <div id="alert" class="card"><div class="lbl">⚠ Aviso</div><div id="alertTxt"></div></div>
+
+    <div id="hero" class="card off">
+      <div class="lbl" id="heroLbl">Delay</div>
+      <div id="state">—</div>
+      <div id="sub">—</div>
+      <div class="bar"><i id="bar"></i></div>
+    </div>
+
+    <button id="toggle" class="big go">Activar delay</button>
+    <div class="row">
+      <button class="ghost" data-a="menos">− 5 s</button>
+      <button class="ghost" data-a="mas">+ 5 s</button>
+    </div>
+
+    <div class="card"><div class="lbl">Delays guardados</div><div id="presets"></div></div>
+    <div class="card"><div class="lbl">Destinos</div><div id="dests"><div class="empty">—</div></div></div>
+    <div class="card"><div class="lbl">Últimos avisos</div><div id="events"><div class="empty">Todo en orden.</div></div></div>
+
+    <button id="cut"><i></i><span>Mantén pulsado para CORTAR YA</span></button>
+    <div class="foot">
+      <label><input type="checkbox" id="snd"> Sonido de aviso en este dispositivo</label>
+      <span id="ver"></span>
+    </div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+(function () {
+  var q = new URLSearchParams(location.search);
+  var K = q.get('k') || '';
+  var API = '/mando/api?k=' + encodeURIComponent(K) + '&a=';
+  var $ = function (id) { return document.getElementById(id); };
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+  function secs(n) { return n >= 60 && n % 60 === 0 ? (n / 60) + '<small>min</small>' : n + '<small>s</small>'; }
+
+  // ---------- Código QR (?qr=1) ----------
+  if (q.get('qr') === '1') {
+    document.body.classList.add('qr');
+    fetch(API + 'estado', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (s) {
+      if (!s.lan) {
+        $('qrurl').textContent = '';
+        $('qrnote').innerHTML = 'Primero activa <b>Permitir desde el móvil</b> en StreamDelay → pestaña Mando, y vuelve a pulsar «Código QR».';
+        $('qr').style.display = 'none';
+        return;
+      }
+      $('qrurl').textContent = s.lan;
+      var sc = document.createElement('script');
+      sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js';
+      sc.onload = function () { new QRCode($('qr'), { text: s.lan, width: 260, height: 260, correctLevel: QRCode.CorrectLevel.M }); };
+      sc.onerror = function () { $('qr').style.display = 'none'; $('qrnote').textContent = 'Sin internet para dibujar el QR: escribe la dirección de arriba en el navegador del móvil.'; };
+      document.head.appendChild(sc);
+    });
+    return;
+  }
+
+  // ---------- Sonido de aviso ----------
+  var sndOn = true;
+  try { sndOn = localStorage.getItem('sd-mando-sonido') !== '0'; } catch (x) {}
+  $('snd').checked = sndOn;
+  $('snd').onchange = function () { sndOn = this.checked; try { localStorage.setItem('sd-mando-sonido', sndOn ? '1' : '0'); } catch (x) {} unlock(); };
+  var ctx = null;
+  function unlock() { try { if (!ctx) ctx = new (window.AudioContext || window.webkitAudioContext)(); if (ctx.state === 'suspended') ctx.resume(); } catch (x) {} }
+  document.addEventListener('pointerdown', unlock, { once: false, passive: true });
+  function beep() {
+    if (!sndOn || !ctx) return;
+    [[988, 0, .16], [740, .22, .22]].forEach(function (n) {
+      var o = ctx.createOscillator(), g = ctx.createGain(), t = ctx.currentTime + n[1];
+      o.frequency.value = n[0]; o.connect(g); g.connect(ctx.destination);
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.35, t + .01); g.gain.linearRampToValueAtTime(0, t + n[2]);
+      o.start(t); o.stop(t + n[2] + .02);
+    });
+    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+  }
+
+  var toastT;
+  function toast(m) { var t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(function () { t.classList.remove('show'); }, 1800); }
+
+  // ---------- Pintar el estado ----------
+  var lastSeq = null, ST = { live: 'En directo', retry: 'Reintentando', connecting: 'Conectando', wait: 'Esperando', ready: 'Preparado', nokey: 'Sin clave', off: 'Parado' };
+  var TR = { on: 'Activando delay', up: 'Subiendo delay', down: 'Bajando delay', off: 'Delay quitado' };
+  function render(s) {
+    if (!s || s.error) { if (s && s.error) toast(s.error); return; }
+    var hero = $('hero'), t = s.tr && TR[s.tr.k] ? s.tr : null;
+    hero.className = 'card ' + (s.on ? 'on' : 'off') + (t ? ' tr' : '');
+    $('heroLbl').textContent = t ? TR[t.k] : s.on ? 'Delay activado' : 'Delay';
+    $('state').innerHTML = s.on ? secs(s.s) : 'Sin delay';
+    $('bar').style.width = t ? Math.round(t.p * 100) + '%' : '0';
+    var nLive = (s.dests || []).filter(function (d) { return d.st === 'live'; }).length;
+    $('sub').innerHTML = !s.running ? 'Servicio parado en StreamDelay' : !s.input ? 'Esperando a OBS…' :
+      nLive ? '<span class="live">● EN DIRECTO</span> en ' + nLive + (nLive === 1 ? ' plataforma' : ' plataformas') + (s.on ? ' · tu público va ' + s.s + ' s por detrás' : '') :
+      'OBS conectado · llenando el delay';
+    var tg = $('toggle');
+    tg.textContent = s.on ? 'Quitar delay' : 'Activar delay' + (s.s > 0 ? ' (' + s.s + ' s)' : '');
+    tg.className = 'big ' + (s.on ? 'stop' : 'go');
+
+    var pre = $('presets');
+    if (pre.children.length !== (s.presets || []).length) {
+      pre.innerHTML = '';
+      (s.presets || []).forEach(function (p, i) {
+        var b = document.createElement('button'); b.className = 'pre';
+        b.onclick = function () { act('preset&n=' + (i + 1)); };
+        pre.appendChild(b);
+      });
+    }
+    (s.presets || []).forEach(function (p, i) { var b = pre.children[i]; b.textContent = p.n; b.classList.toggle('sel', !!p.sel); });
+
+    $('dests').innerHTML = (s.dests || []).length ? s.dests.map(function (d) {
+      return '<div class="dest"><b>' + esc(d.name) + '</b>' + (d.q ? '<span class="q">' + esc(d.q) + '</span>' : '') +
+        '<span class="chip ' + d.st + '">' + (d.st === 'retry' && d.note ? esc(d.note) : ST[d.st] || d.st) + '</span></div>';
+    }).join('') : '<div class="empty">No hay destinos activados.</div>';
+
+    var pr = s.problems || [];
+    $('alert').classList.toggle('show', pr.length > 0);
+    $('alertTxt').innerHTML = pr.map(esc).join('<br>');
+    $('events').innerHTML = (s.events || []).length ? s.events.slice(0, 6).map(function (e) {
+      return '<div class="ev ' + esc(e.lv) + '"><time>' + esc(e.t) + '</time><span>' + esc(e.m) + '</span></div>';
+    }).join('') : '<div class="empty">Todo en orden.</div>';
+    if (lastSeq !== null && s.seq > lastSeq) beep();
+    lastSeq = s.seq;
+    $('ver').textContent = 'v' + s.ver;
+  }
+
+  function setConn(ok) { $('conn').className = 'conn ' + (ok ? 'ok' : 'bad'); $('connTxt').textContent = ok ? 'Conectado' : 'Sin conexión con StreamDelay'; }
+  function act(a) {
+    unlock();
+    if (navigator.vibrate) navigator.vibrate(15);
+    return fetch(API + a, { cache: 'no-store' }).then(function (r) { return r.json(); })
+      .then(function (s) { setConn(true); render(s); if (s.msg) toast(s.msg); })
+      .catch(function () { setConn(false); toast('No se pudo contactar con StreamDelay'); });
+  }
+  function poll() {
+    fetch(API + 'estado', { cache: 'no-store' }).then(function (r) { if (r.status === 403) throw 'k'; return r.json(); })
+      .then(function (s) { setConn(true); render(s); })
+      .catch(function (e) { setConn(false); if (e === 'k') $('connTxt').textContent = 'Clave incorrecta: copia de nuevo la URL'; })
+      .then(function () { setTimeout(poll, 1000); });
+  }
+
+  $('toggle').onclick = function () { act('toggle'); };
+  Array.prototype.forEach.call(document.querySelectorAll('[data-a]'), function (b) { b.onclick = function () { act(b.dataset.a); }; });
+
+  // Cortar ya: hay que mantenerlo pulsado 1,5 s para que no se pulse sin querer.
+  var cut = $('cut'), fill = cut.querySelector('i'), holdT = null, holdStart = 0, raf = 0;
+  function holdStep() {
+    var p = Math.min(1, (Date.now() - holdStart) / 1500);
+    fill.style.width = (p * 100) + '%';
+    if (p >= 1) { stopHold(); act('cortar'); return; }
+    raf = requestAnimationFrame(holdStep);
+  }
+  function startHold(e) { e.preventDefault(); holdStart = Date.now(); cancelAnimationFrame(raf); raf = requestAnimationFrame(holdStep); }
+  function stopHold() { cancelAnimationFrame(raf); fill.style.width = '0'; }
+  cut.addEventListener('pointerdown', startHold);
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (ev) { cut.addEventListener(ev, stopHold); });
+  cut.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
+  poll();
+})();
+</script>
+</body>
+</html>

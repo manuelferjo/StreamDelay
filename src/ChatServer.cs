@@ -1,0 +1,646 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Net;
+using System.Net.Sockets;
+using System.Text;
+using System.Threading;
+
+namespace StreamDelay
+{
+	internal class ChatServer
+	{
+		private class Request
+		{
+			public string Method = "";
+
+			public string Path = "";
+
+			public string Body = "";
+
+			public Dictionary<string, string> Headers = new Dictionary<string, string>();
+		}
+
+		private const int RecentMax = 80;
+
+		public Action<string> Log = delegate
+		{
+		};
+
+		private TcpListener listener;
+
+		private volatile bool running;
+
+		private readonly List<Stream> clients = new List<Stream>();
+
+		private readonly object lk = new object();
+
+		private readonly LinkedList<string> recent = new LinkedList<string>();
+
+		private string lastViewers;
+
+		private string lastStatus;
+
+		private string pageHtml;
+
+		private string delayHtml;
+
+		private string viewersHtml;
+
+		private string mandoHtml;
+
+		// Mando a distancia (móvil, Stream Deck, panel de OBS): acción + parámetros -> JSON de estado.
+		// Exige la clave del mando (?k=...) en cada petición.
+		public Func<string, Dictionary<string, string>, string> OnRemote = (string a, Dictionary<string, string> q) => "{}";
+
+		public Func<string> RemoteKey = () => "";
+
+		// Moderación desde la página del chat.
+		public Func<Dictionary<string, object>, Dictionary<string, object>> OnMod = (Dictionary<string, object> d) => new Dictionary<string, object>();
+
+		// true: escucha también en la red local (para el móvil). Solo el mando responde desde fuera del PC.
+		public bool Lan { get; private set; }
+
+		// Espectadores y qué mostrar, para el overlay de espectadores.
+		public Func<string> OnViewersState = () => "{}";
+
+		// Estado del delay para el overlay de OBS (lo rellena la ventana principal).
+		public Func<string> OnDelayState = () => "{}";
+
+		private readonly string secret = Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N");
+
+		public Func<Dictionary<string, object>> OnInfo = () => new Dictionary<string, object>();
+
+		public Func<string, string[], Dictionary<string, object>> OnSend = (string t, string[] to) => new Dictionary<string, object>();
+
+		public int Port { get; private set; }
+
+		public bool Running
+		{
+			get
+			{
+				return running;
+			}
+		}
+
+		public string Url
+		{
+			get
+			{
+				return "http://127.0.0.1:" + Port + "/";
+			}
+		}
+
+		public void Start(int port, bool lan)
+		{
+			Lan = lan;
+			Start(port);
+		}
+
+		public void Start(int port)
+		{
+			if (running)
+			{
+				return;
+			}
+			using (Stream stream = typeof(ChatServer).Assembly.GetManifestResourceStream("StreamDelay.chat.html"))
+			{
+				using (MemoryStream memoryStream = new MemoryStream())
+				{
+					if (stream != null)
+					{
+						stream.CopyTo(memoryStream);
+					}
+					pageHtml = Encoding.UTF8.GetString(memoryStream.ToArray());
+				}
+			}
+			using (Stream stream2 = typeof(ChatServer).Assembly.GetManifestResourceStream("StreamDelay.delay.html"))
+			{
+				using (MemoryStream memoryStream2 = new MemoryStream())
+				{
+					if (stream2 != null)
+					{
+						stream2.CopyTo(memoryStream2);
+					}
+					delayHtml = Encoding.UTF8.GetString(memoryStream2.ToArray());
+				}
+			}
+			using (Stream stream3 = typeof(ChatServer).Assembly.GetManifestResourceStream("StreamDelay.viewers.html"))
+			{
+				using (MemoryStream memoryStream3 = new MemoryStream())
+				{
+					if (stream3 != null)
+					{
+						stream3.CopyTo(memoryStream3);
+					}
+					viewersHtml = Encoding.UTF8.GetString(memoryStream3.ToArray());
+				}
+			}
+			using (Stream stream4 = typeof(ChatServer).Assembly.GetManifestResourceStream("StreamDelay.mando.html"))
+			{
+				using (MemoryStream memoryStream4 = new MemoryStream())
+				{
+					if (stream4 != null)
+					{
+						stream4.CopyTo(memoryStream4);
+					}
+					mandoHtml = Encoding.UTF8.GetString(memoryStream4.ToArray());
+				}
+			}
+			listener = new TcpListener(Lan ? IPAddress.Any : IPAddress.Loopback, port);
+			listener.Start();
+			Port = port;
+			running = true;
+			Thread thread = new Thread(AcceptLoop);
+			thread.IsBackground = true;
+			thread.Name = "chat-web";
+			thread.Start();
+			Thread thread2 = new Thread(HeartbeatLoop);
+			thread2.IsBackground = true;
+			thread2.Name = "chat-web-ping";
+			thread2.Start();
+		}
+
+		public void Stop()
+		{
+			running = false;
+			try
+			{
+				if (listener != null)
+				{
+					listener.Stop();
+				}
+			}
+			catch
+			{
+			}
+			lock (lk)
+			{
+				foreach (Stream client in clients)
+				{
+					try
+					{
+						client.Close();
+					}
+					catch
+					{
+					}
+				}
+				clients.Clear();
+			}
+		}
+
+		public void Send(ChatItem it)
+		{
+			string text = Web.ToJson(it);
+			lock (lk)
+			{
+				if (it.t == "viewers")
+				{
+					lastViewers = text;
+				}
+				else if (it.t == "status")
+				{
+					lastStatus = text;
+				}
+				else
+				{
+					recent.AddLast(text);
+					while (recent.Count > 80)
+					{
+						recent.RemoveFirst();
+					}
+				}
+			}
+			Broadcast("data: " + text + "\n\n");
+		}
+
+		private void Broadcast(string s)
+		{
+			byte[] bytes = Encoding.UTF8.GetBytes(s);
+			lock (lk)
+			{
+				for (int num = clients.Count - 1; num >= 0; num--)
+				{
+					try
+					{
+						clients[num].Write(bytes, 0, bytes.Length);
+						clients[num].Flush();
+					}
+					catch
+					{
+						try
+						{
+							clients[num].Close();
+						}
+						catch
+						{
+						}
+						clients.RemoveAt(num);
+					}
+				}
+			}
+		}
+
+		private void HeartbeatLoop()
+		{
+			while (running)
+			{
+				for (int i = 0; i < 150; i++)
+				{
+					if (!running)
+					{
+						break;
+					}
+					Thread.Sleep(100);
+				}
+				if (running)
+				{
+					Broadcast(": ping\n\n");
+				}
+			}
+		}
+
+		private void AcceptLoop()
+		{
+			while (running)
+			{
+				TcpClient c;
+				try
+				{
+					c = listener.AcceptTcpClient();
+				}
+				catch
+				{
+					if (running)
+					{
+						Thread.Sleep(200);
+					}
+					continue;
+				}
+				Thread thread = new Thread((ThreadStart)delegate
+				{
+					Serve(c);
+				});
+				thread.IsBackground = true;
+				thread.Start();
+			}
+		}
+
+		private void Serve(TcpClient c)
+		{
+			try
+			{
+				c.NoDelay = true;
+				NetworkStream stream = c.GetStream();
+				stream.ReadTimeout = 10000;
+				Request request = ReadRequest(stream);
+				if (request == null)
+				{
+					c.Close();
+					return;
+				}
+				string text = Header(request, "host").ToLowerInvariant();
+				string pathOnly = request.Path.Split('?')[0];
+				bool local = text == "127.0.0.1:" + Port || text == "localhost:" + Port;
+				bool fromPc = IPAddress.IsLoopback(((IPEndPoint)c.Client.RemoteEndPoint).Address);
+				if (pathOnly == "/mando" || pathOnly == "/mando/api")
+				{
+					// El mando se puede abrir desde el móvil, pero solo con la clave correcta.
+					if ((!local && !Lan) || (!fromPc && !Lan))
+					{
+						Respond(stream, "403 Forbidden", "text/plain", "");
+						c.Close();
+						return;
+					}
+					Mando(stream, request, pathOnly);
+					c.Close();
+					return;
+				}
+				if (!local || !fromPc)
+				{
+					Respond(stream, "403 Forbidden", "text/plain", "");
+					c.Close();
+					return;
+				}
+				string path = request.Path;
+				int num = path.IndexOf('?');
+				string text2 = ((num >= 0) ? path.Substring(0, num) : path);
+				if (text2.StartsWith("/api/"))
+				{
+					Api(stream, request, text2);
+					c.Close();
+					return;
+				}
+				if (request.Method != "GET")
+				{
+					Respond(stream, "405 Method Not Allowed", "text/plain", "");
+					c.Close();
+					return;
+				}
+				switch (text2)
+				{
+				case "/events":
+				{
+					Write(stream, "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream; charset=utf-8\r\nCache-Control: no-cache\r\nConnection: keep-alive\r\n\r\nretry: 2000\n\n");
+					StringBuilder stringBuilder = new StringBuilder();
+					lock (lk)
+					{
+						if (lastStatus != null)
+						{
+							stringBuilder.Append("data: ").Append(lastStatus).Append("\n\n");
+						}
+						if (lastViewers != null)
+						{
+							stringBuilder.Append("data: ").Append(lastViewers).Append("\n\n");
+						}
+						foreach (string item in recent)
+						{
+							stringBuilder.Append("data: ").Append(item).Append("\n\n");
+						}
+						byte[] bytes = Encoding.UTF8.GetBytes(stringBuilder.ToString());
+						stream.Write(bytes, 0, bytes.Length);
+						stream.Flush();
+						clients.Add(stream);
+					}
+					stream.ReadTimeout = -1;
+					return;
+				}
+				case "/delay":
+				case "/overlay-delay":
+					Respond(stream, "200 OK", "text/html; charset=utf-8", delayHtml);
+					break;
+				case "/viewers":
+				case "/espectadores":
+					Respond(stream, "200 OK", "text/html; charset=utf-8", viewersHtml);
+					break;
+				case "/viewers.json":
+				{
+					string vs;
+					try
+					{
+						vs = OnViewersState();
+					}
+					catch
+					{
+						vs = "{}";
+					}
+					Respond(stream, "200 OK", "application/json; charset=utf-8", vs);
+					break;
+				}
+				case "/delay.json":
+				{
+					string st;
+					try
+					{
+						st = OnDelayState();
+					}
+					catch
+					{
+						st = "{}";
+					}
+					Respond(stream, "200 OK", "application/json; charset=utf-8", st);
+					break;
+				}
+				case "/":
+				case "/index.html":
+				case "/chat":
+					Respond(stream, "200 OK", "text/html; charset=utf-8", pageHtml.Replace("__SD_SECRET__", secret));
+					break;
+				default:
+					Respond(stream, "404 Not Found", "text/plain", "");
+					break;
+				}
+				c.Close();
+			}
+			catch
+			{
+				try
+				{
+					c.Close();
+				}
+				catch
+				{
+				}
+			}
+		}
+
+		private void Api(Stream s, Request req, string p)
+		{
+			string text = Header(req, "origin").ToLowerInvariant();
+			if ((text.Length != 0 && !(text == "http://127.0.0.1:" + Port) && !(text == "http://localhost:" + Port)) || Header(req, "x-sd-secret") != secret)
+			{
+				Respond(s, "403 Forbidden", "text/plain", "");
+				return;
+			}
+			object o;
+			try
+			{
+				if (p == "/api/info" && req.Method == "GET")
+				{
+					o = OnInfo();
+				}
+				else
+				{
+					if (p == "/api/mod" && req.Method == "POST")
+					{
+						Dictionary<string, object> md = Web.Parse(req.Body) as Dictionary<string, object>;
+						if (md == null)
+						{
+							Respond(s, "400 Bad Request", "text/plain", "");
+							return;
+						}
+						Respond(s, "200 OK", "application/json; charset=utf-8", Web.ToJson(OnMod(md)));
+						return;
+					}
+					if (!(p == "/api/send") || !(req.Method == "POST"))
+					{
+						Respond(s, "404 Not Found", "text/plain", "");
+						return;
+					}
+					object o2 = Web.Parse(req.Body);
+					string text2 = J.S(o2, "text").Trim();
+					List<string> list = new List<string>();
+					foreach (object item in J.L(o2, "to"))
+					{
+						list.Add(Convert.ToString(item));
+					}
+					if (text2.Length == 0 || list.Count == 0)
+					{
+						Respond(s, "400 Bad Request", "text/plain", "");
+						return;
+					}
+					o = OnSend(text2, list.ToArray());
+				}
+			}
+			catch (Exception ex)
+			{
+				Dictionary<string, object> dictionary = new Dictionary<string, object>();
+				dictionary.Add("error", ex.Message);
+				o = dictionary;
+			}
+			Respond(s, "200 OK", "application/json; charset=utf-8", Web.ToJson(o));
+		}
+
+		private static Dictionary<string, string> Query(string path)
+		{
+			Dictionary<string, string> d = new Dictionary<string, string>();
+			int i = path.IndexOf('?');
+			if (i < 0)
+			{
+				return d;
+			}
+			foreach (string kv in path.Substring(i + 1).Split('&'))
+			{
+				if (kv.Length == 0)
+				{
+					continue;
+				}
+				int e = kv.IndexOf('=');
+				string k = Uri.UnescapeDataString((e < 0 ? kv : kv.Substring(0, e)).Replace('+', ' '));
+				string v = (e < 0) ? "" : Uri.UnescapeDataString(kv.Substring(e + 1).Replace('+', ' '));
+				d[k.ToLowerInvariant()] = v;
+			}
+			return d;
+		}
+
+		private static bool SameKey(string a, string b)
+		{
+			if (string.IsNullOrEmpty(a) || string.IsNullOrEmpty(b) || a.Length != b.Length)
+			{
+				return false;
+			}
+			int diff = 0;
+			for (int i = 0; i < a.Length; i++)
+			{
+				diff |= a[i] ^ b[i];
+			}
+			return diff == 0;
+		}
+
+		private void Mando(Stream s, Request req, string p)
+		{
+			if (req.Method != "GET" && req.Method != "POST")
+			{
+				Respond(s, "405 Method Not Allowed", "text/plain", "");
+				return;
+			}
+			Dictionary<string, string> q = Query(req.Path);
+			string k;
+			q.TryGetValue("k", out k);
+			if (!SameKey((k ?? "").Trim().ToLowerInvariant(), RemoteKey()))
+			{
+				if (p == "/mando")
+				{
+					Respond(s, "403 Forbidden", "text/html; charset=utf-8", "<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width'><body style='background:#09090c;color:#f4f4f5;font:16px system-ui;padding:24px'><h2>Clave del mando incorrecta</h2><p>Copia de nuevo la URL en StreamDelay → pestaña Mando.</p>");
+				}
+				else
+				{
+					Respond(s, "403 Forbidden", "application/json; charset=utf-8", "{\"error\":\"clave incorrecta\"}");
+				}
+				return;
+			}
+			if (p == "/mando")
+			{
+				Respond(s, "200 OK", "text/html; charset=utf-8", mandoHtml);
+				return;
+			}
+			string a;
+			if (!q.TryGetValue("a", out a) || a.Length == 0)
+			{
+				a = "estado";
+			}
+			string json;
+			try
+			{
+				json = OnRemote(a.ToLowerInvariant(), q);
+			}
+			catch (Exception ex)
+			{
+				json = "{\"error\":" + Web.ToJson(ex.Message) + "}";
+			}
+			Respond(s, "200 OK", "application/json; charset=utf-8", json);
+		}
+
+		private static string Header(Request r, string k)
+		{
+			string value;
+			if (!r.Headers.TryGetValue(k, out value))
+			{
+				return "";
+			}
+			return value.Trim();
+		}
+
+		private static Request ReadRequest(Stream s)
+		{
+			List<byte> list = new List<byte>();
+			byte[] array = new byte[1];
+			while (list.Count < 16384)
+			{
+				if (s.Read(array, 0, 1) <= 0)
+				{
+					return null;
+				}
+				list.Add(array[0]);
+				int count = list.Count;
+				if (count >= 4 && list[count - 1] == 10 && list[count - 2] == 13 && list[count - 3] == 10 && list[count - 4] == 13)
+				{
+					break;
+				}
+			}
+			string[] array2 = Encoding.UTF8.GetString(list.ToArray()).Split(new string[1] { "\r\n" }, StringSplitOptions.None);
+			string[] array3 = array2[0].Split(' ');
+			if (array3.Length < 2)
+			{
+				return null;
+			}
+			Request request = new Request();
+			request.Method = array3[0].ToUpperInvariant();
+			request.Path = array3[1];
+			Request request2 = request;
+			for (int i = 1; i < array2.Length; i++)
+			{
+				int num = array2[i].IndexOf(':');
+				if (num > 0)
+				{
+					request2.Headers[array2[i].Substring(0, num).Trim().ToLowerInvariant()] = array2[i].Substring(num + 1).Trim();
+				}
+			}
+			int result;
+			if (int.TryParse(Header(request2, "content-length"), out result) && result > 0)
+			{
+				if (result > 65536)
+				{
+					return null;
+				}
+				byte[] array4 = new byte[result];
+				int num2;
+				for (int j = 0; j < result; j += num2)
+				{
+					num2 = s.Read(array4, j, result - j);
+					if (num2 <= 0)
+					{
+						return null;
+					}
+				}
+				request2.Body = Encoding.UTF8.GetString(array4);
+			}
+			return request2;
+		}
+
+		private static void Respond(Stream s, string status, string type, string body)
+		{
+			byte[] bytes = Encoding.UTF8.GetBytes(body);
+			Write(s, "HTTP/1.1 " + status + "\r\nContent-Type: " + type + "\r\nCache-Control: no-cache\r\nContent-Length: " + bytes.Length + "\r\nConnection: close\r\n\r\n");
+			s.Write(bytes, 0, bytes.Length);
+			s.Flush();
+		}
+
+		private static void Write(Stream s, string text)
+		{
+			byte[] bytes = Encoding.UTF8.GetBytes(text);
+			s.Write(bytes, 0, bytes.Length);
+		}
+	}
+}

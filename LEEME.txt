@@ -1,0 +1,134 @@
+STREAM DELAY 3.0 - delay dinámico gratuito para OBS (by Vortexs)
+================================================================
+
+Abre GUIA.html (doble clic) para ver la guía completa.
+
+Novedades de la 3.0
+- Pestaña "Mando": controla el delay desde el móvil (misma wifi, con
+  código QR), como panel en OBS o con el Stream Deck (acción "Sitio web"
+  en segundo plano). La URL lleva una clave privada.
+- Avisos si algo falla: si se cae una plataforma o tu subida no da para
+  todo, pita, parpadea en la barra de tareas, sale en rojo en Directo y
+  en el móvil, y avisa cuando vuelve.
+- Delays guardados: 6 botones con nombre y segundos; un clic los aplica.
+- Comandos del chat: !delay, !web... con respuesta automática en la
+  plataforma donde se escriben. El aviso de delay activado/quitado viene
+  encendido y también avisa al cambiar los segundos.
+- Moderar desde el chat conjunto: pulsa un mensaje para borrarlo,
+  expulsar 1 o 10 min o banear (Twitch, Kick y YouTube). Twitch: vuelve a
+  conectar en Título. Kick: marca moderation:ban y
+  moderation:chat_message:manage en tu app y vuelve a conectar.
+- Overlay de delay con transición: "Activando delay" con barra al
+  activarlo y "Delay quitado" al quitarlo.
+
+Novedades de la 2.9
+- Nueva pestaña "Overlays": todos los overlays de OBS en un sitio, cada uno
+  con "Copiar URL" y "Vista previa". Los cambios se ven al momento en OBS.
+  · Delay: tamaño (Normal/Grande/Enorme) y "Ocultar sin delay".
+  · Espectadores (nuevo): Twitch, Kick, YouTube y Total, la combinación que
+    quieras o ninguna; 4 esquinas, en fila o en columna, 2 tamaños.
+  · Chat en pantalla.
+- Aviso automático opcional en los chats elegidos al activar o quitar el
+  delay (pestaña Chat -> "Avisos de delay en el chat"). Textos editables.
+- El recuadro "OVERLAYS OBS" de Directo lleva a la nueva pestaña.
+
+Novedades de la 2.8
+-------------------
+- Overlay de delay: con delay activado usa el mismo formato que sin delay
+  (borde y punto rojos, letras blancas), más legible.
+- Chat conjunto: pulsa el total de espectadores para ocultarlos o verlos, o
+  una plataforma para ocultar solo la suya. Cada uno lo elige y se recuerda.
+
+Novedades de la 2.7
+-------------------
+- Kick, YouTube y Otro reciben siempre la calidad de MÁS resolución que
+  manda OBS (antes recibían la primera, que con Transmisión mejorada podía
+  ser 720p). Cada destino muestra en Directo la calidad que recibe.
+- Overlay de delay para OBS: recuadro "OVERLAY OBS" en Directo. Fuente
+  Navegador de 1920x1080; sale arriba a la derecha. Ver GUIA.html, apartado 9.
+- Guía: requisitos exactos para tener 1080p en Twitch y Kick a la vez.
+
+Novedades de la 2.6
+-------------------
+- Escribir en el chat de Twitch, Kick y YouTube a la vez desde la página del
+  chat conjunto (caja abajo). Usa las cuentas de la pestaña Título; Twitch y
+  Kick piden un permiso nuevo: vuelve a conectarlas una vez. En tu app de
+  Kick marca también el permiso chat:write. Ver GUIA.html, apartado 8.
+
+Novedades de la 2.5
+-------------------
+- Chat conjunto: follows de Twitch (con la cuenta de la pestaña Título; si la
+  conectaste antes, vuelve a conectarla una vez) y donaciones de
+  StreamElements y Streamlabs (pegando su token). Botón "Follows y
+  donaciones" en la pestaña Chat. Ver GUIA.html, apartado 8.
+
+Novedades de la 2.4
+-------------------
+- Pestaña "Chat": chat conjunto de Twitch, Kick y YouTube con emotes de 7TV,
+  BetterTTV y FrankerFaceZ, avisos de subs, regalos, raids, bits, Super Chats
+  y miembros, y los espectadores de cada plataforma. Sin iniciar sesión: solo
+  el nombre de cada canal. Se ve en el navegador, como panel de OBS o en
+  pantalla (fondo transparente). Ver GUIA.html, apartado 8.
+- La pestaña "Configuración" ahora se llama "Ajustes".
+
+Novedades de la 2.3
+-------------------
+- Multistream: emite a la vez en Twitch, Kick, YouTube y otro destino
+  (Ajustes -> Destinos). En Directo ves dónde estás en directo y el
+  estado de cada plataforma; el botón muestra "Iniciar · Twitch + Kick".
+  Tu StreamDelay.ini anterior se conserva (el destino que tenías queda activado).
+
+Novedades de la 2.2
+-------------------
+- Pestaña "Título": cambia título y categoría en Twitch, YouTube y Kick a la
+  vez. TikTok no lo permite desde fuera: se copia el título para pegarlo.
+  La primera vez hay que crear una app de desarrollador gratuita en cada
+  plataforma (ver GUIA.html, apartado 7).
+
+Novedades de la 2.1
+-------------------
+- 1080p asegurado: StreamDelay muestra la calidad que envía OBS y, si no
+  llega a 1080p, avisa al conectar (antes de que acabe el delay).
+- Kick/YouTube: se envía solo la calidad más alta con la clave escrita en
+  StreamDelay; la plataforma crea el resto.
+
+Novedades de la 2.0
+-------------------
+- Varias calidades en Twitch: StreamDelay deja pasar la "Transmisión mejorada"
+  de OBS (1080p, 720p, 480p...). Antes solo llegaba la calidad original.
+- Emisor propio: ya no hace falta ffmpeg (queda como "Modo clásico" opcional).
+- Interfaz nueva con los colores y tipografías de vortexs.es.
+
+Resumen rápido
+--------------
+1. Ejecuta build.bat y abre StreamDelay.exe.
+   (Si SmartScreen avisa: "Más información" -> "Ejecutar de todas formas".)
+2. En StreamDelay -> Ajustes -> Destinos: activa Twitch y Kick (Editar -> URL y clave de Kick).
+3. En OBS -> Ajustes -> Emisión:
+     Servicio: Twitch
+     Servidor: "Especifica un servidor personalizado..." -> rtmp://127.0.0.1:1935/app
+     Clave: tu clave de Twitch
+     [x] Habilitar Transmisión mejorada
+   y en Avanzado desactiva "Retraso de transmisión".
+   En OBS -> Ajustes -> Vídeo: base y salida 1920x1080. En Emisión,
+   "Ancho de banda máximo" en Auto.
+4. Pulsa "Iniciar" y luego "Iniciar transmisión" en OBS.
+   En el panel Directo, "Calidades" debe empezar por 1080p y Kick debe
+   poner "EN DIRECTO · 1080P60".
+
+Atajos: Ctrl+Alt+D activar/desactivar · Ctrl+Alt+Flecha arriba/abajo ±5 s
+
+Al SUBIR el delay se repiten los últimos segundos emitidos (o se congela la
+imagen si desactivas la opción). Al BAJARLO, el stream salta hacia adelante.
+
+¿OBS en otro PC? Activa "OBS en otro PC de la red" en Ajustes.
+
+No compartas StreamDelay.ini: contiene tu clave (cifrada para tu usuario).
+Si pides ayuda, copia el texto de la pestaña Registro.
+
+Compilar
+--------
+El código está en src\ y las fuentes y el logo en res\. build.bat usa el
+compilador de C# que ya trae Windows: no hay que instalar nada.
+Fuentes incluidas (licencia SIL OFL, ver res\OFL-*.txt): Outfit,
+Plus Jakarta Sans y JetBrains Mono.

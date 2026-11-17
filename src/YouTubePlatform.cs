@@ -1,0 +1,345 @@
+using System;
+using System.Collections.Generic;
+
+namespace StreamDelay
+{
+	internal class YouTubePlatform : Platform
+	{
+		private const string Scope = "https://www.googleapis.com/auth/youtube";
+
+		public static string AuthBase = "https://oauth2.googleapis.com";
+
+		public static string ApiBase = "https://www.googleapis.com/youtube/v3";
+
+		public static readonly Category[] All = new Category[14]
+		{
+			new Category("20", "Videojuegos"),
+			new Category("22", "Gente y blogs"),
+			new Category("24", "Entretenimiento"),
+			new Category("23", "Humor"),
+			new Category("10", "Música"),
+			new Category("17", "Deportes"),
+			new Category("28", "Ciencia y tecnología"),
+			new Category("27", "Educación"),
+			new Category("26", "Consejos y estilo"),
+			new Category("1", "Cine y animación"),
+			new Category("2", "Motor"),
+			new Category("19", "Viajes y eventos"),
+			new Category("15", "Animales"),
+			new Category("25", "Noticias y política")
+		};
+
+		private string liveChatId = "";
+
+		private DateTime liveChatAt = DateTime.MinValue;
+
+		public override string Name
+		{
+			get
+			{
+				return "YouTube";
+			}
+		}
+
+		public override string Key
+		{
+			get
+			{
+				return "yt";
+			}
+		}
+
+		public override bool NeedsSecret
+		{
+			get
+			{
+				return true;
+			}
+		}
+
+		public override string ConsoleUrl
+		{
+			get
+			{
+				return "https://console.cloud.google.com/apis/credentials";
+			}
+		}
+
+		public override int TitleMax
+		{
+			get
+			{
+				return 100;
+			}
+		}
+
+		public override void Login(ILoginUi ui)
+		{
+			Dictionary<string, object> d = Http.Send("POST", AuthBase + "/device/code", null, null, "application/x-www-form-urlencoded", Http.Form("client_id", ClientId, "scope", "https://www.googleapis.com/auth/youtube"));
+			string text = Http.Str(d, "verification_url");
+			if (text.Length == 0)
+			{
+				text = Http.Str(d, "verification_uri");
+			}
+			ui.ShowCode(Http.Str(d, "user_code"), text);
+			Dictionary<string, object> tokens = PollDevice(ui, AuthBase + "/token", new string[8]
+			{
+				"client_id",
+				ClientId,
+				"client_secret",
+				ClientSecret,
+				"device_code",
+				Http.Str(d, "device_code"),
+				"grant_type",
+				"urn:ietf:params:oauth:grant-type:device_code"
+			}, Http.Int(d, "interval", 5), Http.Int(d, "expires_in", 1800));
+			SetTokens(tokens);
+			FinishLogin();
+		}
+
+		protected override void DoRefresh()
+		{
+			SetTokens(Http.Send("POST", AuthBase + "/token", null, null, "application/x-www-form-urlencoded", Http.Form("client_id", ClientId, "client_secret", ClientSecret, "refresh_token", refresh, "grant_type", "refresh_token")));
+		}
+
+		protected override void LoadAccount()
+		{
+			List<Dictionary<string, object>> list = Http.Arr(Api("GET", ApiBase + "/channels?part=snippet&mine=true", null, null), "items");
+			Account = ((list.Count > 0) ? Http.Str(Http.Obj(list[0], "snippet"), "title") : "");
+		}
+
+		public override List<Category> Search(string q)
+		{
+			List<Category> list = new List<Category>();
+			string text = Platform.Norm(q);
+			Category[] all = All;
+			foreach (Category category in all)
+			{
+				if (text.Length == 0 || Platform.Norm(category.Name).Contains(text))
+				{
+					list.Add(category);
+				}
+			}
+			return list;
+		}
+
+		public static Category Suggest(string gameName)
+		{
+			string text = Platform.Norm(gameName);
+			if (text.Length == 0)
+			{
+				return null;
+			}
+			if (text.Contains("justchatting") || text.Contains("charlando") || text == "irl" || text.Contains("chatting"))
+			{
+				return All[1];
+			}
+			if (text.Contains("music") || text.Contains("musica"))
+			{
+				return All[4];
+			}
+			if (text.Contains("sport") || text.Contains("deporte"))
+			{
+				return All[5];
+			}
+			return All[0];
+		}
+
+		private string BroadcastId()
+		{
+			string[] array = new string[2] { "active", "upcoming" };
+			foreach (string text in array)
+			{
+				List<Dictionary<string, object>> list = Http.Arr(Api("GET", ApiBase + "/liveBroadcasts?part=id&broadcastType=all&maxResults=5&broadcastStatus=" + text, null, null), "items");
+				if (list.Count > 0)
+				{
+					return Http.Str(list[0], "id");
+				}
+			}
+			throw new ApiException(404, "no hay ningún directo en curso ni programado en tu canal");
+		}
+
+		public override void ReadCurrent(out string title, out Category cat)
+		{
+			Dictionary<string, object> d = Snippet(BroadcastId());
+			title = Http.Str(d, "title");
+			string text = Http.Str(d, "categoryId");
+			cat = null;
+			Category[] all = All;
+			foreach (Category category in all)
+			{
+				if (category.Id == text)
+				{
+					cat = category;
+				}
+			}
+		}
+
+		private Dictionary<string, object> Snippet(string id)
+		{
+			List<Dictionary<string, object>> list = Http.Arr(Api("GET", ApiBase + "/videos?part=snippet&id=" + id, null, null), "items");
+			if (list.Count == 0)
+			{
+				throw new ApiException(404, "no se encontró el vídeo del directo");
+			}
+			return Http.Obj(list[0], "snippet");
+		}
+
+		public override void Update(string title, Category cat)
+		{
+			string text = BroadcastId();
+			Dictionary<string, object> dictionary = Snippet(text);
+			Dictionary<string, object> dictionary2 = new Dictionary<string, object>();
+			dictionary2["title"] = title ?? Http.Str(dictionary, "title");
+			dictionary2["categoryId"] = ((cat != null) ? cat.Id : Http.Str(dictionary, "categoryId"));
+			dictionary2["description"] = Http.Str(dictionary, "description");
+			object value;
+			if (dictionary.TryGetValue("tags", out value) && value != null)
+			{
+				dictionary2["tags"] = value;
+			}
+			string[] array = new string[2] { "defaultLanguage", "defaultAudioLanguage" };
+			foreach (string text2 in array)
+			{
+				if (Http.Str(dictionary, text2).Length > 0)
+				{
+					dictionary2[text2] = Http.Str(dictionary, text2);
+				}
+			}
+			Dictionary<string, object> dictionary3 = new Dictionary<string, object>();
+			dictionary3["id"] = text;
+			dictionary3["snippet"] = dictionary2;
+			Api("PUT", ApiBase + "/videos?part=snippet", null, dictionary3);
+		}
+
+		public void SendChat(string text)
+		{
+			if (liveChatId.Length == 0 || DateTime.UtcNow - liveChatAt > TimeSpan.FromMinutes(10.0))
+			{
+				List<Dictionary<string, object>> list = Http.Arr(Api("GET", ApiBase + "/liveBroadcasts?part=snippet&broadcastType=all&maxResults=5&broadcastStatus=active", null, null), "items");
+				liveChatId = ((list.Count > 0) ? Http.Str(Http.Obj(list[0], "snippet"), "liveChatId") : "");
+				liveChatAt = DateTime.UtcNow;
+				if (liveChatId.Length == 0)
+				{
+					throw new ApiException(404, "no estás en directo en YouTube");
+				}
+			}
+			Dictionary<string, object> dictionary = new Dictionary<string, object>();
+			dictionary.Add("snippet", new Dictionary<string, object>
+			{
+				{ "liveChatId", liveChatId },
+				{ "type", "textMessageEvent" },
+				{
+					"textMessageDetails",
+					new Dictionary<string, object> { { "messageText", text } }
+				}
+			});
+			Dictionary<string, object> body = dictionary;
+			try
+			{
+				Api("POST", ApiBase + "/liveChat/messages?part=snippet", null, body);
+			}
+			catch (ApiException ex)
+			{
+				if (ex.Status == 403 || ex.Status == 404)
+				{
+					liveChatId = "";
+				}
+				if (ex.Status == 403 && ex.Message.ToLowerInvariant().Contains("quota"))
+				{
+					throw new ApiException(403, "se ha gastado el cupo diario de la API de YouTube");
+				}
+				throw;
+			}
+		}
+			// ---------- Moderación ----------
+
+		private string LiveChatId()
+		{
+			if (liveChatId.Length == 0 || DateTime.UtcNow - liveChatAt > TimeSpan.FromMinutes(10.0))
+			{
+				List<Dictionary<string, object>> list = Http.Arr(Api("GET", ApiBase + "/liveBroadcasts?part=snippet&broadcastType=all&maxResults=5&broadcastStatus=active", null, null), "items");
+				liveChatId = ((list.Count > 0) ? Http.Str(Http.Obj(list[0], "snippet"), "liveChatId") : "");
+				liveChatAt = DateTime.UtcNow;
+				if (liveChatId.Length == 0)
+				{
+					throw new ApiException(404, "no estás en directo en YouTube");
+				}
+			}
+			return liveChatId;
+		}
+
+		private static ApiException ModError(ApiException ex)
+		{
+			if (ex.Status == 403 && ex.Message.ToLowerInvariant().Contains("quota"))
+			{
+				return new ApiException(403, "se ha gastado el cupo diario de la API de YouTube");
+			}
+			if (ex.Status == 401 || ex.Status == 403)
+			{
+				return new ApiException(ex.Status, "YouTube no deja moderar con esta cuenta (vuelve a conectar YouTube en la pestaña Título)");
+			}
+			return ex;
+		}
+
+		// El chat de YouTube se lee sin la API, así que el mensaje se busca entre los últimos del chat
+		// por autor y texto (si el texto no coincide, se borra el último de esa persona).
+		public void DeleteMessage(string authorChannelId, string text)
+		{
+			try
+			{
+				string chat = LiveChatId();
+				List<Dictionary<string, object>> items = Http.Arr(Api("GET", ApiBase + "/liveChat/messages?part=snippet,authorDetails&maxResults=2000&liveChatId=" + Uri.EscapeDataString(chat), null, null), "items");
+				string byText = null;
+				string last = null;
+				string want = (text ?? "").Trim();
+				foreach (Dictionary<string, object> it in items)
+				{
+					if (Http.Str(Http.Obj(it, "authorDetails"), "channelId") != authorChannelId)
+					{
+						continue;
+					}
+					string id = Http.Str(it, "id");
+					last = id;
+					if (want.Length > 0 && Http.Str(Http.Obj(it, "snippet"), "displayMessage").Trim() == want)
+					{
+						byText = id;
+					}
+				}
+				string target = byText ?? last;
+				if (target == null)
+				{
+					throw new ApiException(404, "no se encontró el mensaje en YouTube");
+				}
+				Api("DELETE", ApiBase + "/liveChat/messages?id=" + Uri.EscapeDataString(target), null, null);
+			}
+			catch (ApiException ex)
+			{
+				throw ModError(ex);
+			}
+		}
+
+		// seconds = 0: ban permanente.
+		public void Ban(string authorChannelId, int seconds)
+		{
+			Dictionary<string, object> snippet = new Dictionary<string, object>();
+			snippet.Add("liveChatId", LiveChatId());
+			snippet.Add("type", (seconds > 0) ? "temporary" : "permanent");
+			if (seconds > 0)
+			{
+				snippet.Add("banDurationSeconds", seconds);
+			}
+			snippet.Add("bannedUserDetails", new Dictionary<string, object> { { "channelId", authorChannelId } });
+			Dictionary<string, object> body = new Dictionary<string, object>();
+			body.Add("snippet", snippet);
+			try
+			{
+				Api("POST", ApiBase + "/liveChat/bans?part=snippet", null, body);
+			}
+			catch (ApiException ex)
+			{
+				throw ModError(ex);
+			}
+		}
+	}
+}

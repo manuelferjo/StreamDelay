@@ -1,0 +1,20 @@
+STREAM DELAY 3.0 - CÓMO CREAR EL PROGRAMA
+==========================================
+
+Este paquete trae StreamDelay.exe ya creado y también el código. Si tu
+antivirus o Google Drive bloquean el .exe, créalo tú en unos segundos:
+
+1. Descomprime el ZIP en una carpeta fija (por ejemplo Documentos\StreamDelay).
+   No lo abras desde dentro del ZIP. Deben quedar juntas las carpetas src y res.
+2. Haz doble clic en  build.bat
+   Se abre una ventana negra. Cuando diga "Listo", pulsa una tecla.
+   (Si Windows avisa con "Windows protegió su PC": Más información ->
+   Ejecutar de todas formas.)
+3. Abre el StreamDelay.exe que ha aparecido en la carpeta.
+4. Sigue GUIA.html (doble clic para abrirla). El paso 2 explica cómo dejar OBS
+   para que tus espectadores puedan elegir calidad (1080p, 720p, 480p...).
+
+¿Tenías una versión anterior? Copia tu StreamDelay.ini a esta carpeta y se
+conservan el delay, el servidor y la clave.
+
+No se instala nada: build.bat usa el compilador que ya trae Windows.

@@ -1,0 +1,374 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Guía StreamDelay</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Outfit:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:#09090C; --surface:#111116; --elevated:#171720; --line:rgba(255,255,255,.08); --text:#F4F4F5; --muted:#A1A1AA;
+    --violet:#C09AFD; --violet-light:#D6BFFF; --yellow:#EDE103; --red:#FF4655; --green:#34D399;
+    --grad:linear-gradient(135deg,#C09AFD 0%,#E3D5FF 45%,#EDE103 100%);
+  }
+  * { box-sizing:border-box; }
+  html { background:var(--bg); }
+  body { margin:0; color:var(--text); font:16px/1.65 "Plus Jakarta Sans","Segoe UI",system-ui,sans-serif; -webkit-font-smoothing:antialiased;
+    background:
+      radial-gradient(ellipse 700px 380px at 20% -60px, rgba(192,154,253,.18), transparent 70%),
+      radial-gradient(circle 420px at 95% 160px, rgba(237,225,3,.10), transparent 70%),
+      var(--bg) no-repeat; }
+  ::selection { background:rgba(192,154,253,.3); color:var(--yellow); }
+  main { max-width:780px; margin:0 auto; padding:40px 16px 72px; }
+  header { display:flex; align-items:center; gap:16px; margin:0 0 8px; }
+  header img { width:52px; height:52px; }
+  h1 { font:800 34px/1.1 Outfit,"Segoe UI",sans-serif; letter-spacing:-.025em; margin:0; }
+  h1 span, .grad { background:var(--grad); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
+  .by { font:500 12px "JetBrains Mono",Consolas,monospace; color:var(--muted); letter-spacing:.08em; text-transform:uppercase; }
+  .sub { color:var(--muted); margin:14px 0 30px; font-size:17px; }
+  h2 { font:700 20px/1.3 Outfit,"Segoe UI",sans-serif; letter-spacing:-.02em; margin:0 0 14px; display:flex; align-items:center; gap:12px; }
+  .n { flex:none; width:30px; height:30px; border-radius:50%; background:var(--grad); color:#000; font:700 14px Outfit,sans-serif; display:grid; place-items:center; }
+  section { background:rgba(17,17,22,.85); border:1px solid var(--line); border-radius:24px; padding:24px; margin:0 0 16px; box-shadow:0 8px 32px rgba(0,0,0,.4); }
+  section.hl { border-color:rgba(192,154,253,.35); box-shadow:0 12px 35px rgba(192,154,253,.12); }
+  ol, ul { margin:0; padding-left:22px; }
+  li { margin:6px 0; }
+  li::marker { color:var(--violet); }
+  p { margin:12px 0 0; }
+  b { font-weight:700; }
+  code { background:var(--elevated); border:1px solid var(--line); color:var(--violet-light); padding:2px 7px; border-radius:7px; font:500 14px "JetBrains Mono",Consolas,monospace; overflow-wrap:anywhere; }
+  table { width:100%; border-collapse:collapse; font-size:15px; }
+  td, th { text-align:left; padding:10px 8px; border-bottom:1px solid var(--line); vertical-align:top; }
+  tr:last-child td { border-bottom:0; }
+  th { color:var(--muted); font:500 11px "JetBrains Mono",Consolas,monospace; letter-spacing:.08em; text-transform:uppercase; }
+  .flow { display:flex; flex-wrap:wrap; gap:8px; align-items:center; font-weight:600; margin:4px 0 0; color:var(--muted); }
+  .flow span { background:var(--elevated); border:1px solid var(--line); color:var(--text); padding:7px 14px; border-radius:999px; }
+  .flow span.on { border-color:rgba(192,154,253,.5); color:var(--violet-light); }
+  .note { border:1px solid rgba(237,225,3,.25); background:rgba(237,225,3,.06); padding:10px 14px; margin:14px 0 0; border-radius:14px; }
+  .ok { border-color:rgba(52,211,153,.25); background:rgba(52,211,153,.06); }
+  .tag { display:inline-block; font:700 11px "JetBrains Mono",Consolas,monospace; letter-spacing:.06em; padding:2px 9px; border-radius:999px; background:rgba(192,154,253,.15); color:var(--violet-light); border:1px solid rgba(192,154,253,.4); vertical-align:middle; margin-left:6px; }
+  kbd { border:1px solid rgba(255,255,255,.14); border-bottom-width:2px; border-radius:6px; padding:1px 7px; font:500 13px "JetBrains Mono",Consolas,monospace; background:var(--elevated); }
+  .opt { color:var(--muted); font-size:14px; }
+  @media (max-width:560px) { section { padding:18px; border-radius:20px; } td, th { padding:8px 4px; } h1 { font-size:28px; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <img src="res/logo.png" alt="">
+    <div>
+      <h1>Stream <span>Delay</span></h1>
+      <div class="by">by Vortexs · v3.0</div>
+    </div>
+  </header>
+  <p class="sub">Delay dinámico y gratuito para tus directos con OBS: cámbialo, actívalo o desactívalo sin cortar el stream. Ahora conserva todas las calidades de la <b>Transmisión mejorada</b> de Twitch.</p>
+
+  <section>
+    <h2>Cómo funciona</h2>
+    <div class="flow"><span>OBS</span>→<span class="on">StreamDelay (guarda X segundos)</span>→<span>Twitch / YouTube / Kick…</span></div>
+    <p>StreamDelay incluye su propio servidor: OBS le envía el directo, el programa lo guarda X segundos y lo reenvía a tu plataforma tal cual, sin volver a codificar (casi no usa CPU).</p>
+    <p>Si en OBS activas la <b>Transmisión mejorada</b>, OBS crea en tu PC varias calidades a la vez (por ejemplo 1080p60, 720p, 480p, 360p). StreamDelay las retrasa todas juntas y las manda a Twitch, así tus espectadores pueden elegir calidad en el reproductor.</p>
+    <p><b>Requisitos:</b> Windows 10 u 11 y OBS Studio 30.2 o posterior. Ya no hace falta ffmpeg.</p>
+    <p class="opt">Memoria: unos 25 MB el programa y unos 22 MB por cada 30 s de delay a 6000 kbps (con Transmisión mejorada se suma el bitrate de todas las calidades).</p>
+  </section>
+
+  <section class="hl" id="1080p">
+    <h2>1080p en Twitch y Kick a la vez: lo que hace falta <span class="tag">IMPORTANTE</span></h2>
+    <p style="margin-top:0">StreamDelay no cambia la imagen: reenvía lo que le manda OBS. <b>Twitch recibe todas las calidades</b> de la Transmisión mejorada y <b>Kick recibe siempre la de más resolución</b> (desde la 2.7, aunque no sea la primera). Para que esa calidad sea 1080p tiene que cumplirse todo esto:</p>
+    <table style="margin-top:12px">
+      <tr><th>Dónde</th><th>Qué poner</th></tr>
+      <tr><td>OBS → Ajustes → Vídeo</td><td>Resolución base <code>1920x1080</code> · Resolución de salida (escalada) <code>1920x1080</code> · FPS <code>60</code> (o 30).</td></tr>
+      <tr><td>OBS → Ajustes → Emisión</td><td>Servicio <b>Twitch</b> · Servidor: <b>Especifica un servidor personalizado…</b> → <code>rtmp://127.0.0.1:1935/app</code> · tu cuenta o clave de Twitch · <b>Habilitar Transmisión mejorada</b> ✓ · <b>Ancho de banda máximo: Auto</b> (o 10000 kbps o más) · Máximas pistas de vídeo: Auto.</td></tr>
+      <tr><td>OBS → Ajustes → Avanzado</td><td>“Retraso de transmisión” <b>desactivado</b>.</td></tr>
+      <tr><td>StreamDelay → Ajustes → Destinos</td><td><b>Twitch</b> activado (la clave la pone OBS). <b>Kick</b> activado con su <b>Stream URL</b> y <b>Stream Key</b> (Editar).</td></tr>
+      <tr><td>Tu conexión</td><td>Subida estable de <b>20 Mbps o más</b>: Twitch con Transmisión mejorada usa hasta ~10,5 Mbps y Kick otros 6–8 Mbps, y se envían a la vez.</td></tr>
+    </table>
+    <p class="note"><b>Por qué “Auto” en el ancho de banda:</b> con la Transmisión mejorada es <b>Twitch quien decide</b> las calidades cada vez que empiezas a emitir, según tu tarjeta gráfica, tu conexión y ese límite. La calidad más alta puede ir de 1080p60 a 480p. Con un límite bajo (por ejemplo 7000 kbps) Twitch puede quitar el 1080p.</p>
+    <h3 style="margin:18px 0 8px">Comprobarlo en cada directo (antes de que te vea nadie)</h3>
+    <ol>
+      <li>Pulsa <b>Iniciar</b> en StreamDelay y <b>Iniciar transmisión</b> en OBS. Durante el delay todavía no se emite nada.</li>
+      <li>Nada más conectar OBS, en la pestaña <b>Directo</b> el recuadro <b>Calidades</b> debe empezar por <b>1080p60</b> (si no, salta el aviso). Al terminar el delay, la píldora de Kick debe poner <b>EN DIRECTO · 1080P60</b> y la de Twitch <b>EN DIRECTO · N CAL.</b></li>
+      <li>Si sale el aviso <b>“Sin 1080p”</b>, detén la transmisión en OBS, revisa la tabla de arriba y vuelve a empezar: Twitch recalcula las calidades en cada inicio.</li>
+    </ol>
+    <p class="note ok"><b>Plan B, 1080p garantizado:</b> si Twitch sigue sin darte 1080p, desactiva la Transmisión mejorada. En OBS → Salida → Emisión usa tu codificador de vídeo (NVENC H.264, por ejemplo), control de tasa <b>CBR 6000 kbps</b>, intervalo de fotogramas clave <b>2 s</b> y resolución de salida 1920x1080. Así Twitch y Kick reciben siempre 1080p60. A cambio, en Twitch las calidades más bajas solo existen si Twitch transcodifica tu canal.</p>
+    <p class="opt">Si una plataforma se cae, StreamDelay reconecta solo esa plataforma sin cortar la otra. Antes del primer directo importante haz una prueba: en OBS añade <code>?bandwidthtest=true</code> al final de la clave de Twitch y la prueba no se emitirá en público.</p>
+  </section>
+
+  <section>
+    <h2><span class="n">1</span>Instalar</h2>
+    <ol>
+      <li>Descomprime el ZIP en una carpeta fija, por ejemplo <code>Documentos\StreamDelay</code>. No lo ejecutes desde dentro del ZIP.</li>
+      <li>Haz doble clic en <code>build.bat</code>. Cuando diga “Listo”, pulsa una tecla. Aparecerá <code>StreamDelay.exe</code>.</li>
+      <li>Abre <code>StreamDelay.exe</code>. Si aparece <b>“Windows protegió su PC”</b> (SmartScreen), pulsa <b>Más información → Ejecutar de todas formas</b>.</li>
+      <li>Si ya tenías la versión anterior, puedes copiar tu <code>StreamDelay.ini</code> a la nueva carpeta: se conservan el delay, el servidor y la clave.</li>
+    </ol>
+  </section>
+
+  <section class="hl">
+    <h2><span class="n">2</span>Configurar OBS para varias calidades <span class="tag">RECOMENDADO</span></h2>
+    <p style="margin-top:0">En OBS, <b>Ajustes → Emisión</b>:</p>
+    <table>
+      <tr><th>Campo</th><th>Valor</th></tr>
+      <tr><td>Servicio</td><td><b>Twitch</b> (no “Personalizado”)</td></tr>
+      <tr><td>Servidor</td><td><b>Especifica un servidor personalizado…</b></td></tr>
+      <tr><td>Servidor personalizado</td><td><code>rtmp://127.0.0.1:1935/app</code> <span class="opt">(botón “Copiar” en StreamDelay → Configuración → OBS)</span></td></tr>
+      <tr><td>Clave de retransmisión</td><td>Tu clave de Twitch, o pulsa “Conectar cuenta”</td></tr>
+      <tr><td>Transmisión mejorada</td><td><b>Activada</b> (“Habilitar Transmisión mejorada”)</td></tr>
+    </table>
+    <p>En <b>Ajustes → Avanzado</b> <b>desactiva</b> “Retraso de transmisión” (el delay lo pone StreamDelay).</p>
+    <p class="note ok">Con esto OBS pide a Twitch la configuración de calidades con tu clave y envía todas las calidades a StreamDelay. En el panel <b>Directo</b> verás <b>Calidades: 4 · Mejorada</b> (o el número que te asigne Twitch).</p>
+    <p class="note">Twitch genera una clave especial para cada sesión de Transmisión mejorada y StreamDelay la recibe de OBS automáticamente. Por eso en este modo <b>no hace falta</b> poner la clave en StreamDelay, y si la pones se ignora.</p>
+  </section>
+
+  <section>
+    <h2><span class="n">3</span>Configurar StreamDelay</h2>
+    <ol>
+      <li>Pestaña <b>Ajustes → Destinos</b>: activa Twitch (y las demás plataformas donde quieras emitir) y pulsa <b>Editar</b> para revisar servidor y clave.</li>
+      <li><b>Clave de transmisión:</b> opcional si la pones en OBS como en el paso 2. Rellénala solo si en OBS usas “Personalizado” con la clave <code>stream</code>. Se guarda cifrada con tu usuario de Windows en <code>StreamDelay.ini</code>. <b>No compartas ese archivo.</b></li>
+    </ol>
+    <table style="margin-top:12px">
+      <tr><th>Plataforma</th><th>Servidor</th></tr>
+      <tr><td>Twitch</td><td><code>rtmp://live.twitch.tv/app</code></td></tr>
+      <tr><td>YouTube</td><td><code>rtmp://a.rtmp.youtube.com/live2</code></td></tr>
+      <tr><td>Kick</td><td>El “Stream URL” de tu panel de Kick (empieza por <code>rtmps://</code>)</td></tr>
+      <tr><td>Otras</td><td>La URL de servidor que te dé la plataforma</td></tr>
+    </table>
+    <p class="note"><b>Kick y YouTube:</b> escribe su clave en StreamDelay (la de OBS suele ser la de Twitch y se ignora). A estas plataformas StreamDelay envía la calidad de más resolución y ellas crean el resto (720p, 480p…). Para que sea 1080p mira el apartado <a href="#1080p" style="color:var(--violet-light)">“1080p en Twitch y Kick a la vez”</a>.</p>
+  </section>
+
+  <section id="multistream">
+    <h2>Multistream: varias plataformas a la vez <span class="tag">NUEVO</span></h2>
+    <p style="margin-top:0">En <b>Ajustes → Destinos</b> activa las plataformas donde quieres emitir (Twitch, Kick, YouTube y un destino “Otro”) y con <b>Editar</b> pon su servidor y su clave. Todas reciben el mismo directo con el mismo delay.</p>
+    <ul>
+      <li>El botón grande ya te dice dónde vas a emitir: <b>“▶ Iniciar · Twitch + Kick”</b>.</li>
+      <li>En la pestaña <b>Directo</b>, el recuadro <b>“Emitiendo en”</b> muestra cada destino con su estado: <b>EN DIRECTO</b> (en rojo), CONECTANDO, REINTENTANDO, CARGANDO DELAY o FALTA CLAVE. Arriba, “EN DIRECTO · 2” indica en cuántas estás en directo.</li>
+      <li><b>Twitch</b> recibe todas las calidades de la Transmisión mejorada. <b>Kick, YouTube y Otro</b> reciben la de <b>más resolución</b> que envíe OBS (lo verás en su píldora, por ejemplo “EN DIRECTO · 1080P60”) y cada plataforma crea las demás.</li>
+      <li>Cada destino va por su cuenta: si una plataforma se cae o va lenta, se reconecta sola sin cortar las demás.</li>
+      <li>Con varias plataformas se sube el mismo vídeo varias veces: tu conexión tiene que aguantar la suma (por ejemplo, Twitch con 3 calidades ≈ 8 Mbps + Kick 6 Mbps ≈ 14 Mbps de subida).</li>
+    </ul>
+    <p class="note">La clave de Twitch la puede poner OBS (servicio Twitch + Transmisión mejorada). Las de Kick, YouTube y Otro tienen que estar guardadas en StreamDelay.</p>
+  </section>
+
+  <section>
+    <h2><span class="n">4</span>Cada vez que transmitas</h2>
+    <ol>
+      <li>Abre StreamDelay y pulsa <b>▶ Iniciar servicio</b>. Arriba verás <b>ESPERANDO A OBS</b>.</li>
+      <li>En OBS pulsa <b>Iniciar transmisión</b>. Pasará a <b>CARGANDO DELAY</b>.</li>
+      <li>Pasado el delay elegido verás <b>EN DIRECTO</b> y empezará el stream.</li>
+      <li>Para terminar, detén la transmisión en OBS. StreamDelay envía lo que queda en el búfer y cierra el directo. Para cortar al momento, pulsa <b>Cortar ya</b>.</li>
+    </ol>
+    <p class="note ok">Si OBS se desconecta y se reconecta con la misma clave, el directo sigue sin cortarse. Con Transmisión mejorada, cada vez que OBS vuelve a empezar Twitch le da una clave nueva: StreamDelay reconecta con ella automáticamente (el público verá un corte de un par de segundos). Si es la plataforma la que se cae, StreamDelay reintenta solo.</p>
+  </section>
+
+  <section>
+    <h2><span class="n">5</span>Controlar el delay en directo</h2>
+    <table>
+      <tr><th>Acción</th><th>Cómo</th></tr>
+      <tr><td>Delays guardados</td><td><b>Un clic</b> en uno de los 6 botones de Directo lo aplica (y activa el delay si estaba quitado). “Sin delay” lo quita. Se cambian en la pestaña <b>Mando</b> → Delays guardados → <b>Editar</b> (nombre opcional y segundos).</td></tr>
+      <tr><td>Otro valor</td><td>Barra y después <b>Aplicar</b></td></tr>
+      <tr><td>Activar / desactivar</td><td>Interruptor “Activado”, o <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>D</kbd></td></tr>
+      <tr><td>Sumar / restar 5 s</td><td><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>↑</kbd> / <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>↓</kbd></td></tr>
+      <tr><td>Ventana encima del juego</td><td>Ajustes → “Ventana siempre visible”</td></tr>
+      <tr><td>Desde el móvil o el Stream Deck</td><td>Pestaña <b>Mando</b> (apartado 11)</td></tr>
+    </table>
+    <p class="note">Los atajos funcionan aunque estés dentro del juego. Comprueba que no coincidan con tus atajos de OBS (por ejemplo, el de guardar clips).</p>
+  </section>
+
+  <section>
+    <h2><span class="n">6</span>Qué ve tu público al cambiar el delay</h2>
+    <table>
+      <tr><th>Cambio</th><th>Efecto en el stream</th></tr>
+      <tr><td>Subir (30 → 45 s)</td><td>Se repiten los últimos ~15 s y luego el directo sigue sin cortes</td></tr>
+      <tr><td>Activar (0 → 30 s)</td><td>Se repiten los últimos ~30 s y luego sigue</td></tr>
+      <tr><td>Bajar (30 → 10 s)</td><td>El stream salta 20 s hacia adelante</td></tr>
+      <tr><td>Desactivar</td><td>Salta al directo (como bajar a 0)</td></tr>
+    </table>
+    <ul style="margin-top:12px">
+      <li>Todas las calidades se repiten o saltan a la vez, empezando en el mismo fotograma clave.</li>
+      <li>Si desactivas “repetir lo último” en Ajustes, al subir el delay la imagen se congela en vez de repetirse.</li>
+      <li>Se guardan los últimos 35 s emitidos. Si subes más que eso, la repetición se reproduce varias veces seguidas.</li>
+    </ul>
+  </section>
+
+  <section id="titulo">
+    <h2><span class="n">7</span>Cambiar título y categoría <span class="tag">NUEVO</span></h2>
+    <p style="margin-top:0">En la pestaña <b>Título</b> escribes un título y una categoría (por ejemplo <code>Valorant</code>), pulsas <b>Buscar</b> y luego <b>Actualizar</b>: se cambian a la vez en Twitch, YouTube y Kick.</p>
+    <ul>
+      <li>Las píldoras muestran la categoría elegida en cada plataforma. Si no es la buena, pulsa la píldora y elige otra de la lista.</li>
+      <li><b>YouTube</b> solo deja elegir su categoría general (Videojuegos, Gente y blogs…). El juego concreto lo detecta YouTube solo.</li>
+      <li>En YouTube se cambia el directo en curso o, si aún no has empezado, el próximo programado. El título se recorta a 100 caracteres (Twitch admite 140).</li>
+      <li><b>TikTok no permite</b> que otros programas cambien el título de un LIVE. StreamDelay te copia el título para que lo pegues en TikTok LIVE Studio.</li>
+      <li>“Recientes” guarda tus últimos 10 títulos.</li>
+    </ul>
+    <p class="note">La primera vez tienes que crear una <b>app de desarrollador</b> gratuita en cada plataforma. Es la forma oficial de que un programa pueda cambiar tu título. Al pulsar <b>Conectar</b>, StreamDelay te enseña los pasos. Resumen:</p>
+    <table style="margin-top:12px">
+      <tr><th>Plataforma</th><th>Qué crear</th></tr>
+      <tr><td>Twitch</td><td><code>dev.twitch.tv/console</code> → Registrar aplicación. Redirección OAuth: <code>http://localhost</code> · Categoría: Application Integration · Tipo de cliente: <b>Público</b>. Copia el <b>ID de cliente</b>. (Twitch pide la verificación en dos pasos.)</td></tr>
+      <tr><td>Kick</td><td>Kick → Ajustes → <b>Developer</b> → Create App. Redirect URL: <code>http://localhost:17563/callback</code> · Permisos: leer usuario, leer canal y <b>escribir canal</b>. Copia <b>Client ID</b> y <b>Client Secret</b>.</td></tr>
+      <tr><td>YouTube</td><td><code>console.cloud.google.com</code> → proyecto nuevo → habilita <b>YouTube Data API v3</b> → pantalla de consentimiento (Externo, tu correo) y pulsa <b>Publicar aplicación</b> → Credenciales → ID de cliente OAuth de tipo <b>“TVs y dispositivos de entrada limitada”</b>. Copia ID y secreto.</td></tr>
+    </table>
+    <p class="opt">Al conectar, Twitch y YouTube te muestran un código que hay que escribir en su web (StreamDelay lo copia y abre la página). Kick abre el navegador para que pulses “Permitir”. Las claves y los accesos se guardan cifrados en <code>StreamDelay.ini</code>.</p>
+    <p class="opt">Si Google muestra “Google no ha verificado esta aplicación”, pulsa <b>Configuración avanzada → Ir a StreamDelay</b>: es tu propia app. Si no la publicas, Google te desconecta cada 7 días.</p>
+  </section>
+
+  <section id="chat">
+    <h2><span class="n">8</span>Chat conjunto y espectadores <span class="tag">NUEVO</span></h2>
+    <p style="margin-top:0">Los chats de <b>Twitch, Kick y YouTube</b> en un solo sitio, con los emotes de <b>7TV, BetterTTV y FrankerFaceZ</b>, los avisos de subs, regalos, raids, bits, Super Chats y miembros, y los <b>espectadores de cada plataforma</b>. No hace falta iniciar sesión ni crear apps: solo el nombre de cada canal.</p>
+    <ol>
+      <li>Pestaña <b>Chat</b>: escribe el nombre de tu canal de Twitch y de Kick, y tu canal de YouTube (<code>@tucanal</code> o el enlace del directo). Deja vacío lo que no uses.</li>
+      <li>Activa el interruptor <b>Activado</b>. Abajo verás los espectadores y si cada chat está conectado.</li>
+      <li>Para verlo: <b>Abrir chat</b> lo abre en tu navegador.</li>
+    </ol>
+    <table style="margin-top:12px">
+      <tr><th>Dónde verlo</th><th>Cómo</th></tr>
+      <tr><td>Panel dentro de OBS</td><td>Pulsa <b>URL para OBS</b>. En OBS: <b>Docks → Docks de navegador personalizados</b>, pon un nombre (por ejemplo “Chat”), pega la URL y aplica.</td></tr>
+      <tr><td>En pantalla, en el directo</td><td>Pestaña <b>Overlays</b> → tarjeta <b>Chat en pantalla</b> → <b>Copiar URL</b>. En OBS añade una fuente <b>Navegador</b> con esa URL, ancho <code>500</code> y alto <code>700</code> por ejemplo, y colócala donde quieras (fondo transparente; cada mensaje se ve 30 s y desaparece).</td></tr>
+    </table>
+    <ul style="margin-top:12px">
+      <li>El chat va <b>en tiempo real</b>, sin delay: así ves lo que escribe la gente al momento (ellos reaccionan a lo que vieron hace X segundos).</li>
+      <li>Los emotes de 7TV/BTTV/FFZ de tu canal de Twitch se usan también en Kick y YouTube; los de 7TV de Kick y YouTube se añaden si los tienes.</li>
+      <li>Los mensajes borrados y los usuarios baneados desaparecen también del chat conjunto.</li>
+      <li><b>Ocultar o ver los espectadores:</b> pulsa el total de arriba para ocultarlos o verlos todos, o pulsa una plataforma para ocultar solo la suya (el total se marca con * si falta alguna). Cada uno lo elige en su navegador o panel de OBS y se recuerda. Con <code>?espectadores=0</code> en la URL empiezan ocultos.</li>
+      <li>Funciona aunque el delay esté apagado y se activa solo al abrir StreamDelay si lo dejaste activado.</li>
+      <li>Ajustes de la URL (se añaden al final): <code>?size=18</code> tamaño de letra · <code>?eventos=0</code> sin avisos · <code>?ocultar=youtube</code> no mostrar una plataforma · <code>?overlay=1&amp;desvanecer=20</code> segundos que se ve cada mensaje.</li>
+    </ul>
+    <h3 style="margin:18px 0 8px">Follows de Twitch y donaciones</h3>
+    <p style="margin-top:0">Pulsa <b>Follows y donaciones</b> en la pestaña Chat:</p>
+    <table>
+      <tr><th>Qué</th><th>Cómo activarlo</th></tr>
+      <tr><td><b>Follows de Twitch</b></td><td>Usa la cuenta de Twitch de la pestaña <b>Título</b> (tienes que ser el dueño del canal o moderador). Si la conectaste antes de la 2.5, pulsa <b>Volver a conectar Twitch</b> una vez para dar el permiso de follows. Los follows de Kick salen sin hacer nada.</td></tr>
+      <tr><td><b>StreamElements</b></td><td>En StreamElements: tu cuenta → <b>Canales</b> → “Mostrar secretos” → copia el <b>JWT Token</b> y pégalo.</td></tr>
+      <tr><td><b>Streamlabs</b></td><td>En Streamlabs: Ajustes → <b>API Settings</b> → API Tokens → copia el <b>Your Socket API Token</b> y pégalo.</td></tr>
+    </table>
+    <ul style="margin-top:12px">
+      <li>Las donaciones salen en el chat con su importe y su mensaje.</li>
+      <li>Si no conectas Twitch pero usas StreamElements o Streamlabs, sus avisos de follow de Twitch se usan en su lugar.</li>
+      <li>El botón muestra cuántos avisos están funcionando. Si pone <b>revisar</b>, mira la pestaña <b>Registro</b>: dice qué falla (token incorrecto, falta permiso…).</li>
+      <li>Los tokens se guardan cifrados en <code>StreamDelay.ini</code>. Son como contraseñas: <b>no los compartas</b>.</li>
+    </ul>
+    <h3 style="margin:18px 0 8px">Escribir en todas las plataformas a la vez</h3>
+    <p style="margin-top:0">Abajo de la página del chat (en el navegador o en el panel de OBS) hay una caja para escribir. Lo que escribas se envía <b>con tu cuenta</b> al chat de cada plataforma marcada.</p>
+    <ul>
+      <li>Usa las cuentas conectadas en la pestaña <b>Título</b>. Solo aparecen las plataformas conectadas; pulsa cada una para incluirla o quitarla (se recuerda).</li>
+      <li><b>Twitch y Kick</b> piden un permiso nuevo para escribir: si las conectaste antes de la 2.6, vuelve a conectarlas una vez en <b>Título</b>. En tu app de Kick marca también el permiso de escribir en el chat (<code>chat:write</code>).</li>
+      <li><b>YouTube</b> escribe en tu directo en curso. Cada mensaje gasta 50 de las 10.000 unidades diarias de la API (unos 200 mensajes al día) y admite como máximo 200 caracteres.</li>
+      <li>Debajo de la caja ves el resultado de cada plataforma (✓ enviado o ✗ y el motivo). Tu mensaje aparece en el chat conjunto como el de cualquiera.</li>
+      <li>La caja no sale en la versión “en pantalla” (overlay). Para quitarla también del panel, añade <code>?escribir=0</code> a la URL.</li>
+      <li>Por seguridad, solo la propia página del chat puede enviar mensajes: ninguna otra web abierta en tu navegador puede escribir en tu chat.</li>
+    </ul>
+    <p class="note">TikTok no tiene un chat oficial accesible desde fuera, así que no aparece en el chat conjunto.</p>
+  </section>
+
+  <section id="overlay">
+    <h2><span class="n">9</span>Pestaña Overlays: delay, espectadores y chat <span class="tag">NUEVO</span></h2>
+    <p style="margin-top:0">Todos los overlays para OBS se gestionan desde la pestaña <b>Overlays</b> de StreamDelay (o pulsando el recuadro <b>OVERLAYS OBS</b> de la pestaña Directo). Cada uno tiene <b>Copiar URL</b> y <b>Vista previa</b>. Lo que cambies ahí (tamaño, qué mostrar, posición) <b>se aplica al momento en OBS</b>, sin tocar la URL.</p>
+    <h3>Cómo añadir cualquiera a OBS</h3>
+    <ol>
+      <li>En la pestaña <b>Overlays</b>, pulsa <b>Copiar URL</b> en el que quieras.</li>
+      <li>En OBS, en tu escena: <b>+ → Navegador</b>. Pega la URL, pon <b>Ancho 1920</b> y <b>Alto 1080</b> y acepta (para el chat en pantalla, por ejemplo <b>500×700</b>).</li>
+      <li>Deja las fuentes de delay y espectadores ocupando toda la pantalla, sin moverlas ni escalarlas, y <b>encima de las demás</b>. Se colocan solas.</li>
+    </ol>
+    <table>
+      <tr><th>Overlay</th><th>Qué muestra y qué puedes elegir</th></tr>
+      <tr><td><b>Delay</b><br><code>…/delay</code></td><td>Arriba a la derecha: <b>“DELAY 30 s”</b> o <b>“EN DIRECTO · Sin delay”</b>, los dos en el mismo formato rojo, muy legible. Tamaño <b>Normal / Grande / Enorme</b> y <b>Ocultar sin delay</b> (si solo quieres que se vea cuando hay delay). Funciona aunque el chat esté apagado.</td></tr>
+      <tr><td><b>Espectadores</b><br><code>…/viewers</code></td><td>Los espectadores del momento de <b>Twitch, Kick, YouTube</b> y el <b>Total</b>: marca las que quieras, cualquier combinación, o <b>ninguna</b> para que no salga nada. Una plataforma solo aparece mientras está en directo. Posición (las 4 esquinas; arriba a la derecha se pone justo debajo del de delay), <b>En columna</b> y tamaño. Necesita el <b>chat activado</b> (pestaña Chat) con los nombres de tus canales; se actualiza cada pocos segundos.</td></tr>
+      <tr><td><b>Chat en pantalla</b><br><code>…/?overlay=1&amp;desvanecer=30</code></td><td>Los tres chats juntos con fondo transparente; cada mensaje se ve 30 s. Colócalo donde no tape a los otros dos.</td></tr>
+    </table>
+    <ul style="margin-top:12px">
+      <li>Al <b>activar o subir el delay</b> en directo, el de delay muestra “ACTIVANDO DELAY” con una barra que se llena durante esos segundos; al quitarlo, “DELAY QUITADO · En directo” unos segundos. Como el overlay también va con delay, tu público ve la barra justo después de la repetición: así entiende qué ha pasado.</li>
+      <li>Los overlays van dentro del vídeo, así que también pasan por el delay: tu público los ve sincronizados con lo que está viendo.</li>
+      <li>Si cierras StreamDelay, los overlays desaparecen. Si el puerto 8935 estaba ocupado, la URL usa otro: vuelve a copiarla desde la pestaña Overlays.</li>
+      <li>Las opciones por URL siguen funcionando y mandan sobre las de la app: delay <code>?escala=1.3</code>, <code>?sin_delay=0</code>, <code>?texto=Retraso</code>; espectadores <code>?pos=bl</code>, <code>?vertical=1</code>, <code>?escala=1.2</code>.</li>
+    </ul>
+  </section>
+
+  <section id="avisos">
+    <h2><span class="n">10</span>Avisos y comandos en el chat <span class="tag">NUEVO</span></h2>
+    <p style="margin-top:0">Opcional: StreamDelay escribe un mensaje en los chats que elijas cuando activas o desactivas el delay (por ejemplo <i>“⏱️ Delay activado: el directo va con 30 s de retraso.”</i>).</p>
+    <ol>
+      <li>Pestaña <b>Chat</b> → <b>Avisos de delay y comandos del chat</b>.</li>
+      <li>Activa <b>Mandar el aviso automáticamente</b>, marca en qué chats (Twitch, Kick, YouTube) y, si quieres, cambia los textos. <code>{s}</code> se cambia por los segundos de delay.</li>
+      <li>Pulsa <b>Probar aviso ahora</b> para comprobarlo y luego <b>Guardar</b>.</li>
+    </ol>
+    <ul style="margin-top:12px">
+      <li>Para escribir hace falta tener la cuenta de esa plataforma conectada en la pestaña <b>Título</b> (con permiso de chat). Las no conectadas salen como “(sin conectar)”.</li>
+      <li>Con <b>Solo si estoy en directo</b> no se manda nada mientras no estés emitiendo. Si cambias el delay varias veces seguidas, espera 3 s y manda un único aviso con el valor final. También avisa si cambias los segundos con el delay ya activado.</li>
+    </ul>
+    <h3 style="margin:18px 0 8px">Comandos (!delay, !web…)</h3>
+    <p style="margin-top:0">En la misma ventana, tarjeta <b>Comandos del chat</b>: StreamDelay contesta solo cuando alguien escribe un comando, en la misma plataforma donde lo escribió. Uno por línea, así:</p>
+    <pre style="background:#0e0e13;border:1px solid #26262e;border-radius:10px;padding:10px 14px;overflow:auto">!delay = ⏱️ {delay}
+!web = 🌐 www.vortexs.es
+!horario = 📅 Directos de lunes a viernes a las 18:00, {user}</pre>
+    <ul>
+      <li><code>{delay}</code> se cambia por “El directo va con 30 s de delay.” o “Ahora mismo no hay delay…”; <code>{s}</code> por los segundos; <code>{user}</code> por quien lo pregunta; <code>{plataforma}</code> por Twitch, Kick o YouTube.</li>
+      <li>Cada comando contesta como mucho una vez cada 20 s por plataforma (así no se llena el chat). Los mensajes antiguos que llegan al conectar el chat no se contestan.</li>
+      <li>Hace falta el chat activado y la cuenta de esa plataforma conectada en <b>Título</b>. En YouTube cada respuesta gasta cupo de la API (50 de 10.000 diarias).</li>
+    </ul>
+    <h3 style="margin:18px 0 8px">Moderar desde el chat conjunto</h3>
+    <p style="margin-top:0">En la página del chat (navegador o panel de OBS), <b>pulsa un mensaje</b> y elige: <b>🗑 Borrar</b>, <b>⏱ 1 min</b>, <b>⏱ 10 min</b> (expulsión temporal) o <b>⛔ Ban</b> (pide confirmación con un segundo clic). Debajo sale ✓ o el motivo del fallo.</p>
+    <ul>
+      <li>Se hace con tu cuenta conectada en <b>Título</b>; tienes que ser el dueño del canal o moderador.</li>
+      <li><b>Twitch:</b> necesita permisos nuevos. Vuelve a conectar Twitch una vez en <b>Título</b> (desconectar y conectar).</li>
+      <li><b>Kick:</b> en tu app de Kick (kick.com → Ajustes → Desarrollador) marca también <code>moderation:ban</code> y <code>moderation:chat_message:manage</code>, guarda y vuelve a conectar Kick en <b>Título</b>.</li>
+      <li><b>YouTube:</b> funciona con la conexión que ya tienes. Para borrar, StreamDelay busca el mensaje entre los últimos del chat; cada acción gasta algo de cupo de la API.</li>
+      <li>No sale en la versión en pantalla (overlay). Para quitarlo también del panel, añade <code>?moderar=0</code> a la URL.</li>
+    </ul>
+  </section>
+
+  <section id="mando">
+    <h2><span class="n">11</span>Pestaña Mando: móvil, Stream Deck y avisos <span class="tag">NUEVO</span></h2>
+    <h3 style="margin:0 0 8px">Desde el móvil o una tablet</h3>
+    <ol>
+      <li>Pestaña <b>Mando</b> → activa <b>Permitir desde el móvil (misma wifi)</b>. La primera vez Windows puede preguntar por el firewall: marca <b>Redes privadas</b> y acepta.</li>
+      <li>Pulsa <b>Código QR</b> y escanéalo con la cámara del móvil (o copia la URL y ábrela en el móvil). El móvil tiene que estar en la <b>misma wifi</b> que el PC.</li>
+      <li>Consejo: en el móvil, “Añadir a pantalla de inicio” para tenerlo como una app.</li>
+    </ol>
+    <p>En el mando ves el delay y si estás en directo, el estado de cada plataforma y los avisos. Botones: <b>Activar/Quitar delay</b>, <b>−5 s / +5 s</b>, tus <b>delays guardados</b> y <b>Cortar ya</b> (hay que mantenerlo pulsado 1,5 s para que no se pulse sin querer). Si algo falla, el móvil suena y vibra.</p>
+    <ul>
+      <li>La URL lleva una <b>clave</b> privada: sin ella no se puede usar. No la enseñes en directo. Si alguien la ve, pulsa <b>Nueva clave</b> (arriba en la tarjeta) y vuelve a copiar las URL.</li>
+      <li>Si la red de tu casa es “pública” en Windows, el móvil no podrá entrar: cámbiala a privada (Configuración → Red → Propiedades).</li>
+      <li><b>Como panel en OBS:</b> pulsa <b>Abrir aquí</b>, copia la dirección y en OBS → <b>Docks → Docks de navegador personalizados</b> pégala. Funciona aunque no actives el permiso del móvil.</li>
+    </ul>
+    <h3 style="margin:18px 0 8px">Stream Deck</h3>
+    <ol>
+      <li>Pestaña <b>Mando</b> → <b>Stream Deck</b>: verás una URL para cada acción (activar/quitar, activar, quitar, +5 s, −5 s, delays guardados, cortar ya).</li>
+      <li>En el Stream Deck arrastra la acción <b>Sitio web</b> (categoría Sistema) a un botón, pega la URL y marca <b>“GET request in background” / “Acceder en segundo plano”</b> (si no, abre el navegador cada vez).</li>
+    </ol>
+    <p class="note">“Cortar ya” desde el Stream Deck corta al momento, sin preguntar. Ponlo en un botón apartado.</p>
+    <h3 style="margin:18px 0 8px">Avisos si algo falla</h3>
+    <ul>
+      <li>Si una plataforma se cae mientras emites, StreamDelay <b>pita</b>, <b>parpadea en la barra de tareas</b>, lo pone en <b>rojo abajo en Directo</b> y en el mando, y avisa cuando vuelve. Mientras tanto reintenta solo.</li>
+      <li>También avisa si tu <b>subida no da para enviar todo</b> (la cola de envío de un destino no para de crecer): baja el bitrate en OBS o quita un destino.</li>
+      <li>Si OBS deja de enviar, lo apunta sin pitar (al acabar el directo es normal).</li>
+      <li>Cada aviso se puede activar o quitar en la tarjeta <b>Avisos si algo falla</b>; <b>Probar aviso</b> te enseña cómo suena.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Si algo falla</h2>
+    <table>
+      <tr><th>Problema</th><th>Solución</th></tr>
+      <tr><td>No sale 1080p (Kick, Twitch…)</td><td>StreamDelay te avisa al conectar OBS, antes de que acabe el delay. En OBS → Ajustes → Vídeo pon <b>Resolución de salida (escalada)</b> en <code>1920x1080</code>. Con Transmisión mejorada, pon además <b>Ancho de banda máximo</b> en Auto (Twitch decide las calidades según tu PC y ese límite).</td></tr>
+      <tr><td>Chat de Kick: “Kick ha bloqueado la consulta del canal”</td><td>Kick tiene una protección anti-bots que a veces rechaza programas que no son un navegador. StreamDelay reintenta solo; si dura más de unos minutos, cierra y abre StreamDelay. El resto de chats siguen funcionando.</td></tr>
+      <tr><td>El móvil no abre el mando</td><td>Activa “Permitir desde el móvil”, que el móvil esté en la misma wifi (no con datos) y que Windows tenga la red como <b>privada</b> y StreamDelay permitido en el firewall. Vuelve a escanear el QR.</td></tr>
+      <tr><td>Moderar da “falta permiso”</td><td>Twitch: vuelve a conectar en Título. Kick: marca moderation:ban y moderation:chat_message:manage en tu app de Kick y vuelve a conectar. Tienes que ser el dueño o moderador del canal.</td></tr>
+      <tr><td>El overlay de espectadores no sale</td><td>Activa el chat (pestaña Chat) con los nombres de tus canales y marca al menos una opción en Overlays → Espectadores. Una plataforma solo aparece mientras está en directo.</td></tr>
+      <tr><td>El aviso de delay no llega al chat</td><td>Conecta esa cuenta en la pestaña Título (con permiso de chat) y mira el Registro: dice en qué chat se mandó y el motivo si falló. Con “Solo si estoy en directo” no se manda fuera de directo.</td></tr>
+      <tr><td>El overlay de delay no se ve</td><td>Comprueba que StreamDelay está abierto, que la fuente Navegador mide 1920x1080 y está encima de las demás. Copia de nuevo la URL desde la pestaña Overlays (si el puerto 8935 estaba ocupado, la URL usa otro).</td></tr>
+      <tr><td>“sesión caducada: vuelve a conectar”</td><td>En la pestaña Título pulsa Desconectar y Conectar otra vez en esa plataforma.</td></tr>
+      <tr><td>YouTube: “no hay ningún directo en curso ni programado”</td><td>Empieza el directo (o prográmalo en YouTube Studio) y vuelve a pulsar Actualizar.</td></tr>
+      <tr><td>“Solo 1080p · Transmisión mejorada off” en Twitch</td><td>OBS no está usando la Transmisión mejorada: revisa el paso 2 (servicio <b>Twitch</b>, servidor personalizado y la casilla activada).</td></tr>
+      <tr><td>“Falta la clave”</td><td>Pon tu clave de Twitch en OBS (paso 2) o escríbela en StreamDelay → Ajustes.</td></tr>
+      <tr><td>“La plataforma no aceptó la emisión (¿clave incorrecta o caducada?)”</td><td>Vuelve a copiar la clave. Con Transmisión mejorada, detén e inicia de nuevo la transmisión en OBS para que Twitch genere una clave nueva.</td></tr>
+      <tr><td>“El puerto 1935 está ocupado”</td><td>Hay otro programa usando ese puerto, o tienes StreamDelay abierto dos veces. Cambia el <b>Puerto</b> (por ejemplo a 1936) y copia de nuevo el servidor en OBS.</td></tr>
+      <tr><td>OBS no conecta</td><td>Comprueba que pulsaste “Iniciar servicio”, que el servidor en OBS empieza por <code>rtmp://</code> (sin s) y que el puerto coincide.</td></tr>
+      <tr><td>Algo no va con el emisor nuevo</td><td>Activa <b>Modo clásico con ffmpeg</b> en Ajustes: envía como la versión anterior (una sola calidad, necesita ffmpeg).</td></tr>
+      <tr><td>“Control inteligente de aplicaciones bloqueó…”</td><td>Windows 11 bloquea algunos programas nuevos sin firma digital. Puedes desactivarlo en <i>Seguridad de Windows → Control de aplicaciones y navegador</i>, pero es una decisión de seguridad tuya: en muchas versiones no se puede volver a activar sin reinstalar Windows.</td></tr>
+    </table>
+    <p>La pestaña <b>Registro</b> muestra lo que va pasando. <b>Si pides ayuda, copia ese texto</b>: no contiene tu clave.</p>
+    <p class="note ok">Antes del primer directo de verdad, haz una prueba corta: en OBS añade <code>?bandwidthtest=true</code> al final de tu clave de Twitch y la prueba no se emitirá en público.</p>
+  </section>
+</main>
+</body>
+</html>

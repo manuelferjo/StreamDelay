@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Overlay de espectadores</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700&family=Outfit:wght@700;800&display=swap" rel="stylesheet">
+<style>
+  /* Fuente Navegador de 1920x1080 en OBS. Por defecto arriba a la derecha, justo debajo del overlay de delay. */
+  :root { --red:#FF4655; --k:1; }
+  html, body { margin:0; background:transparent; overflow:hidden; }
+  body { width:1920px; height:1080px; position:relative; font-family:Outfit, "Segoe UI", sans-serif; }
+  #box { position:absolute; display:flex; gap:12px; transform:scale(var(--k)); }
+  #box.tr { right:40px; transform-origin:top right; justify-content:flex-end; }
+  #box.tl { top:36px; left:40px; transform-origin:top left; }
+  #box.br { bottom:36px; right:40px; transform-origin:bottom right; justify-content:flex-end; }
+  #box.bl { bottom:36px; left:40px; transform-origin:bottom left; }
+  #box.col { flex-direction:column; align-items:flex-end; }
+  #box.col.tl, #box.col.bl { align-items:flex-start; }
+  .pill { display:flex; align-items:center; gap:12px; height:56px; padding:0 20px 0 14px; border-radius:18px; position:relative;
+    background:linear-gradient(180deg, rgba(23,23,32,.92), rgba(9,9,12,.92)); box-shadow:0 10px 30px rgba(0,0,0,.5), 0 0 30px rgba(255,70,85,.18);
+    opacity:0; translate:0 -8px; transition:opacity .4s ease, translate .4s ease; }
+  .pill.show { opacity:1; translate:0 0; }
+  .pill.gone { display:none; }
+  .pill::before { content:""; position:absolute; inset:0; border-radius:18px; padding:2px; pointer-events:none;
+    background:linear-gradient(120deg, var(--red), #ff8a94);
+    -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude; }
+  .pill svg { width:30px; height:30px; flex:none; }
+  .num { font-weight:800; font-size:32px; color:#F4F4F5; letter-spacing:-.01em; font-variant-numeric:tabular-nums; }
+  .lbl { font:700 12px "JetBrains Mono", Consolas, monospace; letter-spacing:.14em; color:#A1A1AA; text-transform:uppercase; margin-right:-4px; }
+  .bump { animation:bump .5s ease; }
+  @keyframes bump { 40% { transform:scale(1.12); } }
+</style>
+</head>
+<body>
+<div id="box" class="tr">
+  <div class="pill gone" id="p-total"><svg viewBox="0 0 24 24"><path fill="#FF4655" d="M12 5C6.5 5 2.7 9.6 1.5 12c1.2 2.4 5 7 10.5 7s9.3-4.6 10.5-7C21.3 9.6 17.5 5 12 5Zm0 11.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9Zm0-2.3a2.2 2.2 0 1 0 0-4.4 2.2 2.2 0 0 0 0 4.4Z"/></svg><span class="lbl" id="l-total">Total</span><span class="num" id="n-total">0</span></div>
+  <div class="pill gone" id="p-twitch"><svg viewBox="0 0 24 24"><path fill="#a970ff" d="M4 2 2.5 6v14h5v3h3l3-3h4l5-5V2H4Zm16 12-3 3h-5l-3 3v-3H5V4h15v10Z"/><path fill="#a970ff" d="M15 7h2v5h-2zM10 7h2v5h-2z"/></svg><span class="num" id="n-twitch">0</span></div>
+  <div class="pill gone" id="p-kick"><svg viewBox="0 0 24 24"><rect width="24" height="24" rx="5" fill="#53fc18"/><path fill="#000" d="M6 5h4v4h2V7h2V5h4v5h-2v2h-2v0h2v2h2v5h-4v-2h-2v-2h-2v4H6z"/></svg><span class="num" id="n-kick">0</span></div>
+  <div class="pill gone" id="p-youtube"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="5" fill="#ff3b3b"/><path fill="#fff" d="m10 8.5 6 3.5-6 3.5z"/></svg><span class="num" id="n-youtube">0</span></div>
+</div>
+<script>
+  // Qué se muestra se elige en StreamDelay (pestaña Chat → Avisos y overlays) y cambia al momento.
+  // Opciones de la URL: ?pos=tr|tl|br|bl (esquina) · ?vertical=1 · ?escala=1.2 · ?texto=Viewers
+  var q = new URLSearchParams(location.search);
+  var box = document.getElementById('box');
+  // La URL puede forzar las opciones; si no, se usan las de StreamDelay (pestaña Overlays).
+  function applyOpts(s) {
+    var pos = (q.get('pos') || (s && s.pos) || 'tr').toLowerCase(); if (['tr', 'tl', 'br', 'bl'].indexOf(pos) < 0) pos = 'tr';
+    var vert = q.get('vertical') != null ? q.get('vertical') === '1' : !!(s && s.vertical);
+    var cls = pos + (vert ? ' col' : '');
+    if (box.className !== cls) box.className = cls;
+    var k = parseFloat(q.get('escala') || ''); if (!(k > 0.2 && k < 4)) k = s && s.k > 0.2 && s.k < 4 ? s.k : 1;
+    document.documentElement.style.setProperty('--k', k);
+    // Arriba a la derecha se coloca justo debajo del overlay de delay (que puede ser más grande).
+    var dk = s && s.dk > 0.2 && s.dk < 4 ? s.dk : 1;
+    box.style.top = pos === 'tr' ? Math.round(108 * dk + 20) + 'px' : '';
+  }
+  applyOpts(null);
+  if (q.get('texto')) document.getElementById('l-total').textContent = q.get('texto');
+  var last = {};
+  function fmt(n) { return n.toLocaleString('es-ES'); }
+  function set(id, show, n) {
+    var p = document.getElementById('p-' + id), el = document.getElementById('n-' + id);
+    if (!show) { p.classList.remove('show'); setTimeout(function () { if (!p.classList.contains('show')) p.classList.add('gone'); }, 400); return; }
+    if (p.classList.contains('gone')) { p.classList.remove('gone'); void p.offsetWidth; }
+    p.classList.add('show');
+    var t = fmt(n);
+    if (el.textContent !== t) { el.textContent = t; if (last[id] != null) { el.classList.remove('bump'); void el.offsetWidth; el.classList.add('bump'); } last[id] = t; }
+  }
+  function render(s) {
+    if (s) applyOpts(s);
+    var show = (s && s.show) || {}, v = (s && s.v) || {}, total = 0, any = false;
+    ['twitch', 'kick', 'youtube'].forEach(function (p) {
+      var n = v[p];
+      var live = typeof n === 'number' && n >= 0;
+      if (live) { total += n; any = true; }
+      set(p, !!(s && show[p] && live), live ? n : 0);
+    });
+    set('total', !!(s && show.total && any), total);
+  }
+  function tick() {
+    fetch('/viewers.json', { cache: 'no-store' }).then(function (r) { return r.json(); })
+      .then(render).catch(function () { render(null); })
+      .then(function () { setTimeout(tick, 2000); });
+  }
+  if (q.get('demo')) render({ show: { twitch: true, kick: true, youtube: true, total: true }, v: { twitch: 154, kick: 87, youtube: 23 } });
+  else tick();
+</script>
+</body>
+</html>
