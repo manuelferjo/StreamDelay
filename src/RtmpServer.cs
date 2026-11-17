@@ -1,3 +1,6 @@
+// Servidor RTMP local donde se conecta OBS (rtmp://127.0.0.1:1935/app).
+// Escucha en IPv4 e IPv6 (solo en este PC, o en toda la red con "OBS en otro PC") y crea una
+// RtmpSession con su propio hilo por cada conexión.
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -13,6 +16,7 @@ namespace StreamDelay
 		{
 		};
 
+		// OBS empieza a emitir / llega un paquete (tipo, marca de tiempo, datos) / OBS termina.
 		public Action<RtmpSession> PublishStart = delegate
 		{
 		};
@@ -31,10 +35,12 @@ namespace StreamDelay
 
 		private volatile bool running;
 
+		// lan = aceptar conexiones de otros PCs. Si no se puede abrir el puerto en IPv4, lanza IOException
+		// (IPv6 es opcional).
 		public void Start(int port, bool lan)
 		{
 			running = true;
-			IPAddress[] array = (lan ? new IPAddress[2]
+			IPAddress[] addresses = (lan ? new IPAddress[2]
 			{
 				IPAddress.Any,
 				IPAddress.IPv6Any
@@ -43,40 +49,41 @@ namespace StreamDelay
 				IPAddress.Loopback,
 				IPAddress.IPv6Loopback
 			});
-			Exception ex = null;
-			IPAddress[] array2 = array;
-			foreach (IPAddress iPAddress in array2)
+			Exception ipv4Error = null;
+			foreach (IPAddress address in addresses)
 			{
 				try
 				{
-					TcpListener l = new TcpListener(iPAddress, port);
-					if (iPAddress.AddressFamily == AddressFamily.InterNetworkV6)
+					TcpListener l = new TcpListener(address, port);
+					if (address.AddressFamily == AddressFamily.InterNetworkV6)
 					{
+						// Solo IPv6 en este socket: el de IPv4 va aparte.
 						l.Server.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, true);
 					}
 					l.Start();
 					listeners.Add(l);
-					Thread thread = new Thread((ThreadStart)delegate
+					Thread worker = new Thread((ThreadStart)delegate
 					{
 						AcceptLoop(l);
-					});
-					thread.IsBackground = true;
-					thread.Name = "rtmp-accept";
-					Thread thread2 = thread;
-					thread2.Start();
+					})
+					{
+						IsBackground = true,
+						Name = "rtmp-accept"
+					};
+					worker.Start();
 				}
 				catch (Exception ex2)
 				{
-					if (iPAddress.AddressFamily == AddressFamily.InterNetwork)
+					if (address.AddressFamily == AddressFamily.InterNetwork)
 					{
-						ex = ex2;
+						ipv4Error = ex2;
 					}
 				}
 			}
-			if (ex != null)
+			if (ipv4Error != null)
 			{
 				Stop();
-				throw new IOException("El puerto " + port + " está ocupado o bloqueado (" + ex.Message + ")");
+				throw new IOException("El puerto " + port + " está ocupado o bloqueado (" + ipv4Error.Message + ")");
 			}
 		}
 
@@ -94,27 +101,27 @@ namespace StreamDelay
 				}
 			}
 			listeners.Clear();
-			RtmpSession[] array;
+			RtmpSession[] open;
 			lock (sessions)
 			{
-				array = sessions.ToArray();
+				open = sessions.ToArray();
 				sessions.Clear();
 			}
-			RtmpSession[] array2 = array;
-			foreach (RtmpSession rtmpSession in array2)
+			foreach (RtmpSession session in open)
 			{
-				rtmpSession.Close();
+				session.Close();
 			}
 		}
 
+		// Hilo "rtmp-accept": acepta conexiones y lanza un hilo "rtmp-session" para cada una.
 		private void AcceptLoop(TcpListener l)
 		{
 			while (running)
 			{
-				TcpClient tcpClient;
+				TcpClient client;
 				try
 				{
-					tcpClient = l.AcceptTcpClient();
+					client = l.AcceptTcpClient();
 				}
 				catch
 				{
@@ -124,24 +131,25 @@ namespace StreamDelay
 					}
 					continue;
 				}
-				tcpClient.NoDelay = true;
-				RtmpSession s = new RtmpSession(this, tcpClient);
+				client.NoDelay = true;
+				RtmpSession s = new RtmpSession(this, client);
 				lock (sessions)
 				{
 					sessions.Add(s);
 				}
-				Thread thread = new Thread((ThreadStart)delegate
+				Thread worker = new Thread((ThreadStart)delegate
 				{
 					s.Run();
 					lock (sessions)
 					{
 						sessions.Remove(s);
 					}
-				});
-				thread.IsBackground = true;
-				thread.Name = "rtmp-session";
-				Thread thread2 = thread;
-				thread2.Start();
+				})
+				{
+					IsBackground = true,
+					Name = "rtmp-session"
+				};
+				worker.Start();
 			}
 		}
 	}

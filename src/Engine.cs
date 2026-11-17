@@ -1,3 +1,15 @@
+// El motor del delay.
+//
+//   OBS ──RTMP──▶ RtmpServer/RtmpSession ──OnPacket──▶ cola (q) ──OutputLoop──▶ Sink (uno por destino)
+//
+// Cada paquete que llega de OBS se apunta con la hora de llegada y se guarda en la cola. El hilo
+// "salida" (OutputLoop) saca cada paquete cuando han pasado los segundos de delay y lo reparte a
+// todos los destinos. Las marcas de tiempo de salida se recalculan para que el público vea un
+// vídeo continuo aunque cambie el delay:
+//   - Al BAJAR el delay, los paquetes que ya "tocaban" salen de golpe: se salta hasta el último
+//     fotograma clave para no mandar segundos de vídeo de una vez ("Saltados X s…").
+//   - Al SUBIR el delay, la cola tarda más en vaciarse. Mientras tanto, si ReplayOnIncrease está
+//     activado, se repiten los últimos segundos ya emitidos (historial); si no, la imagen se congela.
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -8,6 +20,7 @@ namespace StreamDelay
 {
 	internal class Engine
 	{
+		// Cuánto de lo emitido se guarda para poder repetirlo al subir el delay.
 		private const long HistoryMs = 35000L;
 
 		public string FfmpegPath = "ffmpeg.exe";
@@ -36,12 +49,14 @@ namespace StreamDelay
 
 		private volatile bool cutRequested;
 
+		// Delay real del último paquete enviado (lo que ve el público ahora mismo).
 		private volatile int currentDelayMs;
 
 		private volatile int inputTracks;
 
 		private long queuedBytes;
 
+		// Cola de paquetes esperando su hora de salida (protegida por sync).
 		private readonly LinkedList<FlvPacket> q = new LinkedList<FlvPacket>();
 
 		private readonly object sync = new object();
@@ -52,18 +67,24 @@ namespace StreamDelay
 
 		private RtmpServer server;
 
+		// Conexión de OBS que se está usando (si OBS se reconecta, la nueva sustituye a la vieja).
 		private RtmpSession current;
 
+		// Al reconectarse OBS sus marcas de tiempo vuelven a 0: se les suma esto para que sigan creciendo.
 		private long sessionOffset;
 
 		private Thread outThread;
 
 		private long lastInTs = -1L;
 
+		// ---------- Calidades que llegan de OBS ----------
+
 		private readonly HashSet<int> inVideoTracks = new HashSet<int>();
 
+		// Altura (720, 1080…) de cada pista de vídeo.
 		private readonly SortedDictionary<int, int> trackHeight = new SortedDictionary<int, int>();
 
+		// Altura y fps que OBS dice en sus metadatos (onMetaData).
 		private int metaHeight;
 
 		private int metaFps;
@@ -79,32 +100,44 @@ namespace StreamDelay
 		// Pista de vídeo de más resolución: la que reciben Kick, YouTube y Otro.
 		public volatile int MainTrack;
 
+		// Ya llegó el primer fotograma (antes, OBS solo ha mandado cabeceras).
 		private bool framesSeen;
+
+		// ---------- Salida ----------
 
 		public volatile bool ReplayOnIncrease = true;
 
 		public int Skips;
 
+		// Lo que se resta a la marca de tiempo de entrada para obtener la de salida.
 		private long shift;
 
+		// Última marca de tiempo enviada a los destinos.
 		private long lastOut = -1L;
 
 		private long idleSince = -1L;
 
+		// Tras un salto o un corte hay que esperar a un fotograma clave antes de enviar vídeo.
 		private bool needKey = true;
 
+		// Últimas cabeceras (secuencias de inicio) enviadas, por tipo y pista: un destino que se
+		// conecta tarde las necesita antes del primer fotograma.
 		private readonly Dictionary<int, FlvPacket> sentSeq = new Dictionary<int, FlvPacket>();
 
 		private RtmpSession seqSession;
 
 		private bool streaming;
 
+		// ---------- Repetición al subir el delay ----------
+
+		// Lo último emitido (HistoryMs), con su marca de tiempo de salida.
 		private readonly LinkedList<FlvPacket> history = new LinkedList<FlvPacket>();
 
 		private volatile bool replayRequested;
 
 		private volatile bool abortReplay;
 
+		// Tramo que se está repitiendo, por dónde va y cuándo empezó.
 		private List<FlvPacket> seg;
 
 		private int segIdx;
@@ -115,6 +148,7 @@ namespace StreamDelay
 
 		private long segOutStart;
 
+		// lastOut cuando empezó la repetición (-1 si no se está repitiendo).
 		private long replayL0 = -1L;
 
 		public List<Sink> Sinks
@@ -133,6 +167,7 @@ namespace StreamDelay
 			}
 		}
 
+		// "1080p60 · 720p30" (vacío si OBS no está conectado).
 		public string Qualities
 		{
 			get
@@ -157,6 +192,7 @@ namespace StreamDelay
 			}
 		}
 
+		// Delay elegido, en milisegundos.
 		public int TargetMs
 		{
 			get
@@ -165,9 +201,9 @@ namespace StreamDelay
 			}
 			set
 			{
-				int effective = Effective;
+				int before = Effective;
 				targetMs = Math.Max(0, value);
-				OnDelayChanged(effective);
+				OnDelayChanged(before);
 			}
 		}
 
@@ -179,9 +215,9 @@ namespace StreamDelay
 			}
 			set
 			{
-				int effective = Effective;
+				int before = Effective;
 				enabled = value;
-				OnDelayChanged(effective);
+				OnDelayChanged(before);
 			}
 		}
 
@@ -193,6 +229,7 @@ namespace StreamDelay
 			}
 		}
 
+		// Delay que se aplica de verdad (0 si está desactivado).
 		private int Effective
 		{
 			get
@@ -221,6 +258,7 @@ namespace StreamDelay
 			}
 		}
 
+		// Algún destino está en directo.
 		public bool OutputActive
 		{
 			get
@@ -240,15 +278,15 @@ namespace StreamDelay
 		{
 			get
 			{
-				int num = 0;
+				int count = 0;
 				foreach (Sink sink in sinks)
 				{
 					if (sink.Live)
 					{
-						num++;
+						count++;
 					}
 				}
-				return num;
+				return count;
 			}
 		}
 
@@ -288,110 +326,114 @@ namespace StreamDelay
 		{
 			get
 			{
-				int num = 0;
+				int max = 0;
 				foreach (Sink sink in sinks)
 				{
 					if (sink.Live)
 					{
-						num = Math.Max(num, sink.Tracks);
+						max = Math.Max(max, sink.Tracks);
 					}
 				}
-				return num;
+				return max;
 			}
 		}
 
+		// Al subir el delay se pide una repetición; al bajarlo se corta la que haya.
 		private void OnDelayChanged(int old)
 		{
-			int effective = Effective;
-			if (effective > old)
+			int now = Effective;
+			if (now > old)
 			{
 				replayRequested = true;
 			}
-			else if (effective < old)
+			else if (now < old)
 			{
 				abortReplay = true;
 			}
 			Wake();
 		}
 
+		// ---------- ffmpeg (modo clásico) ----------
+
+		// Sitios donde puede estar ffmpeg.exe: junto al programa, en el PATH, donde lo deja winget o en C:\ffmpeg.
 		public static List<string> FfmpegCandidates()
 		{
-			List<string> list = new List<string>();
-			List<string> list2 = new List<string>();
-			list2.Add(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ffmpeg.exe"));
-			string[] array = (Environment.GetEnvironmentVariable("PATH") ?? "").Split(';');
-			foreach (string text in array)
+			List<string> found = new List<string>();
+			List<string> places = new List<string>();
+			places.Add(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ffmpeg.exe"));
+			foreach (string dir in (Environment.GetEnvironmentVariable("PATH") ?? "").Split(';'))
 			{
-				if (text.Trim().Length > 0)
+				if (dir.Trim().Length > 0)
 				{
-					list2.Add(Path.Combine(text.Trim().Trim('"'), "ffmpeg.exe"));
+					places.Add(Path.Combine(dir.Trim().Trim('"'), "ffmpeg.exe"));
 				}
 			}
-			string folderPath = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-			list2.Add(Path.Combine(folderPath, "Microsoft\\WinGet\\Links\\ffmpeg.exe"));
-			list2.Add("C:\\ffmpeg\\bin\\ffmpeg.exe");
+			string localAppData = Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
+			places.Add(Path.Combine(localAppData, "Microsoft\\WinGet\\Links\\ffmpeg.exe"));
+			places.Add("C:\\ffmpeg\\bin\\ffmpeg.exe");
 			try
 			{
-				string path = Path.Combine(folderPath, "Microsoft\\WinGet\\Packages");
-				if (Directory.Exists(path))
+				string packages = Path.Combine(localAppData, "Microsoft\\WinGet\\Packages");
+				if (Directory.Exists(packages))
 				{
-					string[] directories = Directory.GetDirectories(path, "Gyan.FFmpeg*");
-					foreach (string path2 in directories)
+					foreach (string package in Directory.GetDirectories(packages, "Gyan.FFmpeg*"))
 					{
-						list2.AddRange(Directory.GetFiles(path2, "ffmpeg.exe", SearchOption.AllDirectories));
+						places.AddRange(Directory.GetFiles(package, "ffmpeg.exe", SearchOption.AllDirectories));
 					}
 				}
 			}
 			catch
 			{
 			}
-			foreach (string c in list2)
+			foreach (string c in places)
 			{
 				try
 				{
-					if (File.Exists(c) && !list.Exists((string f) => string.Equals(f, c, StringComparison.OrdinalIgnoreCase)))
+					if (File.Exists(c) && !found.Exists((string f) => string.Equals(f, c, StringComparison.OrdinalIgnoreCase)))
 					{
-						list.Add(c);
+						found.Add(c);
 					}
 				}
 				catch
 				{
 				}
 			}
-			return list;
+			return found;
 		}
 
+		// null si ese ffmpeg sirve; si no, el motivo.
 		public static string CheckFfmpeg(string path, bool needTls)
 		{
 			try
 			{
-				ProcessStartInfo processStartInfo = new ProcessStartInfo(path, "-hide_banner -protocols");
-				processStartInfo.UseShellExecute = false;
-				processStartInfo.CreateNoWindow = true;
-				processStartInfo.RedirectStandardOutput = true;
-				processStartInfo.RedirectStandardError = true;
-				ProcessStartInfo startInfo = processStartInfo;
+				ProcessStartInfo startInfo = new ProcessStartInfo(path, "-hide_banner -protocols")
+				{
+					UseShellExecute = false,
+					CreateNoWindow = true,
+					RedirectStandardOutput = true,
+					RedirectStandardError = true
+				};
 				using (Process process = Process.Start(startInfo))
 				{
 					process.ErrorDataReceived += delegate
 					{
 					};
 					process.BeginErrorReadLine();
-					string text = process.StandardOutput.ReadToEnd();
+					string output = process.StandardOutput.ReadToEnd();
 					process.WaitForExit(5000);
-					int num = text.IndexOf("Output:", StringComparison.OrdinalIgnoreCase);
-					string text2 = ((num >= 0) ? text.Substring(num) : text);
-					HashSet<string> hashSet = new HashSet<string>();
-					string[] array = text2.Split('\n');
-					foreach (string text3 in array)
+					// Solo interesan los protocolos de salida.
+					int outputs = output.IndexOf("Output:", StringComparison.OrdinalIgnoreCase);
+					string list = ((outputs >= 0) ? output.Substring(outputs) : output);
+					HashSet<string> protocols = new HashSet<string>();
+					foreach (string line in list.Split('\n'))
 					{
-						hashSet.Add(text3.Trim());
+						protocols.Add(line.Trim());
 					}
-					if (!hashSet.Contains("rtmp"))
+					if (!protocols.Contains("rtmp"))
 					{
 						return "este ffmpeg no incluye RTMP";
 					}
-					if (needTls && !hashSet.Contains("rtmps"))
+					if (needTls && !protocols.Contains("rtmps"))
 					{
 						return "este ffmpeg no incluye RTMPS (necesario para este servidor)";
 					}
@@ -403,6 +445,8 @@ namespace StreamDelay
 				return "no se pudo ejecutar (" + ex.Message + ")";
 			}
 		}
+
+		// ---------- Arrancar y parar ----------
 
 		public void Start()
 		{
@@ -422,11 +466,11 @@ namespace StreamDelay
 			};
 			server.Start(InputPort, AllowLan);
 			List<Sink> list = new List<Sink>();
-			foreach (Destination destination in Destinations)
+			foreach (Destination d in Destinations)
 			{
-				if (destination.Enabled)
+				if (d.Enabled)
 				{
-					list.Add(new Sink(destination, this)
+					list.Add(new Sink(d, this)
 					{
 						State = SinkState.Waiting,
 						Note = "Esperando"
@@ -470,12 +514,14 @@ namespace StreamDelay
 			current = null;
 		}
 
+		// "Cortar ya": vacía la cola y desconecta los destinos.
 		public void CutNow()
 		{
 			cutRequested = true;
 			Wake();
 		}
 
+		// Despierta al hilo de salida (que espera en Monitor.Wait).
 		private void Wake()
 		{
 			lock (sync)
@@ -484,13 +530,16 @@ namespace StreamDelay
 			}
 		}
 
+		// ---------- Entrada (OBS) ----------
+
 		private void OnPublishStart(RtmpSession s)
 		{
-			RtmpSession rtmpSession;
+			RtmpSession previous;
 			lock (sessionLock)
 			{
-				rtmpSession = current;
+				previous = current;
 				current = s;
+				// Continúa la línea de tiempo justo después del último paquete (un fotograma a 30 fps = 33 ms).
 				sessionOffset = ((lastInTs >= 0) ? (lastInTs + 33) : 0);
 				inVideoTracks.Clear();
 				inputTracks = 0;
@@ -505,10 +554,10 @@ namespace StreamDelay
 				topHeight = 0;
 				lastQualityLog = null;
 			}
-			if (rtmpSession != null && rtmpSession != s)
+			if (previous != null && previous != s)
 			{
 				Log("Nueva conexión de OBS: sustituye a la anterior.");
-				rtmpSession.Close();
+				previous.Close();
 			}
 			inputActive = true;
 			Log("OBS conectado (" + s.Remote + ")." + (IsObsKey(s.Name) ? " Usaré la clave que envía OBS." : ""));
@@ -529,73 +578,84 @@ namespace StreamDelay
 			Wake();
 		}
 
+		// Lee la cabecera FLV del paquete: si es cabecera de secuencia (Seq/SeqStart), fotograma clave
+		// (Key) y, en la "Transmisión mejorada" (Enhanced RTMP), su subtipo y pista. false = paquete roto.
 		public static bool Classify(FlvPacket pk)
 		{
 			byte[] data = pk.Data;
-			int num = data.Length;
+			int length = data.Length;
 			pk.SubType = -1;
 			if (pk.Type == 9)
 			{
-				if (num < 2)
+				// Vídeo.
+				if (length < 2)
 				{
 					return false;
 				}
-				int num2 = data[0];
-				int num3 = (num2 >> 4) & 7;
-				if ((num2 & 0x80) != 0)
+				int header = data[0];
+				int frameType = (header >> 4) & 7;
+				if ((header & 0x80) != 0)
 				{
-					int num4 = num2 & 0xF;
-					if (num4 == 6)
+					// Enhanced RTMP: los 4 bits bajos son el tipo de paquete.
+					int packetType = header & 0xF;
+					if (packetType == 6)
 					{
-						if (num < 7)
+						// Multipista: el tipo real va en el siguiente byte y la pista en el byte 6.
+						if (length < 7)
 						{
 							return false;
 						}
-						int num5 = data[1] & 0xF0;
-						num4 = data[1] & 0xF;
-						pk.Track = ((num5 == 0) ? data[6] : 0);
+						int multitrackType = data[1] & 0xF0;
+						packetType = data[1] & 0xF;
+						pk.Track = ((multitrackType == 0) ? data[6] : 0);
 					}
-					pk.SubType = num4;
-					pk.SeqStart = num4 == 0 || num4 == 5;
-					pk.Seq = pk.SeqStart || num4 == 4;
+					pk.SubType = packetType;
+					// 0 = cabecera de secuencia, 5 = metadatos, 4 = fin de secuencia.
+					pk.SeqStart = packetType == 0 || packetType == 5;
+					pk.Seq = pk.SeqStart || packetType == 4;
 				}
 				else
 				{
-					int num6 = num2 & 0xF;
-					pk.SeqStart = (pk.Seq = (num6 == 7 || num6 == 12 || num6 == 13) && data[1] == 0);
+					// FLV clásico: códec 7 (H.264), 12 (HEVC) o 13 (AV1) con byte 1 = 0 es cabecera.
+					int codec = header & 0xF;
+					pk.SeqStart = (pk.Seq = (codec == 7 || codec == 12 || codec == 13) && data[1] == 0);
 					if (pk.Seq)
 					{
 						pk.SubType = 0;
 					}
 				}
-				pk.Key = !pk.Seq && num3 == 1;
+				pk.Key = !pk.Seq && frameType == 1;
 			}
 			else if (pk.Type == 8)
 			{
-				if (num < 1)
+				// Audio.
+				if (length < 1)
 				{
 					return false;
 				}
 				switch (data[0] >> 4)
 				{
 				case 10:
-					pk.SeqStart = (pk.Seq = num > 1 && data[1] == 0);
+					// AAC: byte 1 = 0 es la cabecera.
+					pk.SeqStart = (pk.Seq = length > 1 && data[1] == 0);
 					break;
 				case 9:
 				{
-					int num7 = data[0] & 0xF;
-					if (num7 == 5)
+					// Enhanced RTMP (audio).
+					int packetType = data[0] & 0xF;
+					if (packetType == 5)
 					{
-						if (num < 7)
+						// Multipista.
+						if (length < 7)
 						{
 							return false;
 						}
-						int num8 = data[1] & 0xF0;
-						num7 = data[1] & 0xF;
-						pk.Track = ((num8 == 0) ? data[6] : 0);
+						int multitrackType = data[1] & 0xF0;
+						packetType = data[1] & 0xF;
+						pk.Track = ((multitrackType == 0) ? data[6] : 0);
 					}
-					pk.SubType = num7;
-					pk.SeqStart = num7 == 0 || num7 == 4;
+					pk.SubType = packetType;
+					pk.SeqStart = packetType == 0 || packetType == 4;
 					pk.Seq = pk.SeqStart;
 					break;
 				}
@@ -603,36 +663,40 @@ namespace StreamDelay
 			}
 			else
 			{
+				// Datos (onMetaData…): se tratan como cabecera.
 				pk.SeqStart = (pk.Seq = true);
 			}
 			return true;
 		}
 
+		// Llega un paquete de OBS: se clasifica, se apuntan las calidades y se mete en la cola.
 		private void OnPacket(RtmpSession s, byte type, uint ts, byte[] data)
 		{
-			long num;
+			long offset;
 			lock (sessionLock)
 			{
 				if (current != s)
 				{
 					return;
 				}
-				num = sessionOffset;
+				offset = sessionOffset;
 			}
-			FlvPacket flvPacket = new FlvPacket();
-			flvPacket.Type = type;
-			flvPacket.Ts = ts + num;
-			flvPacket.Data = data;
-			flvPacket.Arrival = clock.ElapsedMilliseconds;
-			flvPacket.Src = s;
-			FlvPacket flvPacket2 = flvPacket;
-			if (!Classify(flvPacket2))
+			FlvPacket pk = new FlvPacket
+			{
+				Type = type,
+				Ts = ts + offset,
+				Data = data,
+				Arrival = clock.ElapsedMilliseconds,
+				Src = s
+			};
+			if (!Classify(pk))
 			{
 				return;
 			}
-			if (type == 9 && flvPacket2.SubType == 0)
+			if (type == 9 && pk.SubType == 0)
 			{
-				if (inVideoTracks.Add(flvPacket2.Track))
+				// Cabecera de vídeo: una pista (calidad) nueva o su resolución.
+				if (inVideoTracks.Add(pk.Track))
 				{
 					inputTracks = inVideoTracks.Count;
 					if (inVideoTracks.Count == 2)
@@ -640,12 +704,12 @@ namespace StreamDelay
 						Log("Transmisión mejorada detectada: llegan varias calidades de OBS.");
 					}
 				}
-				int num2 = VideoInfo.Height(flvPacket2);
-				if (num2 > 0)
+				int height = VideoInfo.Height(pk);
+				if (height > 0)
 				{
 					lock (trackHeight)
 					{
-						trackHeight[flvPacket2.Track] = num2;
+						trackHeight[pk.Track] = height;
 					}
 				}
 				if (framesSeen)
@@ -661,44 +725,45 @@ namespace StreamDelay
 					UpdateQualities();
 				}
 			}
-			else if (type == 9 && !flvPacket2.Seq && !framesSeen)
+			else if (type == 9 && !pk.Seq && !framesSeen)
 			{
 				// OBS manda todas las cabeceras antes del primer fotograma: ahora ya se conocen todas las calidades.
 				framesSeen = true;
 				UpdateQualities();
 			}
-			if (flvPacket2.Ts > lastInTs)
+			if (pk.Ts > lastInTs)
 			{
-				lastInTs = flvPacket2.Ts;
+				lastInTs = pk.Ts;
 			}
 			lock (sync)
 			{
-				bool flag = q.Count == 0;
-				q.AddLast(flvPacket2);
+				bool wasEmpty = q.Count == 0;
+				q.AddLast(pk);
 				queuedBytes += data.Length;
-				if (flag)
+				if (wasEmpty)
 				{
 					Monitor.PulseAll(sync);
 				}
 			}
 		}
 
+		// Altura y fps de onMetaData.
 		private void ReadMeta(byte[] data)
 		{
 			try
 			{
-				AmfReader amfReader = new AmfReader(data);
-				while (amfReader.More)
+				AmfReader reader = new AmfReader(data);
+				while (reader.More)
 				{
-					Dictionary<string, object> dictionary = amfReader.Read() as Dictionary<string, object>;
-					if (dictionary != null)
+					Dictionary<string, object> meta = reader.Read() as Dictionary<string, object>;
+					if (meta != null)
 					{
 						object value;
-						if (dictionary.TryGetValue("height", out value) && value is double)
+						if (meta.TryGetValue("height", out value) && value is double)
 						{
 							metaHeight = (int)(double)value;
 						}
-						if (dictionary.TryGetValue("framerate", out value) && value is double)
+						if (meta.TryGetValue("framerate", out value) && value is double)
 						{
 							metaFps = (int)Math.Round((double)value);
 						}
@@ -710,6 +775,7 @@ namespace StreamDelay
 			}
 		}
 
+		// "1080p60" de una pista (vacío si no se sabe).
 		public string LabelFor(int track)
 		{
 			lock (trackHeight)
@@ -723,16 +789,17 @@ namespace StreamDelay
 			}
 		}
 
+		// Recalcula las calidades, elige la pista principal y avisa si no llega 1080p.
 		private void UpdateQualities()
 		{
-			List<int> list = new List<int>();
+			List<int> heights = new List<int>();
 			int best = -1;
 			int bestH = 0;
 			lock (trackHeight)
 			{
 				foreach (KeyValuePair<int, int> item in trackHeight)
 				{
-					list.Add(item.Value);
+					heights.Add(item.Value);
 					if (item.Value > bestH)
 					{
 						bestH = item.Value;
@@ -748,27 +815,27 @@ namespace StreamDelay
 				}
 			}
 			MainTrack = ((best < 0) ? 0 : best);
-			if (list.Count == 0 && metaHeight > 0)
+			if (heights.Count == 0 && metaHeight > 0)
 			{
-				list.Add(metaHeight);
+				heights.Add(metaHeight);
 			}
-			if (list.Count == 0)
+			if (heights.Count == 0)
 			{
 				return;
 			}
-			list.Sort();
-			list.Reverse();
-			List<string> list2 = new List<string>();
-			for (int i = 0; i < list.Count; i++)
+			heights.Sort();
+			heights.Reverse();
+			List<string> labels = new List<string>();
+			for (int i = 0; i < heights.Count; i++)
 			{
-				list2.Add(VideoInfo.Label(list[i], (i == 0) ? metaFps : 0));
+				labels.Add(VideoInfo.Label(heights[i], (i == 0) ? metaFps : 0));
 			}
-			qualities = string.Join(" · ", list2.ToArray());
-			topHeight = list[0];
+			qualities = string.Join(" · ", labels.ToArray());
+			topHeight = heights[0];
 			if (!(qualities == lastQualityLog))
 			{
 				lastQualityLog = qualities;
-				Log("Calidad" + ((list.Count > 1) ? "es" : "") + " que envía OBS: " + qualities + ((list.Count > 1) ? (" (Twitch las recibe todas; Kick, YouTube y Otro, la de " + list[0] + "p).") : "."));
+				Log("Calidad" + ((heights.Count > 1) ? "es" : "") + " que envía OBS: " + qualities + ((heights.Count > 1) ? (" (Twitch las recibe todas; Kick, YouTube y Otro, la de " + heights[0] + "p).") : "."));
 				if (topHeight < 1080)
 				{
 					LowQualityAlert = true;
@@ -777,24 +844,28 @@ namespace StreamDelay
 			}
 		}
 
+		// ---------- Claves ----------
+
+		// ¿OBS mandó una clave de verdad? (con el servidor personalizado suele mandar "stream" o nada).
 		public static bool IsObsKey(string name)
 		{
 			if (string.IsNullOrEmpty(name))
 			{
 				return false;
 			}
-			string text = name.Trim();
-			if (IsEnhancedKey(text))
+			string key = name.Trim();
+			if (IsEnhancedKey(key))
 			{
 				return true;
 			}
-			if (text.Length >= 8)
+			if (key.Length >= 8)
 			{
-				return !string.Equals(text, "stream", StringComparison.OrdinalIgnoreCase);
+				return !string.Equals(key, "stream", StringComparison.OrdinalIgnoreCase);
 			}
 			return false;
 		}
 
+		// Clave de la Transmisión mejorada de Twitch.
 		public static bool IsEnhancedKey(string k)
 		{
 			if (!k.StartsWith("v1_", StringComparison.Ordinal))
@@ -813,28 +884,32 @@ namespace StreamDelay
 			return true;
 		}
 
+		// Clave para un destino: la guardada o, si conviene, la que envía OBS
+		// (una clave de Twitch de OBS solo se usa para Twitch).
 		public string KeyFor(Destination d, RtmpSession s)
 		{
-			string text = ((s != null && s.Name != null) ? s.Name.Trim() : "");
-			string text2 = (d.Key ?? "").Trim();
+			string obsKey = ((s != null && s.Name != null) ? s.Name.Trim() : "");
+			string savedKey = (d.Key ?? "").Trim();
 			if (d.IsTwitch)
 			{
-				if (!IsObsKey(text) || (!LooksTwitch(text) && text2.Length != 0))
+				if (!IsObsKey(obsKey) || (!LooksTwitch(obsKey) && savedKey.Length != 0))
 				{
-					return text2;
+					return savedKey;
 				}
-				return text;
+				return obsKey;
 			}
-			if (text2.Length > 0)
+			if (savedKey.Length > 0)
 			{
-				return text2;
+				return savedKey;
 			}
-			if (!IsObsKey(text) || LooksTwitch(text))
+			if (!IsObsKey(obsKey) || LooksTwitch(obsKey))
 			{
 				return "";
 			}
-			return text;
+			return obsKey;
 		}
+
+		// ---------- Salida ----------
 
 		private void ResetTimeline()
 		{
@@ -846,6 +921,7 @@ namespace StreamDelay
 			streaming = false;
 		}
 
+		// Hilo "salida": saca de la cola cada paquete cuando le toca y lo envía.
 		private void OutputLoop()
 		{
 			while (running)
@@ -868,12 +944,13 @@ namespace StreamDelay
 						Log("Repitiendo los últimos " + ((double)(history.Last.Value.OutTs - segBaseOut) / 1000.0).ToString("0.0") + " s mientras sube el delay.");
 					}
 				}
+				// Mientras se repite, la cola espera (por eso el delay sube).
 				if (replayL0 >= 0 && StepReplay())
 				{
 					continue;
 				}
-				FlvPacket flvPacket = null;
-				List<FlvPacket> list = null;
+				FlvPacket next = null;
+				List<FlvPacket> skippedHeaders = null;
 				lock (sync)
 				{
 					if (cutRequested)
@@ -881,6 +958,7 @@ namespace StreamDelay
 						cutRequested = false;
 						q.Clear();
 						queuedBytes = 0L;
+						// Desconectar puede tardar: se suelta el candado mientras tanto.
 						Monitor.Exit(sync);
 						try
 						{
@@ -893,16 +971,17 @@ namespace StreamDelay
 						}
 						continue;
 					}
-					long elapsedMilliseconds = clock.ElapsedMilliseconds;
+					long now = clock.ElapsedMilliseconds;
 					if (q.Count == 0)
 					{
+						// Cola vacía: si OBS ya no está y han pasado 3 s, se termina la emisión.
 						if (streaming && !inputActive)
 						{
 							if (idleSince < 0)
 							{
-								idleSince = elapsedMilliseconds;
+								idleSince = now;
 							}
-							else if (elapsedMilliseconds - idleSince > 3000)
+							else if (now - idleSince > 3000)
 							{
 								Monitor.Exit(sync);
 								try
@@ -922,84 +1001,91 @@ namespace StreamDelay
 						continue;
 					}
 					idleSince = -1L;
-					long num = Effective;
-					long num2 = q.First.Value.Arrival + num;
-					if (num2 > elapsedMilliseconds)
+					long delay = Effective;
+					long dueAt = q.First.Value.Arrival + delay;
+					if (dueAt > now)
 					{
-						if (num2 - elapsedMilliseconds < 4000)
+						// Aún no le toca. Si falta poco (4 s), los destinos van conectándose.
+						if (dueAt - now < 4000)
 						{
 							foreach (Sink sink in sinks)
 							{
-								sink.Prepare(q.First.Value.Src, elapsedMilliseconds);
+								sink.Prepare(q.First.Value.Src, now);
 							}
 						}
-						Monitor.Wait(sync, (int)Math.Min(num2 - elapsedMilliseconds, 100L));
+						Monitor.Wait(sync, (int)Math.Min(dueAt - now, 100L));
 						continue;
 					}
-					if (elapsedMilliseconds - num2 > 1000)
+					if (now - dueAt > 1000)
 					{
-						LinkedListNode<FlvPacket> linkedListNode = null;
-						long num3 = 0L;
-						LinkedListNode<FlvPacket> linkedListNode2 = q.First;
-						while (linkedListNode2 != null && linkedListNode2.Value.Arrival + num <= elapsedMilliseconds)
+						// Vamos más de 1 s tarde (se ha bajado el delay): se salta hasta el último fotograma
+						// clave que ya tocaba (si hay varios casi juntos, el primero de ellos).
+						LinkedListNode<FlvPacket> jumpTo = null;
+						long jumpTs = 0L;
+						LinkedListNode<FlvPacket> node = q.First;
+						while (node != null && node.Value.Arrival + delay <= now)
 						{
-							if (linkedListNode2.Value.Type == 9 && linkedListNode2.Value.Key && (linkedListNode == null || linkedListNode2.Value.Ts - num3 > 100))
+							if (node.Value.Type == 9 && node.Value.Key && (jumpTo == null || node.Value.Ts - jumpTs > 100))
 							{
-								linkedListNode = linkedListNode2;
-								num3 = linkedListNode2.Value.Ts;
+								jumpTo = node;
+								jumpTs = node.Value.Ts;
 							}
-							linkedListNode2 = linkedListNode2.Next;
+							node = node.Next;
 						}
-						if (linkedListNode != null && linkedListNode != q.First)
+						if (jumpTo != null && jumpTo != q.First)
 						{
-							list = new List<FlvPacket>();
-							long ts = q.First.Value.Ts;
-							while (q.First != linkedListNode)
+							// Se tiran los paquetes saltados, pero las cabeceras se guardan para enviarlas.
+							skippedHeaders = new List<FlvPacket>();
+							long fromTs = q.First.Value.Ts;
+							while (q.First != jumpTo)
 							{
-								FlvPacket value = q.First.Value;
+								FlvPacket dropped = q.First.Value;
 								q.RemoveFirst();
-								queuedBytes -= value.Data.Length;
-								if (value.Seq)
+								queuedBytes -= dropped.Data.Length;
+								if (dropped.Seq)
 								{
-									list.Add(value);
+									skippedHeaders.Add(dropped);
 								}
 							}
 							needKey = true;
 							Skips++;
 							if (streaming)
 							{
-								Log("Saltados " + ((double)(linkedListNode.Value.Ts - ts) / 1000.0).ToString("0.0") + " s para volver al delay elegido.");
+								Log("Saltados " + ((double)(jumpTo.Value.Ts - fromTs) / 1000.0).ToString("0.0") + " s para volver al delay elegido.");
 							}
 						}
 					}
-					flvPacket = q.First.Value;
+					next = q.First.Value;
 					q.RemoveFirst();
-					queuedBytes -= flvPacket.Data.Length;
+					queuedBytes -= next.Data.Length;
 				}
-				if (list != null)
+				if (skippedHeaders != null)
 				{
-					foreach (FlvPacket item in list)
+					foreach (FlvPacket header in skippedHeaders)
 					{
-						Send(item);
+						Send(header);
 					}
 				}
-				Send(flvPacket);
+				Send(next);
 			}
 		}
 
+		// Calcula la marca de tiempo de salida del paquete y lo reparte.
 		private void Send(FlvPacket p)
 		{
 			if (p.Src != seqSession)
 			{
+				// Otra conexión de OBS: sus cabeceras sustituyen a las anteriores.
 				seqSession = p.Src;
 				sentSeq.Clear();
 			}
-			long num;
+			long outTs;
 			if (p.Seq)
 			{
-				num = Math.Max(lastOut, 0L);
+				outTs = Math.Max(lastOut, 0L);
 				if (p.SeqStart)
 				{
+					// Clave: tipo (audio/vídeo), subtipo y pista.
 					sentSeq[(p.Type << 16) | ((p.SubType & 0xFF) << 8) | p.Track] = p;
 				}
 			}
@@ -1007,6 +1093,7 @@ namespace StreamDelay
 			{
 				if (needKey)
 				{
+					// Tras un salto, el vídeo empieza en un fotograma clave, pegado al último enviado.
 					if (p.Type != 9 || !p.Key)
 					{
 						return;
@@ -1014,18 +1101,18 @@ namespace StreamDelay
 					shift = p.Ts - ((lastOut < 0) ? 0 : (lastOut + 33));
 					needKey = false;
 				}
-				num = Math.Max(0L, p.Ts - shift);
+				outTs = Math.Max(0L, p.Ts - shift);
 			}
-			Fanout(p, num);
+			Fanout(p, outTs);
 			if (!p.Seq)
 			{
-				lastOut = Math.Max(lastOut, num);
+				lastOut = Math.Max(lastOut, outTs);
 				streaming = true;
 				if (ReplayOnIncrease)
 				{
-					p.OutTs = num;
+					p.OutTs = outTs;
 					history.AddLast(p);
-					while (history.First.Value.OutTs < num - 35000)
+					while (history.First.Value.OutTs < outTs - HistoryMs)
 					{
 						history.RemoveFirst();
 					}
@@ -1040,39 +1127,43 @@ namespace StreamDelay
 
 		private void Fanout(FlvPacket p, long outTs)
 		{
-			long elapsedMilliseconds = clock.ElapsedMilliseconds;
+			long now = clock.ElapsedMilliseconds;
 			foreach (Sink sink in sinks)
 			{
-				sink.Offer(p, outTs, sentSeq, elapsedMilliseconds);
+				sink.Offer(p, outTs, sentSeq, now);
 			}
 		}
 
+		// ---------- Repetición ----------
+
+		// Prepara un tramo para repetir: desde un fotograma clave del historial hasta el final, como
+		// mucho tan largo como el tiempo que falta para que salga el siguiente paquete de la cola.
 		private bool StartSegment()
 		{
-			long num;
+			long wait;
 			lock (sync)
 			{
-				num = ((q.Count == 0) ? Effective : (q.First.Value.Arrival + Effective - clock.ElapsedMilliseconds));
+				wait = ((q.Count == 0) ? Effective : (q.First.Value.Arrival + Effective - clock.ElapsedMilliseconds));
 			}
-			if (num < 1500 || history.Count == 0)
+			if (wait < 1500 || history.Count == 0)
 			{
 				return false;
 			}
-			long outTs = history.Last.Value.OutTs;
-			LinkedListNode<FlvPacket> linkedListNode = history.First;
-			while (linkedListNode != null && (linkedListNode.Value.Type != 9 || !linkedListNode.Value.Key || linkedListNode.Value.OutTs < outTs - num))
+			long lastTs = history.Last.Value.OutTs;
+			LinkedListNode<FlvPacket> node = history.First;
+			while (node != null && (node.Value.Type != 9 || !node.Value.Key || node.Value.OutTs < lastTs - wait))
 			{
-				linkedListNode = linkedListNode.Next;
+				node = node.Next;
 			}
-			if (linkedListNode == null || outTs - linkedListNode.Value.OutTs < 1000)
+			if (node == null || lastTs - node.Value.OutTs < 1000)
 			{
 				return false;
 			}
 			List<FlvPacket> list = new List<FlvPacket>();
-			while (linkedListNode != null)
+			while (node != null)
 			{
-				list.Add(linkedListNode.Value);
-				linkedListNode = linkedListNode.Next;
+				list.Add(node.Value);
+				node = node.Next;
 			}
 			if (replayL0 < 0)
 			{
@@ -1086,6 +1177,8 @@ namespace StreamDelay
 			return true;
 		}
 
+		// Envía el siguiente paquete de la repetición cuando le toca. Al acabar el tramo empieza otro
+		// si aún queda espera; si no, termina y ajusta shift para seguir donde acabó la repetición.
 		private bool StepReplay()
 		{
 			if (!OutputActive || cutRequested)
@@ -1103,19 +1196,19 @@ namespace StreamDelay
 				EndReplay();
 				return false;
 			}
-			FlvPacket flvPacket = seg[segIdx];
-			long num = segWall + (flvPacket.OutTs - segBaseOut) - clock.ElapsedMilliseconds;
-			if (num > 0)
+			FlvPacket p = seg[segIdx];
+			long wait = segWall + (p.OutTs - segBaseOut) - clock.ElapsedMilliseconds;
+			if (wait > 0)
 			{
 				lock (sync)
 				{
-					Monitor.Wait(sync, (int)Math.Min(num, 50L));
+					Monitor.Wait(sync, (int)Math.Min(wait, 50L));
 				}
 				return true;
 			}
-			long num2 = segOutStart + (flvPacket.OutTs - segBaseOut);
-			Fanout(flvPacket, num2);
-			lastOut = Math.Max(lastOut, num2);
+			long outTs = segOutStart + (p.OutTs - segBaseOut);
+			Fanout(p, outTs);
+			lastOut = Math.Max(lastOut, outTs);
 			segIdx++;
 			return true;
 		}
@@ -1126,56 +1219,59 @@ namespace StreamDelay
 			replayL0 = -1L;
 		}
 
+		// Desconecta todos los destinos (a la vez si son varios). polite = cierre normal de la emisión.
 		private void CloseOutputs(bool polite)
 		{
 			List<Sink> list = sinks;
 			if (list.Count > 1)
 			{
-				List<Thread> list2 = new List<Thread>();
+				List<Thread> threads = new List<Thread>();
 				foreach (Sink item in list)
 				{
 					Sink kk = item;
-					Thread thread = new Thread((ThreadStart)delegate
+					Thread worker = new Thread((ThreadStart)delegate
 					{
 						kk.Disconnect(polite);
-					});
-					thread.IsBackground = true;
-					Thread thread2 = thread;
-					thread2.Start();
-					list2.Add(thread2);
+					})
+					{
+						IsBackground = true
+					};
+					worker.Start();
+					threads.Add(worker);
 				}
-				foreach (Thread item2 in list2)
+				foreach (Thread worker in threads)
 				{
-					item2.Join(5000);
+					worker.Join(5000);
 				}
 			}
 			else
 			{
-				foreach (Sink item3 in list)
+				foreach (Sink sink in list)
 				{
-					item3.Disconnect(polite);
+					sink.Disconnect(polite);
 				}
 			}
 			ResetTimeline();
 		}
 
+		// Quita la clave de un mensaje para el registro.
 		public static string Mask(string m, string key)
 		{
 			if (string.IsNullOrEmpty(m) || string.IsNullOrEmpty(key))
 			{
 				return m;
 			}
-			string text = key;
-			int num = text.IndexOf('?');
-			if (num > 0)
+			string bare = key;
+			int query = bare.IndexOf('?');
+			if (query > 0)
 			{
-				text = text.Substring(0, num);
+				bare = bare.Substring(0, query);
 			}
-			if (text.Length < 4)
+			if (bare.Length < 4)
 			{
 				return m;
 			}
-			return m.Replace(key, "(clave)").Replace(text, "(clave)");
+			return m.Replace(key, "(clave)").Replace(bare, "(clave)");
 		}
 	}
 }

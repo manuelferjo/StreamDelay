@@ -220,23 +220,24 @@ namespace StreamDelay
 			byte[] bytes = Encoding.UTF8.GetBytes(s);
 			lock (lk)
 			{
-				for (int num = clients.Count - 1; num >= 0; num--)
+				// Hacia atrás, para poder quitar las páginas que ya se cerraron.
+				for (int i = clients.Count - 1; i >= 0; i--)
 				{
 					try
 					{
-						clients[num].Write(bytes, 0, bytes.Length);
-						clients[num].Flush();
+						clients[i].Write(bytes, 0, bytes.Length);
+						clients[i].Flush();
 					}
 					catch
 					{
 						try
 						{
-							clients[num].Close();
+							clients[i].Close();
 						}
 						catch
 						{
 						}
-						clients.RemoveAt(num);
+						clients.RemoveAt(i);
 					}
 				}
 			}
@@ -324,11 +325,11 @@ namespace StreamDelay
 					return;
 				}
 				string path = request.Path;
-				int num = path.IndexOf('?');
-				string text2 = ((num >= 0) ? path.Substring(0, num) : path);
-				if (text2.StartsWith("/api/"))
+				int query = path.IndexOf('?');
+				string route = ((query >= 0) ? path.Substring(0, query) : path);
+				if (route.StartsWith("/api/"))
 				{
-					Api(stream, request, text2);
+					Api(stream, request, route);
 					c.Close();
 					return;
 				}
@@ -338,27 +339,29 @@ namespace StreamDelay
 					c.Close();
 					return;
 				}
-				switch (text2)
+				switch (route)
 				{
 				case "/events":
 				{
+					// Server-Sent Events: la página se queda conectada y recibe cada mensaje. Al entrar
+					// se le manda el último estado, los espectadores y los mensajes recientes.
 					Write(stream, "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream; charset=utf-8\r\nCache-Control: no-cache\r\nConnection: keep-alive\r\n\r\nretry: 2000\n\n");
-					StringBuilder stringBuilder = new StringBuilder();
+					StringBuilder backlog = new StringBuilder();
 					lock (lk)
 					{
 						if (lastStatus != null)
 						{
-							stringBuilder.Append("data: ").Append(lastStatus).Append("\n\n");
+							backlog.Append("data: ").Append(lastStatus).Append("\n\n");
 						}
 						if (lastViewers != null)
 						{
-							stringBuilder.Append("data: ").Append(lastViewers).Append("\n\n");
+							backlog.Append("data: ").Append(lastViewers).Append("\n\n");
 						}
 						foreach (string item in recent)
 						{
-							stringBuilder.Append("data: ").Append(item).Append("\n\n");
+							backlog.Append("data: ").Append(item).Append("\n\n");
 						}
-						byte[] bytes = Encoding.UTF8.GetBytes(stringBuilder.ToString());
+						byte[] bytes = Encoding.UTF8.GetBytes(backlog.ToString());
 						stream.Write(bytes, 0, bytes.Length);
 						stream.Flush();
 						clients.Add(stream);
@@ -458,26 +461,27 @@ namespace StreamDelay
 						Respond(s, "404 Not Found", "text/plain", "");
 						return;
 					}
-					object o2 = Web.Parse(req.Body);
-					string text2 = J.S(o2, "text").Trim();
-					List<string> list = new List<string>();
-					foreach (object item in J.L(o2, "to"))
+					// Escribir en los chats: { "text": "…", "to": ["twitch", "kick", …] }.
+					object body = Web.Parse(req.Body);
+					string message = J.S(body, "text").Trim();
+					List<string> targets = new List<string>();
+					foreach (object item in J.L(body, "to"))
 					{
-						list.Add(Convert.ToString(item));
+						targets.Add(Convert.ToString(item));
 					}
-					if (text2.Length == 0 || list.Count == 0)
+					if (message.Length == 0 || targets.Count == 0)
 					{
 						Respond(s, "400 Bad Request", "text/plain", "");
 						return;
 					}
-					o = OnSend(text2, list.ToArray());
+					o = OnSend(message, targets.ToArray());
 				}
 			}
 			catch (Exception ex)
 			{
-				Dictionary<string, object> dictionary = new Dictionary<string, object>();
-				dictionary.Add("error", ex.Message);
-				o = dictionary;
+				Dictionary<string, object> failure = new Dictionary<string, object>();
+				failure.Add("error", ex.Message);
+				o = failure;
 			}
 			Respond(s, "200 OK", "application/json; charset=utf-8", Web.ToJson(o));
 		}
@@ -572,61 +576,66 @@ namespace StreamDelay
 			return value.Trim();
 		}
 
+		// Lee una petición HTTP: cabecera (hasta la línea vacía, como mucho 16 KB) y cuerpo (como mucho 64 KB).
+		// null si la petición no es válida o la conexión se cierra.
 		private static Request ReadRequest(Stream s)
 		{
-			List<byte> list = new List<byte>();
-			byte[] array = new byte[1];
-			while (list.Count < 16384)
+			List<byte> head = new List<byte>();
+			byte[] one = new byte[1];
+			while (head.Count < 16384)
 			{
-				if (s.Read(array, 0, 1) <= 0)
+				if (s.Read(one, 0, 1) <= 0)
 				{
 					return null;
 				}
-				list.Add(array[0]);
-				int count = list.Count;
-				if (count >= 4 && list[count - 1] == 10 && list[count - 2] == 13 && list[count - 3] == 10 && list[count - 4] == 13)
+				head.Add(one[0]);
+				int count = head.Count;
+				// Fin de la cabecera: \r\n\r\n.
+				if (count >= 4 && head[count - 1] == 10 && head[count - 2] == 13 && head[count - 3] == 10 && head[count - 4] == 13)
 				{
 					break;
 				}
 			}
-			string[] array2 = Encoding.UTF8.GetString(list.ToArray()).Split(new string[1] { "\r\n" }, StringSplitOptions.None);
-			string[] array3 = array2[0].Split(' ');
-			if (array3.Length < 2)
+			string[] lines = Encoding.UTF8.GetString(head.ToArray()).Split(new string[1] { "\r\n" }, StringSplitOptions.None);
+			// Primera línea: "GET /ruta HTTP/1.1".
+			string[] requestLine = lines[0].Split(' ');
+			if (requestLine.Length < 2)
 			{
 				return null;
 			}
-			Request request = new Request();
-			request.Method = array3[0].ToUpperInvariant();
-			request.Path = array3[1];
-			Request request2 = request;
-			for (int i = 1; i < array2.Length; i++)
+			Request request = new Request
 			{
-				int num = array2[i].IndexOf(':');
-				if (num > 0)
+				Method = requestLine[0].ToUpperInvariant(),
+				Path = requestLine[1]
+			};
+			for (int i = 1; i < lines.Length; i++)
+			{
+				int colon = lines[i].IndexOf(':');
+				if (colon > 0)
 				{
-					request2.Headers[array2[i].Substring(0, num).Trim().ToLowerInvariant()] = array2[i].Substring(num + 1).Trim();
+					request.Headers[lines[i].Substring(0, colon).Trim().ToLowerInvariant()] = lines[i].Substring(colon + 1).Trim();
 				}
 			}
-			int result;
-			if (int.TryParse(Header(request2, "content-length"), out result) && result > 0)
+			int length;
+			if (int.TryParse(Header(request, "content-length"), out length) && length > 0)
 			{
-				if (result > 65536)
+				if (length > 65536)
 				{
 					return null;
 				}
-				byte[] array4 = new byte[result];
-				int num2;
-				for (int j = 0; j < result; j += num2)
+				byte[] body = new byte[length];
+				int got;
+				for (int j = 0; j < length; j += got)
 				{
-					num2 = s.Read(array4, j, result - j);
-					if (num2 <= 0)
+					got = s.Read(body, j, length - j);
+					if (got <= 0)
 					{
 						return null;
 					}
 				}
-				request2.Body = Encoding.UTF8.GetString(array4);
+				request.Body = Encoding.UTF8.GetString(body);
 			}
-			return request2;
+			return request;
 		}
 
 		private static void Respond(Stream s, string status, string type, string body)

@@ -1,3 +1,8 @@
+// Una conexión de OBS al servidor RTMP local (lado servidor del protocolo RTMP).
+//
+// Hace el saludo inicial (handshake), lee los mensajes troceados (chunks), contesta a los
+// comandos connect / createStream / publish y pasa al motor cada paquete de audio, vídeo y
+// metadatos (server.Packet). Solo lo necesario para que OBS emita: no reproduce nada.
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -9,6 +14,7 @@ namespace StreamDelay
 {
 	internal class RtmpSession
 	{
+		// Estado de cada canal de chunks (chunk stream): RTMP repite solo lo que cambia de un trozo a otro.
 		private class ChunkState
 		{
 			public uint Ts;
@@ -21,13 +27,16 @@ namespace StreamDelay
 
 			public byte Type;
 
+			// La marca de tiempo va en 4 bytes extra (no cabía en 3).
 			public bool Ext;
 
+			// Mensaje a medio recibir y cuántos bytes lleva.
 			public byte[] Buf;
 
 			public int Got;
 		}
 
+		// Error de protocolo que se enseña en el registro (los de red no).
 		private class RtmpProtocolException : Exception
 		{
 			public RtmpProtocolException(string m)
@@ -36,6 +45,7 @@ namespace StreamDelay
 			}
 		}
 
+		// Tamaño máximo de un mensaje (16 MB).
 		private const int MaxMessage = 16777216;
 
 		private readonly RtmpServer server;
@@ -56,6 +66,7 @@ namespace StreamDelay
 
 		private int outChunkSize = 128;
 
+		// Bytes recibidos y último acuse enviado (OBS pide un acuse cada ackWindow bytes).
 		private long bytesIn;
 
 		private long lastAck;
@@ -68,8 +79,10 @@ namespace StreamDelay
 
 		public string App = "";
 
+		// Lo que OBS manda como "clave" (nombre del stream).
 		public string Name = "";
 
+		// Claves del handshake "complejo" de Adobe (las conocen todos los clientes y servidores RTMP).
 		private static readonly byte[] KeyTail = new byte[32]
 		{
 			240, 238, 194, 74, 128, 104, 190, 232, 46, 0,
@@ -109,6 +122,7 @@ namespace StreamDelay
 			}
 		}
 
+		// Hilo de la conexión: saludo, lectura hasta que OBS se va y aviso de fin de emisión.
 		public void Run()
 		{
 			try
@@ -134,104 +148,117 @@ namespace StreamDelay
 			}
 		}
 
+		// ---------- Saludo inicial (handshake) ----------
+
+		// C0 (versión 3) + C1 (1536 bytes) → S0 + S1 + S2 → C2.
 		private void Handshake()
 		{
-			byte[] array = new byte[1537];
-			if (!ReadN(array, 0, 1))
+			byte[] c0c1 = new byte[1537];
+			if (!ReadN(c0c1, 0, 1))
 			{
 				throw new IOException("cerrado");
 			}
-			if (array[0] == 22)
+			if (c0c1[0] == 22)
 			{
+				// 22 = inicio de TLS.
 				throw new RtmpProtocolException("Se recibió una conexión cifrada (rtmps://). En OBS usa rtmp:// (sin s) para el servidor local.");
 			}
-			if (array[0] != 3)
+			if (c0c1[0] != 3)
 			{
 				throw new RtmpProtocolException("Conexión desde " + Remote + " no es RTMP: ¿el servidor de OBS empieza por rtmp://?");
 			}
-			if (!ReadN(array, 1, 1536))
+			if (!ReadN(c0c1, 1, 1536))
 			{
 				throw new IOException("cerrado");
 			}
-			byte[] array2 = new byte[3073];
-			array2[0] = 3;
+			// S0 + S1 + S2: S1 aleatorio y S2 = eco de C1 (handshake simple) o firmado (complejo).
+			byte[] reply = new byte[3073];
+			reply[0] = 3;
 			Random random = new Random();
-			for (int i = 9; i < array2.Length; i++)
+			for (int i = 9; i < reply.Length; i++)
 			{
-				array2[i] = (byte)random.Next(256);
+				reply[i] = (byte)random.Next(256);
 			}
-			if (!ComplexHandshake(array, array2))
+			if (!ComplexHandshake(c0c1, reply))
 			{
-				Buffer.BlockCopy(array, 1, array2, 1537, 1536);
+				Buffer.BlockCopy(c0c1, 1, reply, 1537, 1536);
 			}
 			lock (writeLock)
 			{
-				net.Write(array2, 0, array2.Length);
+				net.Write(reply, 0, reply.Length);
 				net.Flush();
 			}
-			byte[] buf = new byte[1536];
-			if (!ReadN(buf, 0, 1536))
+			byte[] c2 = new byte[1536];
+			if (!ReadN(c2, 0, 1536))
 			{
 				throw new IOException("cerrado");
 			}
 		}
 
+		// Handshake "complejo" (con firmas HMAC-SHA256), el que usan OBS y Flash. false = el cliente
+		// usa el simple. Si C1 lleva una firma válida, rellena S1 y S2 firmados en s.
 		private static bool ComplexHandshake(byte[] c0c1, byte[] s)
 		{
-			byte[] array = new byte[1536];
-			Buffer.BlockCopy(c0c1, 1, array, 0, 1536);
-			if (array[4] == 0 && array[5] == 0 && array[6] == 0 && array[7] == 0)
+			byte[] c1 = new byte[1536];
+			Buffer.BlockCopy(c0c1, 1, c1, 0, 1536);
+			// Versión 0 = handshake simple.
+			if (c1[4] == 0 && c1[5] == 0 && c1[6] == 0 && c1[7] == 0)
 			{
 				return false;
 			}
-			for (int i = 0; i < 2; i++)
+			// La firma puede estar en dos sitios (esquemas 0 y 1).
+			for (int scheme = 0; scheme < 2; scheme++)
 			{
-				int num = DigestOffset(array, i);
-				byte[] a = Hmac(Sub(FpKey, 0, 30), WithoutDigest(array, num));
-				if (SameBytes(a, 0, array, num, 32))
+				int clientDigestAt = DigestOffset(c1, scheme);
+				byte[] expected = Hmac(Sub(FpKey, 0, 30), WithoutDigest(c1, clientDigestAt));
+				if (SameBytes(expected, 0, c1, clientDigestAt, 32))
 				{
-					byte[] array2 = new byte[32];
-					Buffer.BlockCopy(array, num, array2, 0, 32);
-					byte[] array3 = new byte[1536];
-					Buffer.BlockCopy(s, 1, array3, 0, 1536);
-					array3[0] = (array3[1] = (array3[2] = (array3[3] = 0)));
-					array3[4] = 4;
-					array3[5] = 5;
-					array3[6] = 0;
-					array3[7] = 1;
-					int num2 = DigestOffset(array3, i);
-					Buffer.BlockCopy(Hmac(Sub(FmsKey, 0, 36), WithoutDigest(array3, num2)), 0, array3, num2, 32);
-					Buffer.BlockCopy(array3, 0, s, 1, 1536);
-					byte[] array4 = new byte[1536];
-					Buffer.BlockCopy(s, 1537, array4, 0, 1536);
-					byte[] key = Hmac(FmsKey, array2);
-					Buffer.BlockCopy(Hmac(key, Sub(array4, 0, 1504)), 0, array4, 1504, 32);
-					Buffer.BlockCopy(array4, 0, s, 1537, 1536);
+					byte[] clientDigest = new byte[32];
+					Buffer.BlockCopy(c1, clientDigestAt, clientDigest, 0, 32);
+					// S1: tiempo 0, versión 4.5.0.1 y nuestra firma.
+					byte[] s1 = new byte[1536];
+					Buffer.BlockCopy(s, 1, s1, 0, 1536);
+					s1[0] = (s1[1] = (s1[2] = (s1[3] = 0)));
+					s1[4] = 4;
+					s1[5] = 5;
+					s1[6] = 0;
+					s1[7] = 1;
+					int serverDigestAt = DigestOffset(s1, scheme);
+					Buffer.BlockCopy(Hmac(Sub(FmsKey, 0, 36), WithoutDigest(s1, serverDigestAt)), 0, s1, serverDigestAt, 32);
+					Buffer.BlockCopy(s1, 0, s, 1, 1536);
+					// S2: aleatorio, firmado con una clave derivada de la firma del cliente.
+					byte[] s2 = new byte[1536];
+					Buffer.BlockCopy(s, 1537, s2, 0, 1536);
+					byte[] key = Hmac(FmsKey, clientDigest);
+					Buffer.BlockCopy(Hmac(key, Sub(s2, 0, 1504)), 0, s2, 1504, 32);
+					Buffer.BlockCopy(s2, 0, s, 1537, 1536);
 					return true;
 				}
 			}
 			return false;
 		}
 
+		// Dónde está la firma de 32 bytes dentro del bloque de 1536.
 		private static int DigestOffset(byte[] b, int scheme)
 		{
-			int num = ((scheme == 0) ? 8 : 772);
-			return (b[num] + b[num + 1] + b[num + 2] + b[num + 3]) % 728 + ((scheme == 0) ? 12 : 776);
+			int at = ((scheme == 0) ? 8 : 772);
+			return (b[at] + b[at + 1] + b[at + 2] + b[at + 3]) % 728 + ((scheme == 0) ? 12 : 776);
 		}
 
+		// El bloque sin los 32 bytes de la firma (lo que se firma).
 		private static byte[] WithoutDigest(byte[] b, int off)
 		{
-			byte[] array = new byte[b.Length - 32];
-			Buffer.BlockCopy(b, 0, array, 0, off);
-			Buffer.BlockCopy(b, off + 32, array, off, b.Length - off - 32);
-			return array;
+			byte[] result = new byte[b.Length - 32];
+			Buffer.BlockCopy(b, 0, result, 0, off);
+			Buffer.BlockCopy(b, off + 32, result, off, b.Length - off - 32);
+			return result;
 		}
 
 		private static byte[] Hmac(byte[] key, byte[] data)
 		{
-			using (HMACSHA256 hMACSHA = new HMACSHA256(key))
+			using (HMACSHA256 hmac = new HMACSHA256(key))
 			{
-				return hMACSHA.ComputeHash(data);
+				return hmac.ComputeHash(data);
 			}
 		}
 
@@ -249,107 +276,115 @@ namespace StreamDelay
 
 		private static byte[] Concat(byte[] a, byte[] b)
 		{
-			byte[] array = new byte[a.Length + b.Length];
-			Buffer.BlockCopy(a, 0, array, 0, a.Length);
-			Buffer.BlockCopy(b, 0, array, a.Length, b.Length);
-			return array;
+			byte[] result = new byte[a.Length + b.Length];
+			Buffer.BlockCopy(a, 0, result, 0, a.Length);
+			Buffer.BlockCopy(b, 0, result, a.Length, b.Length);
+			return result;
 		}
 
 		private static byte[] Sub(byte[] b, int from, int len)
 		{
-			byte[] array = new byte[len];
-			Buffer.BlockCopy(b, from, array, 0, len);
-			return array;
+			byte[] result = new byte[len];
+			Buffer.BlockCopy(b, from, result, 0, len);
+			return result;
 		}
 
+		// ---------- Lectura de mensajes ----------
+
+		// Lee trozos (chunks) y junta cada mensaje. Cabecera de cada trozo: formato (2 bits) y canal,
+		// y según el formato: marca de tiempo (3), longitud y tipo (4), id de stream (4) y marca extendida (4).
 		private void ReadLoop()
 		{
 			while (true)
 			{
-				int num = ReadByte();
-				if (num < 0)
+				int first = ReadByte();
+				if (first < 0)
 				{
 					break;
 				}
-				int num2 = num >> 6;
-				int num3 = num & 0x3F;
-				switch (num3)
+				int format = first >> 6;
+				int csid = first & 0x3F;
+				// Canales 0 y 1: el número va en 1 o 2 bytes más.
+				switch (csid)
 				{
 				case 0:
-					num3 = 64 + ReadByteOrThrow();
+					csid = 64 + ReadByteOrThrow();
 					break;
 				case 1:
 				{
-					int num4 = ReadByteOrThrow();
-					int num5 = ReadByteOrThrow();
-					num3 = 64 + num4 + num5 * 256;
+					int low = ReadByteOrThrow();
+					int high = ReadByteOrThrow();
+					csid = 64 + low + high * 256;
 					break;
 				}
 				}
-				ChunkState value;
-				if (!states.TryGetValue(num3, out value))
+				ChunkState st;
+				if (!states.TryGetValue(csid, out st))
 				{
-					value = new ChunkState();
-					states[num3] = value;
+					st = new ChunkState();
+					states[csid] = st;
 				}
-				uint num6 = 0u;
-				if (num2 <= 2)
+				uint ts24 = 0u;
+				if (format <= 2)
 				{
 					ReadOrThrow(hdr, 3);
-					num6 = U24(hdr, 0);
+					ts24 = U24(hdr, 0);
 				}
-				if (num2 <= 1)
+				if (format <= 1)
 				{
 					ReadOrThrow(hdr, 4);
-					value.Len = U24(hdr, 0);
-					value.Type = hdr[3];
+					st.Len = U24(hdr, 0);
+					st.Type = hdr[3];
 				}
-				if (num2 == 0)
+				if (format == 0)
+				{
+					// El id de stream va al revés (little endian).
+					ReadOrThrow(hdr, 4);
+					st.StreamId = (uint)(hdr[0] | (hdr[1] << 8) | (hdr[2] << 16) | (hdr[3] << 24));
+				}
+				if (format <= 2)
+				{
+					st.Ext = ts24 == 16777215;
+				}
+				uint extTs = 0u;
+				if (st.Ext)
 				{
 					ReadOrThrow(hdr, 4);
-					value.StreamId = (uint)(hdr[0] | (hdr[1] << 8) | (hdr[2] << 16) | (hdr[3] << 24));
+					extTs = BE32(hdr, 0);
 				}
-				if (num2 <= 2)
+				if (format <= 2)
 				{
-					value.Ext = num6 == 16777215;
+					// Formato 0: marca absoluta; 1 y 2: incremento sobre la anterior.
+					uint delta = (st.Ext ? extTs : ts24);
+					uint step = (st.Delta = delta);
+					st.Ts = ((format == 0) ? step : (st.Ts + step));
+					st.Buf = null;
 				}
-				uint num7 = 0u;
-				if (value.Ext)
+				else if (st.Buf == null)
 				{
-					ReadOrThrow(hdr, 4);
-					num7 = BE32(hdr, 0);
+					// Formato 3 al empezar un mensaje nuevo: mismo incremento que el anterior.
+					st.Ts += st.Delta;
 				}
-				if (num2 <= 2)
+				if (st.Buf == null)
 				{
-					uint delta = (value.Ext ? num7 : num6);
-					uint num8 = (value.Delta = delta);
-					value.Ts = ((num2 == 0) ? num8 : (value.Ts + num8));
-					value.Buf = null;
-				}
-				else if (value.Buf == null)
-				{
-					value.Ts += value.Delta;
-				}
-				if (value.Buf == null)
-				{
-					if (value.Len > 16777216)
+					if (st.Len > MaxMessage)
 					{
-						throw new RtmpProtocolException("Mensaje RTMP demasiado grande (" + value.Len + " bytes).");
+						throw new RtmpProtocolException("Mensaje RTMP demasiado grande (" + st.Len + " bytes).");
 					}
-					value.Buf = new byte[value.Len];
-					value.Got = 0;
+					st.Buf = new byte[st.Len];
+					st.Got = 0;
 				}
-				int num9 = Math.Min(inChunkSize, (int)value.Len - value.Got);
-				if (num9 > 0 && !ReadN(value.Buf, value.Got, num9))
+				int count = Math.Min(inChunkSize, (int)st.Len - st.Got);
+				if (count > 0 && !ReadN(st.Buf, st.Got, count))
 				{
 					break;
 				}
-				value.Got += num9;
-				if (value.Got >= value.Len)
+				st.Got += count;
+				if (st.Got >= st.Len)
 				{
-					byte[] buf = value.Buf;
-					value.Buf = null;
-					Handle(value.Type, value.Ts, buf);
+					byte[] message = st.Buf;
+					st.Buf = null;
+					Handle(st.Type, st.Ts, message);
 				}
 				if (ackWindow != 0 && bytesIn - lastAck >= ackWindow)
 				{
@@ -359,17 +394,20 @@ namespace StreamDelay
 			}
 		}
 
+		// Un mensaje completo, según su tipo RTMP.
 		private void Handle(byte type, uint ts, byte[] msg)
 		{
 			switch (type)
 			{
 			case 1:
+				// Tamaño de trozo.
 				if (msg.Length >= 4)
 				{
 					inChunkSize = Math.Max(1, (int)(BE32(msg, 0) & 0x7FFFFFFF));
 				}
 				break;
 			case 5:
+				// Ventana de acuses.
 				if (msg.Length >= 4)
 				{
 					ackWindow = BE32(msg, 0);
@@ -377,12 +415,14 @@ namespace StreamDelay
 				break;
 			case 8:
 			case 9:
+				// Audio y vídeo.
 				if (publishing && msg.Length > 0)
 				{
 					server.Packet(this, type, ts, msg);
 				}
 				break;
 			case 15:
+				// Datos AMF3 (un byte de más delante).
 				if (msg.Length > 1)
 				{
 					Data(Sub(msg, 1), ts);
@@ -392,6 +432,7 @@ namespace StreamDelay
 				Data(msg, ts);
 				break;
 			case 17:
+				// Comando AMF3.
 				if (msg.Length > 1)
 				{
 					Command(Sub(msg, 1));
@@ -403,6 +444,7 @@ namespace StreamDelay
 			}
 		}
 
+		// Metadatos (onMetaData): se les quita el "@setDataFrame" que añade OBS y van al motor.
 		private void Data(byte[] msg, uint ts)
 		{
 			if (publishing)
@@ -415,22 +457,24 @@ namespace StreamDelay
 			}
 		}
 
+		// Comandos de OBS: connect → createStream → publish (… y al terminar FCUnpublish/deleteStream).
 		private void Command(byte[] msg)
 		{
-			AmfReader amfReader = new AmfReader(msg);
-			string text = amfReader.Read() as string;
-			object obj = (amfReader.More ? amfReader.Read() : null);
-			double txn = ((obj is double) ? ((double)obj) : 0.0);
-			switch (text)
+			AmfReader reader = new AmfReader(msg);
+			string name = reader.Read() as string;
+			object txnValue = (reader.More ? reader.Read() : null);
+			double txn = ((txnValue is double) ? ((double)txnValue) : 0.0);
+			switch (name)
 			{
 			case "connect":
 			{
-				Dictionary<string, object> dictionary = (amfReader.More ? (amfReader.Read() as Dictionary<string, object>) : null);
+				Dictionary<string, object> props = (reader.More ? (reader.Read() as Dictionary<string, object>) : null);
 				object value;
-				if (dictionary != null && dictionary.TryGetValue("app", out value) && value is string)
+				if (props != null && props.TryGetValue("app", out value) && value is string)
 				{
 					App = (string)value;
 				}
+				// Ventana de acuses, ancho de banda y trozos de 4096 bytes.
 				SendControl(5, BE32Bytes(2500000u));
 				SendControl(6, new byte[5] { 0, 38, 37, 160, 2 });
 				SendControl(1, BE32Bytes(4096u));
@@ -441,6 +485,7 @@ namespace StreamDelay
 			case "releaseStream":
 			case "FCPublish":
 			{
+				// Respuesta vacía (null, null).
 				object[] args = new object[2];
 				SendCommand(3, 0u, "_result", txn, args);
 				break;
@@ -449,11 +494,13 @@ namespace StreamDelay
 				SendCommand(3, 0u, "_result", txn, null, 1.0);
 				break;
 			case "publish":
-				if (amfReader.More)
+				// publish(null, nombre, tipo): el nombre es la clave de OBS.
+				if (reader.More)
 				{
-					amfReader.Read();
+					reader.Read();
 				}
-				Name = (amfReader.More ? ((amfReader.Read() as string) ?? "") : "");
+				Name = (reader.More ? ((reader.Read() as string) ?? "") : "");
+				// Stream Begin (stream 1).
 				SendControl(4, new byte[6] { 0, 0, 0, 0, 0, 1 });
 				SendCommand(5, 1u, "onStatus", 0.0, null, Obj("level", "status", "code", "NetStream.Publish.Start", "description", "Publishing " + Name + ".", "details", Name));
 				if (!publishing)
@@ -474,70 +521,78 @@ namespace StreamDelay
 			}
 		}
 
+		// ---------- Envío ----------
+
+		// Mensaje de control (canal 2, stream 0).
 		private void SendControl(byte type, byte[] payload)
 		{
 			SendMessage(2, type, 0u, payload);
 		}
 
+		// Comando AMF0: nombre, número de transacción y argumentos.
 		private void SendCommand(int csid, uint streamId, string name, double txn, params object[] args)
 		{
-			MemoryStream memoryStream = new MemoryStream();
-			AmfWrite(memoryStream, name);
-			AmfWrite(memoryStream, txn);
+			MemoryStream body = new MemoryStream();
+			AmfWrite(body, name);
+			AmfWrite(body, txn);
 			foreach (object v in args)
 			{
-				AmfWrite(memoryStream, v);
+				AmfWrite(body, v);
 			}
-			SendMessage(csid, 20, streamId, memoryStream.ToArray());
+			SendMessage(csid, 20, streamId, body.ToArray());
 		}
 
+		// Envía un mensaje troceado: cabecera completa (formato 0) y el resto de trozos con formato 3.
 		private void SendMessage(int csid, byte type, uint streamId, byte[] payload)
 		{
-			MemoryStream memoryStream = new MemoryStream();
-			memoryStream.WriteByte((byte)csid);
-			byte[] buffer = new byte[3];
-			memoryStream.Write(buffer, 0, 3);
-			int num = payload.Length;
-			memoryStream.Write(new byte[4]
+			MemoryStream ms = new MemoryStream();
+			ms.WriteByte((byte)csid);
+			// Marca de tiempo 0.
+			byte[] zeroTs = new byte[3];
+			ms.Write(zeroTs, 0, 3);
+			int length = payload.Length;
+			ms.Write(new byte[4]
 			{
-				(byte)(num >> 16),
-				(byte)(num >> 8),
-				(byte)num,
+				(byte)(length >> 16),
+				(byte)(length >> 8),
+				(byte)length,
 				type
 			}, 0, 4);
-			memoryStream.Write(new byte[4]
+			ms.Write(new byte[4]
 			{
 				(byte)streamId,
 				(byte)(streamId >> 8),
 				(byte)(streamId >> 16),
 				(byte)(streamId >> 24)
 			}, 0, 4);
-			for (int i = 0; i < num; i += outChunkSize)
+			for (int i = 0; i < length; i += outChunkSize)
 			{
 				if (i > 0)
 				{
-					memoryStream.WriteByte((byte)(0xC0 | csid));
+					ms.WriteByte((byte)(0xC0 | csid));
 				}
-				memoryStream.Write(payload, i, Math.Min(outChunkSize, num - i));
+				ms.Write(payload, i, Math.Min(outChunkSize, length - i));
 			}
-			byte[] array = memoryStream.ToArray();
+			byte[] bytes = ms.ToArray();
 			lock (writeLock)
 			{
-				net.Write(array, 0, array.Length);
+				net.Write(bytes, 0, bytes.Length);
 				net.Flush();
 			}
 		}
 
+		// Objeto AMF a partir de pares clave, valor.
 		private static Dictionary<string, object> Obj(params object[] kv)
 		{
-			Dictionary<string, object> dictionary = new Dictionary<string, object>();
+			Dictionary<string, object> obj = new Dictionary<string, object>();
 			for (int i = 0; i + 1 < kv.Length; i += 2)
 			{
-				dictionary[(string)kv[i]] = kv[i + 1];
+				obj[(string)kv[i]] = kv[i + 1];
 			}
-			return dictionary;
+			return obj;
 		}
 
+		// Escribe un valor en AMF0: null (5), texto (2), número (0), sí/no (1) u objeto (3).
 		internal static void AmfWrite(Stream s, object v)
 		{
 			if (v == null)
@@ -547,22 +602,23 @@ namespace StreamDelay
 			}
 			if (v is string)
 			{
-				byte[] bytes = Encoding.UTF8.GetBytes((string)v);
+				byte[] text = Encoding.UTF8.GetBytes((string)v);
 				s.WriteByte(2);
-				s.WriteByte((byte)(bytes.Length >> 8));
-				s.WriteByte((byte)bytes.Length);
-				s.Write(bytes, 0, bytes.Length);
+				s.WriteByte((byte)(text.Length >> 8));
+				s.WriteByte((byte)text.Length);
+				s.Write(text, 0, text.Length);
 				return;
 			}
 			if (v is double)
 			{
-				byte[] bytes2 = BitConverter.GetBytes((double)v);
+				// Número de 8 bytes, al revés (big endian).
+				byte[] number = BitConverter.GetBytes((double)v);
 				if (BitConverter.IsLittleEndian)
 				{
-					Array.Reverse(bytes2);
+					Array.Reverse(number);
 				}
 				s.WriteByte(0);
-				s.Write(bytes2, 0, 8);
+				s.Write(number, 0, 8);
 				return;
 			}
 			if (v is bool)
@@ -571,35 +627,40 @@ namespace StreamDelay
 				s.WriteByte((byte)(((bool)v) ? 1u : 0u));
 				return;
 			}
-			Dictionary<string, object> dictionary = v as Dictionary<string, object>;
-			if (dictionary != null)
+			Dictionary<string, object> obj = v as Dictionary<string, object>;
+			if (obj != null)
 			{
 				s.WriteByte(3);
-				foreach (KeyValuePair<string, object> item in dictionary)
+				foreach (KeyValuePair<string, object> item in obj)
 				{
-					byte[] bytes3 = Encoding.UTF8.GetBytes(item.Key);
-					s.WriteByte((byte)(bytes3.Length >> 8));
-					s.WriteByte((byte)bytes3.Length);
-					s.Write(bytes3, 0, bytes3.Length);
+					byte[] key = Encoding.UTF8.GetBytes(item.Key);
+					s.WriteByte((byte)(key.Length >> 8));
+					s.WriteByte((byte)key.Length);
+					s.Write(key, 0, key.Length);
 					AmfWrite(s, item.Value);
 				}
+				// Fin de objeto: 00 00 09.
 				s.WriteByte(0);
 				s.WriteByte(0);
 				s.WriteByte(9);
 			}
 			else
 			{
+				// Cualquier otra cosa: undefined.
 				s.WriteByte(6);
 			}
 		}
 
+		// ---------- Lectura de bytes ----------
+
+		// Lee exactamente n bytes. false = conexión cerrada.
 		private bool ReadN(byte[] buf, int off, int n)
 		{
-			int num;
-			for (int i = 0; i < n; i += num)
+			int got;
+			for (int i = 0; i < n; i += got)
 			{
-				num = input.Read(buf, off + i, n - i);
-				if (num <= 0)
+				got = input.Read(buf, off + i, n - i);
+				if (got <= 0)
 				{
 					return false;
 				}
@@ -618,24 +679,25 @@ namespace StreamDelay
 
 		private int ReadByte()
 		{
-			int num = input.ReadByte();
-			if (num >= 0)
+			int b = input.ReadByte();
+			if (b >= 0)
 			{
 				bytesIn++;
 			}
-			return num;
+			return b;
 		}
 
 		private int ReadByteOrThrow()
 		{
-			int num = ReadByte();
-			if (num < 0)
+			int b = ReadByte();
+			if (b < 0)
 			{
 				throw new IOException("cerrado");
 			}
-			return num;
+			return b;
 		}
 
+		// Enteros big endian de 3 y 4 bytes.
 		private static uint U24(byte[] b, int o)
 		{
 			return (uint)((b[o] << 16) | (b[o + 1] << 8) | b[o + 2]);
@@ -659,9 +721,9 @@ namespace StreamDelay
 
 		private static byte[] Sub(byte[] b, int from)
 		{
-			byte[] array = new byte[b.Length - from];
-			Buffer.BlockCopy(b, from, array, 0, array.Length);
-			return array;
+			byte[] result = new byte[b.Length - from];
+			Buffer.BlockCopy(b, from, result, 0, result.Length);
+			return result;
 		}
 	}
 }

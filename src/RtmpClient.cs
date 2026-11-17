@@ -1,3 +1,9 @@
+// Conexión RTMP/RTMPS hacia una plataforma (lado cliente del protocolo, como hace OBS).
+//
+// Connect: TCP (y TLS si es rtmps://) → saludo → connect → releaseStream/FCPublish →
+// createStream → publish, y espera a que la plataforma conteste "NetStream.Publish.Start".
+// Después WriteMedia envía cada paquete troceado. Un hilo "rtmp-cliente" lee lo que contesta la
+// plataforma (acuses, pings, errores) para detectar enseguida si cierra la emisión.
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -11,6 +17,7 @@ namespace StreamDelay
 {
 	internal class RtmpClient
 	{
+		// Estado de cada canal de chunks que llega de la plataforma.
 		private class InChunk
 		{
 			public uint Ts;
@@ -32,10 +39,12 @@ namespace StreamDelay
 		{
 		};
 
+		// Aceptar certificados no válidos en rtmps:// (nunca se activa; queda para pruebas).
 		public static bool SkipCertCheck;
 
 		private TcpClient tcp;
 
+		// raw: la conexión (con TLS si hace falta). net: la misma, con búfer, para leer.
 		private Stream raw;
 
 		private Stream net;
@@ -64,18 +73,22 @@ namespace StreamDelay
 
 		private volatile string error;
 
+		// Respuesta de la plataforma a publish ("NetStream.Publish.Start" si la acepta).
 		private string publishCode;
 
+		// Respuestas (_result / _error) por número de transacción.
 		private readonly Dictionary<double, List<object>> results = new Dictionary<double, List<object>>();
 
 		private readonly Dictionary<int, InChunk> states = new Dictionary<int, InChunk>();
 
+		// "@setDataFrame" en AMF0: va delante de los metadatos que se envían.
 		private static readonly byte[] SetDataFrame = new byte[16]
 		{
 			2, 0, 13, 64, 115, 101, 116, 68, 97, 116,
 			97, 70, 114, 97, 109, 101
 		};
 
+		// Búfer donde se monta cada mensaje antes de enviarlo (se reutiliza).
 		private readonly MemoryStream wbuf = new MemoryStream(65536);
 
 		public bool Alive
@@ -98,6 +111,7 @@ namespace StreamDelay
 			}
 		}
 
+		// Conecta y empieza a publicar con la clave name. Lanza IOException con el motivo si falla.
 		public void Connect(string url, string name, int timeoutMs)
 		{
 			bool tls;
@@ -105,19 +119,19 @@ namespace StreamDelay
 			int port;
 			string app;
 			ParseUrl(url, out tls, out host, out port, out app);
-			string value = (tls ? "rtmps://" : "rtmp://") + host + ":" + port + "/" + app;
+			string tcUrl = (tls ? "rtmps://" : "rtmp://") + host + ":" + port + "/" + app;
 			tcp = new TcpClient();
 			tcp.NoDelay = true;
 			tcp.SendBufferSize = 1048576;
-			IAsyncResult asyncResult = tcp.BeginConnect(host, port, null, null);
-			if (!asyncResult.AsyncWaitHandle.WaitOne(timeoutMs))
+			IAsyncResult attempt = tcp.BeginConnect(host, port, null, null);
+			if (!attempt.AsyncWaitHandle.WaitOne(timeoutMs))
 			{
 				Close();
 				throw new IOException("no responde " + host + ":" + port);
 			}
 			try
 			{
-				tcp.EndConnect(asyncResult);
+				tcp.EndConnect(attempt);
 			}
 			catch (Exception ex)
 			{
@@ -129,17 +143,17 @@ namespace StreamDelay
 			Stream stream = tcp.GetStream();
 			if (tls)
 			{
-				SslStream sslStream = new SslStream(stream, false, (object o, X509Certificate cert, X509Chain chain, SslPolicyErrors errs) => SkipCertCheck || errs == SslPolicyErrors.None);
+				SslStream ssl = new SslStream(stream, false, (object o, X509Certificate cert, X509Chain chain, SslPolicyErrors errs) => SkipCertCheck || errs == SslPolicyErrors.None);
 				try
 				{
-					sslStream.AuthenticateAsClient(host, null, SslProtocols.Tls12, true);
+					ssl.AuthenticateAsClient(host, null, SslProtocols.Tls12, true);
 				}
 				catch (Exception ex2)
 				{
 					Close();
 					throw new IOException("fallo de conexión segura (rtmps) con " + host + ": " + ex2.Message);
 				}
-				stream = sslStream;
+				stream = ssl;
 			}
 			raw = stream;
 			net = new BufferedStream(stream, 65536);
@@ -151,52 +165,56 @@ namespace StreamDelay
 				Name = "rtmp-cliente"
 			};
 			reader.Start();
+			// Trozos de 4096 bytes y connect (se presenta como el codificador de Flash, como OBS).
 			SendControl(1, BE32(4096u));
 			outChunk = 4096;
-			Dictionary<string, object> dictionary = new Dictionary<string, object>();
-			dictionary["app"] = app;
-			dictionary["type"] = "nonprivate";
-			dictionary["flashVer"] = "FMLE/3.0 (compatible; FMSc/1.0)";
-			dictionary["swfUrl"] = value;
-			dictionary["tcUrl"] = value;
-			SendCommand(3, 0u, "connect", 1.0, dictionary);
-			List<object> list = Wait(1.0, timeoutMs);
-			if (list == null)
+			Dictionary<string, object> props = new Dictionary<string, object>();
+			props["app"] = app;
+			props["type"] = "nonprivate";
+			props["flashVer"] = "FMLE/3.0 (compatible; FMSc/1.0)";
+			props["swfUrl"] = tcUrl;
+			props["tcUrl"] = tcUrl;
+			SendCommand(3, 0u, "connect", 1.0, props);
+			List<object> reply = Wait(1.0, timeoutMs);
+			if (reply == null)
 			{
 				throw Fail("la plataforma no respondió al conectar");
 			}
-			if ((string)list[0] == "_error")
+			if ((string)reply[0] == "_error")
 			{
-				throw Fail("la plataforma rechazó la conexión (" + Describe(list) + ")");
+				throw Fail("la plataforma rechazó la conexión (" + Describe(reply) + ")");
 			}
 			SendCommand(3, 0u, "releaseStream", 2.0, null, name);
 			SendCommand(3, 0u, "FCPublish", 3.0, null, name);
+			// createStream(null).
 			object[] args = new object[1];
 			SendCommand(3, 0u, "createStream", 4.0, args);
-			list = Wait(4.0, timeoutMs);
-			if (list == null || (string)list[0] != "_result")
+			reply = Wait(4.0, timeoutMs);
+			if (reply == null || (string)reply[0] != "_result")
 			{
 				throw Fail("la plataforma no abrió el canal de emisión");
 			}
+			// El id del stream es el último número de la respuesta (1 si no viene).
 			streamId = 1u;
-			for (int num = list.Count - 1; num >= 2; num--)
+			for (int i = reply.Count - 1; i >= 2; i--)
 			{
-				if (list[num] is double)
+				if (reply[i] is double)
 				{
-					streamId = (uint)(double)list[num];
+					streamId = (uint)(double)reply[i];
 					break;
 				}
 			}
 			SendCommand(4, streamId, "publish", 5.0, null, name, "live");
+			// Espera la respuesta a publish (la apunta Command en publishCode).
 			lock (sync)
 			{
-				long num2 = Environment.TickCount + timeoutMs;
+				long deadline = Environment.TickCount + timeoutMs;
 				while (publishCode == null && error == null && !closed)
 				{
-					int num3 = (int)(num2 - Environment.TickCount);
-					if (num3 > 0)
+					int left = (int)(deadline - Environment.TickCount);
+					if (left > 0)
 					{
-						Monitor.Wait(sync, num3);
+						Monitor.Wait(sync, left);
 						continue;
 					}
 					break;
@@ -204,8 +222,8 @@ namespace StreamDelay
 			}
 			if (publishCode == null || publishCode.IndexOf("Publish.Start", StringComparison.OrdinalIgnoreCase) < 0)
 			{
-				string text = publishCode ?? error;
-				throw Fail((text == null) ? "la plataforma no aceptó la emisión (¿clave incorrecta o caducada?)" : ("la plataforma rechazó la emisión: " + text));
+				string why = publishCode ?? error;
+				throw Fail((why == null) ? "la plataforma no aceptó la emisión (¿clave incorrecta o caducada?)" : ("la plataforma rechazó la emisión: " + why));
 			}
 		}
 
@@ -215,72 +233,77 @@ namespace StreamDelay
 			return new IOException(m);
 		}
 
+		// rtmp[s]://servidor[:puerto]/app → partes (puerto por defecto 1935, o 443 con rtmps).
 		private static void ParseUrl(string url, out bool tls, out string host, out int port, out string app)
 		{
-			string text = url.Trim();
-			int num = text.IndexOf("://", StringComparison.Ordinal);
-			if (num < 0)
+			string u = url.Trim();
+			int scheme = u.IndexOf("://", StringComparison.Ordinal);
+			if (scheme < 0)
 			{
 				throw new IOException("servidor no válido: " + url);
 			}
-			string text2 = text.Substring(0, num).ToLowerInvariant();
-			tls = text2 == "rtmps";
-			if (text2 != "rtmp" && text2 != "rtmps")
+			string protocol = u.Substring(0, scheme).ToLowerInvariant();
+			tls = protocol == "rtmps";
+			if (protocol != "rtmp" && protocol != "rtmps")
 			{
 				throw new IOException("el servidor debe empezar por rtmp:// o rtmps://");
 			}
-			string text3 = text.Substring(num + 3);
-			int num2 = text3.IndexOf('/');
-			string text4 = ((num2 < 0) ? text3 : text3.Substring(0, num2));
-			app = ((num2 < 0) ? "" : text3.Substring(num2 + 1).Trim('/'));
+			string rest = u.Substring(scheme + 3);
+			int slash = rest.IndexOf('/');
+			string hostPort = ((slash < 0) ? rest : rest.Substring(0, slash));
+			app = ((slash < 0) ? "" : rest.Substring(slash + 1).Trim('/'));
 			port = (tls ? 443 : 1935);
-			int num3 = text4.LastIndexOf(':');
-			if (num3 > 0 && text4.IndexOf(']') < num3)
+			// "host:puerto" (cuidando las direcciones IPv6 entre corchetes).
+			int colon = hostPort.LastIndexOf(':');
+			if (colon > 0 && hostPort.IndexOf(']') < colon)
 			{
-				int result;
-				if (int.TryParse(text4.Substring(num3 + 1), out result))
+				int value;
+				if (int.TryParse(hostPort.Substring(colon + 1), out value))
 				{
-					port = result;
+					port = value;
 				}
-				text4 = text4.Substring(0, num3);
+				hostPort = hostPort.Substring(0, colon);
 			}
-			host = text4.Trim('[', ']');
+			host = hostPort.Trim('[', ']');
 		}
 
+		// Saludo simple: C0+C1 aleatorio → S0+S1+S2 → C2 = eco de S1.
 		private void Handshake()
 		{
-			byte[] array = new byte[1537];
-			array[0] = 3;
+			byte[] c0c1 = new byte[1537];
+			c0c1[0] = 3;
 			Random random = new Random();
-			for (int i = 9; i < array.Length; i++)
+			for (int i = 9; i < c0c1.Length; i++)
 			{
-				array[i] = (byte)random.Next(256);
+				c0c1[i] = (byte)random.Next(256);
 			}
-			raw.Write(array, 0, array.Length);
-			byte[] array2 = new byte[3073];
-			ReadExact(array2, 0, array2.Length);
-			if (array2[0] != 3)
+			raw.Write(c0c1, 0, c0c1.Length);
+			byte[] s0s1s2 = new byte[3073];
+			ReadExact(s0s1s2, 0, s0s1s2.Length);
+			if (s0s1s2[0] != 3)
 			{
 				throw Fail("respuesta no RTMP del servidor de la plataforma");
 			}
-			raw.Write(array2, 1, 1536);
+			raw.Write(s0s1s2, 1, 1536);
 		}
 
 		private void ReadExact(byte[] b, int off, int n)
 		{
 			while (n > 0)
 			{
-				int num = net.Read(b, off, n);
-				if (num <= 0)
+				int got = net.Read(b, off, n);
+				if (got <= 0)
 				{
 					throw new IOException("la plataforma cerró la conexión");
 				}
-				off += num;
-				n -= num;
-				bytesIn += num;
+				off += got;
+				n -= got;
+				bytesIn += got;
 			}
 		}
 
+		// Hilo "rtmp-cliente": junta los mensajes de la plataforma (mismo formato de trozos que en
+		// RtmpSession). Si la conexión se cae, apunta el error y despierta a quien espere.
 		private void ReadLoop()
 		{
 			try
@@ -288,83 +311,85 @@ namespace StreamDelay
 				while (!closed)
 				{
 					ReadExact(hdr, 0, 1);
-					int num = hdr[0];
-					int num2 = num >> 6;
-					int num3 = num & 0x3F;
-					switch (num3)
+					int first = hdr[0];
+					int format = first >> 6;
+					int csid = first & 0x3F;
+					switch (csid)
 					{
 					case 0:
 						ReadExact(hdr, 0, 1);
-						num3 = 64 + hdr[0];
+						csid = 64 + hdr[0];
 						break;
 					case 1:
 						ReadExact(hdr, 0, 2);
-						num3 = 64 + hdr[0] + hdr[1] * 256;
+						csid = 64 + hdr[0] + hdr[1] * 256;
 						break;
 					}
-					InChunk value;
-					if (!states.TryGetValue(num3, out value))
+					InChunk st;
+					if (!states.TryGetValue(csid, out st))
 					{
-						value = new InChunk();
-						states[num3] = value;
+						st = new InChunk();
+						states[csid] = st;
 					}
-					uint num4 = 0u;
-					if (num2 <= 2)
+					uint ts24 = 0u;
+					if (format <= 2)
 					{
 						ReadExact(hdr, 0, 3);
-						num4 = (uint)((hdr[0] << 16) | (hdr[1] << 8) | hdr[2]);
+						ts24 = (uint)((hdr[0] << 16) | (hdr[1] << 8) | hdr[2]);
 					}
-					if (num2 <= 1)
+					if (format <= 1)
 					{
 						ReadExact(hdr, 0, 4);
-						value.Len = (uint)((hdr[0] << 16) | (hdr[1] << 8) | hdr[2]);
-						value.Type = hdr[3];
+						st.Len = (uint)((hdr[0] << 16) | (hdr[1] << 8) | hdr[2]);
+						st.Type = hdr[3];
 					}
-					if (num2 == 0)
+					if (format == 0)
 					{
+						// Id de stream: no hace falta.
 						ReadExact(hdr, 0, 4);
 					}
-					if (num2 <= 2)
+					if (format <= 2)
 					{
-						value.Ext = num4 == 16777215;
+						st.Ext = ts24 == 16777215;
 					}
-					uint num5 = 0u;
-					if (value.Ext)
+					uint extTs = 0u;
+					if (st.Ext)
 					{
 						ReadExact(hdr, 0, 4);
-						num5 = (uint)((hdr[0] << 24) | (hdr[1] << 16) | (hdr[2] << 8) | hdr[3]);
+						extTs = (uint)((hdr[0] << 24) | (hdr[1] << 16) | (hdr[2] << 8) | hdr[3]);
 					}
-					if (num2 <= 2)
+					if (format <= 2)
 					{
-						uint delta = (value.Ext ? num5 : num4);
-						uint num6 = (value.Delta = delta);
-						value.Ts = ((num2 == 0) ? num6 : (value.Ts + num6));
-						value.Buf = null;
+						uint delta = (st.Ext ? extTs : ts24);
+						uint step = (st.Delta = delta);
+						st.Ts = ((format == 0) ? step : (st.Ts + step));
+						st.Buf = null;
 					}
-					else if (value.Buf == null)
+					else if (st.Buf == null)
 					{
-						value.Ts += value.Delta;
+						st.Ts += st.Delta;
 					}
-					if (value.Buf == null)
+					if (st.Buf == null)
 					{
-						if (value.Len > 4194304)
+						// Lo que manda una plataforma son mensajes pequeños: más de 4 MB es un error.
+						if (st.Len > 4194304)
 						{
 							throw new IOException("mensaje demasiado grande de la plataforma");
 						}
-						value.Buf = new byte[value.Len];
-						value.Got = 0;
+						st.Buf = new byte[st.Len];
+						st.Got = 0;
 					}
-					int num7 = Math.Min(inChunk, (int)value.Len - value.Got);
-					if (num7 > 0)
+					int count = Math.Min(inChunk, (int)st.Len - st.Got);
+					if (count > 0)
 					{
-						ReadExact(value.Buf, value.Got, num7);
+						ReadExact(st.Buf, st.Got, count);
 					}
-					value.Got += num7;
-					if (value.Got >= value.Len)
+					st.Got += count;
+					if (st.Got >= st.Len)
 					{
-						byte[] buf = value.Buf;
-						value.Buf = null;
-						Handle(value.Type, value.Ts, buf);
+						byte[] message = st.Buf;
+						st.Buf = null;
+						Handle(st.Type, st.Ts, message);
 					}
 					if (ackWindow != 0 && bytesIn - lastAck >= ackWindow)
 					{
@@ -394,12 +419,14 @@ namespace StreamDelay
 			switch (type)
 			{
 			case 1:
+				// Tamaño de trozo.
 				if (msg.Length >= 4)
 				{
 					inChunk = Math.Max(1, (int)(BE32(msg, 0) & 0x7FFFFFFF));
 				}
 				break;
 			case 4:
+				// Ping (evento 6): se contesta con un pong (evento 7) con la misma marca.
 				if (msg.Length >= 6 && msg[0] == 0 && msg[1] == 6)
 				{
 					SendControl(4, new byte[6]
@@ -414,100 +441,106 @@ namespace StreamDelay
 				}
 				break;
 			case 5:
+				// Ventana de acuses.
 				if (msg.Length >= 4)
 				{
 					ackWindow = BE32(msg, 0);
 				}
 				break;
 			case 6:
+				// Ancho de banda: se contesta con nuestra ventana de acuses.
 				SendControl(5, BE32(2500000u));
 				break;
 			case 20:
 				Command(msg);
 				break;
 			case 17:
+				// Comando AMF3 (un byte de más delante).
 				if (msg.Length > 1)
 				{
-					byte[] array = new byte[msg.Length - 1];
-					Buffer.BlockCopy(msg, 1, array, 0, array.Length);
-					Command(array);
+					byte[] amf0 = new byte[msg.Length - 1];
+					Buffer.BlockCopy(msg, 1, amf0, 0, amf0.Length);
+					Command(amf0);
 				}
 				break;
 			}
 		}
 
+		// Respuestas de la plataforma: _result/_error de un comando, onStatus de publish o close.
 		private void Command(byte[] msg)
 		{
-			AmfReader amfReader = new AmfReader(msg);
-			List<object> list = new List<object>();
+			AmfReader reader = new AmfReader(msg);
+			List<object> values = new List<object>();
 			try
 			{
-				while (amfReader.More)
+				while (reader.More)
 				{
-					list.Add(amfReader.Read());
+					values.Add(reader.Read());
 				}
 			}
 			catch
 			{
 			}
-			if (list.Count == 0)
+			if (values.Count == 0)
 			{
 				return;
 			}
-			switch (list[0] as string)
+			switch (values[0] as string)
 			{
 			case "_result":
 			case "_error":
 			{
-				double key = ((list.Count > 1 && list[1] is double) ? ((double)list[1]) : 0.0);
+				double key = ((values.Count > 1 && values[1] is double) ? ((double)values[1]) : 0.0);
 				lock (sync)
 				{
-					results[key] = list;
+					results[key] = values;
 					Monitor.PulseAll(sync);
 					break;
 				}
 			}
 			case "onStatus":
 			{
-				Dictionary<string, object> dictionary = null;
-				for (int i = 2; i < list.Count; i++)
+				Dictionary<string, object> info = null;
+				for (int i = 2; i < values.Count; i++)
 				{
-					if (dictionary != null)
+					if (info != null)
 					{
 						break;
 					}
-					dictionary = list[i] as Dictionary<string, object>;
+					info = values[i] as Dictionary<string, object>;
 				}
-				if (dictionary == null)
+				if (info == null)
 				{
 					break;
 				}
-				string text = Get(dictionary, "code");
-				string text2 = Get(dictionary, "level");
-				string text3 = Get(dictionary, "description");
-				if (text.IndexOf("Publish.Start", StringComparison.OrdinalIgnoreCase) >= 0)
+				string code = Get(info, "code");
+				string level = Get(info, "level");
+				string description = Get(info, "description");
+				if (code.IndexOf("Publish.Start", StringComparison.OrdinalIgnoreCase) >= 0)
 				{
 					lock (sync)
 					{
-						publishCode = text;
+						publishCode = code;
 						Monitor.PulseAll(sync);
 						break;
 					}
 				}
-				if (!(text2 == "error") && text.IndexOf("Failed", StringComparison.OrdinalIgnoreCase) < 0 && text.IndexOf("BadName", StringComparison.OrdinalIgnoreCase) < 0)
+				// Solo interesan los errores ("level: error", "…Failed", "…BadName").
+				if (!(level == "error") && code.IndexOf("Failed", StringComparison.OrdinalIgnoreCase) < 0 && code.IndexOf("BadName", StringComparison.OrdinalIgnoreCase) < 0)
 				{
 					break;
 				}
-				string text4 = text + ((text3.Length > 0) ? (" — " + text3) : "");
+				string problem = code + ((description.Length > 0) ? (" — " + description) : "");
 				lock (sync)
 				{
+					// Antes de publicar es la respuesta a publish; después, un error de la emisión.
 					if (publishCode == null)
 					{
-						publishCode = text4;
+						publishCode = problem;
 					}
 					else
 					{
-						error = text4;
+						error = problem;
 					}
 					Monitor.PulseAll(sync);
 					break;
@@ -533,29 +566,31 @@ namespace StreamDelay
 			return (string)value;
 		}
 
+		// "código descripción" del primer objeto de la respuesta que los tenga.
 		private static string Describe(List<object> r)
 		{
 			foreach (object item in r)
 			{
-				Dictionary<string, object> dictionary = item as Dictionary<string, object>;
-				if (dictionary != null)
+				Dictionary<string, object> info = item as Dictionary<string, object>;
+				if (info != null)
 				{
-					string text = Get(dictionary, "code");
-					string text2 = Get(dictionary, "description");
-					if (text.Length > 0 || text2.Length > 0)
+					string code = Get(info, "code");
+					string description = Get(info, "description");
+					if (code.Length > 0 || description.Length > 0)
 					{
-						return (text + " " + text2).Trim();
+						return (code + " " + description).Trim();
 					}
 				}
 			}
 			return "sin detalle";
 		}
 
+		// Espera la respuesta a la transacción txn (null si no llega o se corta la conexión).
 		private List<object> Wait(double txn, int timeoutMs)
 		{
 			lock (sync)
 			{
-				long num = Environment.TickCount + timeoutMs;
+				long deadline = Environment.TickCount + timeoutMs;
 				List<object> value;
 				while (!results.TryGetValue(txn, out value))
 				{
@@ -563,17 +598,18 @@ namespace StreamDelay
 					{
 						return null;
 					}
-					int num2 = (int)(num - Environment.TickCount);
-					if (num2 <= 0)
+					int left = (int)(deadline - Environment.TickCount);
+					if (left <= 0)
 					{
 						return null;
 					}
-					Monitor.Wait(sync, num2);
+					Monitor.Wait(sync, left);
 				}
 				return value;
 			}
 		}
 
+		// Envía un paquete: metadatos (canal 4, con @setDataFrame delante), audio (canal 5) o vídeo (canal 6).
 		public void WriteMedia(byte type, long ts, byte[] data)
 		{
 			if (error != null)
@@ -586,10 +622,10 @@ namespace StreamDelay
 			}
 			if (type == 18)
 			{
-				byte[] array = new byte[SetDataFrame.Length + data.Length];
-				Buffer.BlockCopy(SetDataFrame, 0, array, 0, SetDataFrame.Length);
-				Buffer.BlockCopy(data, 0, array, SetDataFrame.Length, data.Length);
-				SendMessage(4, type, streamId, (uint)ts, array, 0, array.Length);
+				byte[] meta = new byte[SetDataFrame.Length + data.Length];
+				Buffer.BlockCopy(SetDataFrame, 0, meta, 0, SetDataFrame.Length);
+				Buffer.BlockCopy(data, 0, meta, SetDataFrame.Length, data.Length);
+				SendMessage(4, type, streamId, (uint)ts, meta, 0, meta.Length);
 			}
 			else
 			{
@@ -604,69 +640,72 @@ namespace StreamDelay
 
 		private void SendCommand(int csid, uint sid, string name, double txn, params object[] args)
 		{
-			MemoryStream memoryStream = new MemoryStream();
-			RtmpSession.AmfWrite(memoryStream, name);
-			RtmpSession.AmfWrite(memoryStream, txn);
+			MemoryStream body = new MemoryStream();
+			RtmpSession.AmfWrite(body, name);
+			RtmpSession.AmfWrite(body, txn);
 			if (args != null)
 			{
 				foreach (object v in args)
 				{
-					RtmpSession.AmfWrite(memoryStream, v);
+					RtmpSession.AmfWrite(body, v);
 				}
 			}
-			byte[] array = memoryStream.ToArray();
-			SendMessage(csid, 20, sid, 0u, array, 0, array.Length);
+			byte[] bytes = body.ToArray();
+			SendMessage(csid, 20, sid, 0u, bytes, 0, bytes.Length);
 		}
 
+		// Envía un mensaje troceado con cabecera completa (formato 0) y el resto de trozos con formato 3.
+		// Marcas de tiempo de 0xFFFFFF o más van en 4 bytes extra en cada trozo.
 		private void SendMessage(int csid, byte type, uint sid, uint ts, byte[] payload, int off, int len)
 		{
-			bool flag = ts >= 16777215;
-			uint num = (flag ? 16777215u : ts);
+			bool extended = ts >= 16777215;
+			uint ts24 = (extended ? 16777215u : ts);
 			lock (writeLock)
 			{
 				if (raw == null)
 				{
 					throw new IOException("sin conexión");
 				}
-				MemoryStream memoryStream = wbuf;
-				memoryStream.SetLength(0L);
-				memoryStream.WriteByte((byte)csid);
-				memoryStream.WriteByte((byte)(num >> 16));
-				memoryStream.WriteByte((byte)(num >> 8));
-				memoryStream.WriteByte((byte)num);
-				memoryStream.WriteByte((byte)(len >> 16));
-				memoryStream.WriteByte((byte)(len >> 8));
-				memoryStream.WriteByte((byte)len);
-				memoryStream.WriteByte(type);
-				memoryStream.WriteByte((byte)sid);
-				memoryStream.WriteByte((byte)(sid >> 8));
-				memoryStream.WriteByte((byte)(sid >> 16));
-				memoryStream.WriteByte((byte)(sid >> 24));
-				if (flag)
+				MemoryStream ms = wbuf;
+				ms.SetLength(0L);
+				ms.WriteByte((byte)csid);
+				ms.WriteByte((byte)(ts24 >> 16));
+				ms.WriteByte((byte)(ts24 >> 8));
+				ms.WriteByte((byte)ts24);
+				ms.WriteByte((byte)(len >> 16));
+				ms.WriteByte((byte)(len >> 8));
+				ms.WriteByte((byte)len);
+				ms.WriteByte(type);
+				ms.WriteByte((byte)sid);
+				ms.WriteByte((byte)(sid >> 8));
+				ms.WriteByte((byte)(sid >> 16));
+				ms.WriteByte((byte)(sid >> 24));
+				if (extended)
 				{
-					WriteBE32(memoryStream, ts);
+					WriteBE32(ms, ts);
 				}
-				int num2 = 0;
+				int sent = 0;
 				while (true)
 				{
-					int num3 = Math.Min(outChunk, len - num2);
-					memoryStream.Write(payload, off + num2, num3);
-					num2 += num3;
-					if (num2 >= len)
+					int count = Math.Min(outChunk, len - sent);
+					ms.Write(payload, off + sent, count);
+					sent += count;
+					if (sent >= len)
 					{
 						break;
 					}
-					memoryStream.WriteByte((byte)(0xC0 | csid));
-					if (flag)
+					ms.WriteByte((byte)(0xC0 | csid));
+					if (extended)
 					{
-						WriteBE32(memoryStream, ts);
+						WriteBE32(ms, ts);
 					}
 				}
-				raw.Write(memoryStream.GetBuffer(), 0, (int)memoryStream.Length);
-				if (memoryStream.Capacity > 4194304)
+				raw.Write(ms.GetBuffer(), 0, (int)ms.Length);
+				// Si un mensaje enorme agrandó el búfer, se vuelve a dejar pequeño.
+				if (ms.Capacity > 4194304)
 				{
-					memoryStream.SetLength(0L);
-					memoryStream.Capacity = 65536;
+					ms.SetLength(0L);
+					ms.Capacity = 65536;
 				}
 			}
 		}
@@ -679,6 +718,7 @@ namespace StreamDelay
 			w.WriteByte((byte)v);
 		}
 
+		// polite: avisa a la plataforma de que termina la emisión (FCUnpublish + deleteStream) antes de cerrar.
 		public void Close(bool polite)
 		{
 			if (closed)
