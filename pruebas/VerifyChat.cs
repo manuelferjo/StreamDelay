@@ -1,6 +1,7 @@
 // Banco de pruebas: pasa los mismos datos de ejemplo por las clases del chat de un StreamDelay.exe
 // (cargado por reflexión) e imprime todo lo que producen. Se ejecuta con la 3.0 y con la versión
 // con el código original, y se comparan las salidas: deben ser idénticas.
+// Uso: verifychat.exe StreamDelay.exe [salida.txt]. GitHub compara la salida con pruebas\salida-esperada.txt.
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -191,8 +192,9 @@ static class VerifyChat
             "42[\"otro\",{}]", "44\"Authentication error\"" }) Call(sl, "OnText", s);
         Out.AppendLine("  PingMs=" + sl.GetType().BaseType.GetField("PingMs", F).GetValue(sl));
 
-        Console.OutputEncoding = Encoding.UTF8;
-        Console.Write(Out.ToString());
+        // Con un segundo argumento se guarda en ese archivo (UTF-8), sin depender de la consola.
+        if (a.Length > 1) File.WriteAllText(a[1], Out.ToString(), new UTF8Encoding(false));
+        else { Console.OutputEncoding = Encoding.UTF8; Console.Write(Out.ToString()); }
         return 0;
     }
 

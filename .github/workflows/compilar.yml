@@ -1,0 +1,78 @@
+# Compila StreamDelay en GitHub con cada cambio y pasa las pruebas del chat.
+# Al publicar una versión (Release con etiqueta v3.1, v4.0…), adjunta el ZIP de descarga a la Release.
+name: Compilar
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # para adjuntar el ZIP a la Release
+
+jobs:
+  compilar:
+    runs-on: windows-latest
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v4
+
+      - name: Compilar StreamDelay.exe
+        shell: cmd
+        run: build.bat < NUL
+
+      - name: Comprobar que se ha creado el programa
+        shell: pwsh
+        run: |
+          if (-not (Test-Path StreamDelay.exe)) { throw "No se ha creado StreamDelay.exe (mira el paso anterior)" }
+          "StreamDelay.exe: $([math]::Round((Get-Item StreamDelay.exe).Length / 1KB)) KB"
+
+      - name: Pruebas del chat
+        shell: pwsh
+        run: |
+          & "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319\csc.exe" /nologo /out:verifychat.exe /r:System.Web.Extensions.dll pruebas\VerifyChat.cs
+          if ($LASTEXITCODE -ne 0) { throw "No se pudieron compilar las pruebas" }
+          .\verifychat.exe StreamDelay.exe salida.txt
+          $esperada = Get-Content pruebas\salida-esperada.txt -Encoding utf8
+          $salida = Get-Content salida.txt -Encoding utf8
+          $dif = Compare-Object $esperada $salida -SyncWindow 0
+          if ($dif) {
+            $dif | Select-Object -First 20 | ForEach-Object { "$($_.SideIndicator) $($_.InputObject)" }
+            throw "Las pruebas del chat no dan el resultado esperado ($($dif.Count) diferencias)"
+          }
+          "Pruebas del chat: $($salida.Count) líneas idénticas al resultado esperado."
+
+      - name: Comprobar que la versión coincide con la etiqueta
+        if: github.event_name == 'release'
+        shell: pwsh
+        env:
+          ETIQUETA: ${{ github.event.release.tag_name }}
+        run: |
+          $v = (Select-String -Path src\MainForm.cs -Pattern 'const string Version = "([^"]+)"').Matches[0].Groups[1].Value
+          if ("v$v" -ne $env:ETIQUETA) { throw "La etiqueta es $env:ETIQUETA pero src\MainForm.cs dice Version = $v. Cámbialo para que coincidan." }
+          "Versión $v = etiqueta $env:ETIQUETA"
+
+      - name: Crear el ZIP de descarga
+        shell: pwsh
+        run: .\empaquetar.ps1
+
+      - name: Guardar el ZIP (descargable desde la página de esta ejecución)
+        uses: actions/upload-artifact@v4
+        with:
+          name: StreamDelay
+          path: dist/*.zip
+
+      - name: Adjuntar el ZIP a la Release
+        if: github.event_name == 'release'
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ETIQUETA: ${{ github.event.release.tag_name }}
+        run: |
+          $zip = (Get-Item dist\*.zip).FullName
+          gh release upload $env:ETIQUETA $zip --clobber --repo $env:GITHUB_REPOSITORY
+          if ($LASTEXITCODE -ne 0) { throw "No se pudo adjuntar el ZIP a la Release" }
+          "Adjuntado $(Split-Path $zip -Leaf) a la Release $env:ETIQUETA"

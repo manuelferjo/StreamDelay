@@ -31,6 +31,16 @@ build.bat
 
 Crea `StreamDelay.exe` en la misma carpeta. El código está en `src/` y los recursos (página del chat, overlays, fuentes, icono) en `res/`.
 
+GitHub compila el programa y pasa las pruebas del chat con cada cambio (pestaña **Actions**).
+
+## Publicar una versión
+
+1. Cambia `Version` en `src/MainForm.cs` (por ejemplo a `3.1`) y añade las novedades al `LEEME.txt`.
+2. Sube los cambios a GitHub.
+3. En **Releases → Draft a new release**, crea la etiqueta `v3.1` (la misma versión con una `v` delante) y pulsa **Publish release**.
+
+GitHub compila, comprueba que la versión coincide con la etiqueta y **adjunta el ZIP de descarga a la Release** él solo.
+
 ## Code signing policy
 
 Free code signing provided by [SignPath.io](https://about.signpath.io), certificate by [SignPath Foundation](https://signpath.org).
