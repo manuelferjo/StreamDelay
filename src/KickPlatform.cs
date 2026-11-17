@@ -1,3 +1,6 @@
+// Kick: inicio de sesión OAuth con PKCE (se abre el navegador y Kick vuelve a
+// http://localhost:17563/callback, donde StreamDelay escucha un momento), título y categoría,
+// escribir en el chat y moderar.
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -19,11 +22,12 @@ namespace StreamDelay
 
 		public static string ApiBase = "https://api.kick.com/public";
 
+		// La que hay que poner en la app de Kick.
 		public static string RedirectUri
 		{
 			get
 			{
-				return "http://localhost:" + 17563 + "/callback";
+				return "http://localhost:" + CallbackPort + "/callback";
 			}
 		}
 
@@ -59,189 +63,199 @@ namespace StreamDelay
 			}
 		}
 
+		// Base64 para URLs (sin "=" y con - y _).
 		private static string B64Url(byte[] b)
 		{
 			return Convert.ToBase64String(b).TrimEnd('=').Replace('+', '-')
 				.Replace('/', '_');
 		}
 
+		// OAuth con PKCE: se abre la página de Kick, se espera (máximo 5 min) a que el navegador vuelva
+		// a localhost con el código y se cambia el código por los tokens.
 		public override void Login(ILoginUi ui)
 		{
-			byte[] array = new byte[32];
-			using (RandomNumberGenerator randomNumberGenerator = RandomNumberGenerator.Create())
+			// PKCE: un secreto aleatorio (verifier) del que a Kick solo se le manda el SHA-256 (challenge).
+			byte[] random = new byte[32];
+			using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
 			{
-				randomNumberGenerator.GetBytes(array);
+				rng.GetBytes(random);
 			}
-			string text = B64Url(array);
-			string text2;
-			using (SHA256 sHA = SHA256.Create())
+			string verifier = B64Url(random);
+			string challenge;
+			using (SHA256 sha = SHA256.Create())
 			{
-				text2 = B64Url(sHA.ComputeHash(Encoding.ASCII.GetBytes(text)));
+				challenge = B64Url(sha.ComputeHash(Encoding.ASCII.GetBytes(verifier)));
 			}
-			byte[] array2 = new byte[16];
-			using (RandomNumberGenerator randomNumberGenerator2 = RandomNumberGenerator.Create())
+			// state: para comprobar que la respuesta es de esta petición.
+			byte[] stateBytes = new byte[16];
+			using (RandomNumberGenerator rng2 = RandomNumberGenerator.Create())
 			{
-				randomNumberGenerator2.GetBytes(array2);
+				rng2.GetBytes(stateBytes);
 			}
-			string text3 = B64Url(array2);
-			string value = null;
-			string text4 = null;
-			List<TcpListener> list = new List<TcpListener>();
-			IPAddress[] array3 = new IPAddress[2]
+			string state = B64Url(stateBytes);
+			string code = null;
+			string error = null;
+			// Se escucha en localhost (IPv4 e IPv6, el navegador puede usar cualquiera).
+			List<TcpListener> listeners = new List<TcpListener>();
+			foreach (IPAddress localaddr in new IPAddress[2]
 			{
 				IPAddress.Loopback,
 				IPAddress.IPv6Loopback
-			};
-			foreach (IPAddress localaddr in array3)
+			})
 			{
 				try
 				{
-					TcpListener tcpListener = new TcpListener(localaddr, 17563);
-					tcpListener.Start();
-					list.Add(tcpListener);
+					TcpListener listener = new TcpListener(localaddr, CallbackPort);
+					listener.Start();
+					listeners.Add(listener);
 				}
 				catch
 				{
 				}
 			}
-			if (list.Count == 0)
+			if (listeners.Count == 0)
 			{
-				throw new ApiException(0, "el puerto " + 17563 + " está ocupado; cierra el programa que lo use y vuelve a intentarlo");
+				throw new ApiException(0, "el puerto " + CallbackPort + " está ocupado; cierra el programa que lo use y vuelve a intentarlo");
 			}
 			try
 			{
-				string url = IdBase + "/oauth/authorize?" + Http.Form("response_type", "code", "client_id", ClientId, "redirect_uri", RedirectUri, "scope", "user:read channel:read channel:write chat:write moderation:ban moderation:chat_message:manage", "code_challenge", text2, "code_challenge_method", "S256", "state", text3);
+				string url = IdBase + "/oauth/authorize?" + Http.Form("response_type", "code", "client_id", ClientId, "redirect_uri", RedirectUri, "scope", Scopes, "code_challenge", challenge, "code_challenge_method", "S256", "state", state);
 				ui.ShowBrowserWait(url);
 				Http.OpenBrowser(url);
-				DateTime dateTime = DateTime.UtcNow.AddMinutes(5.0);
-				while (value == null && text4 == null)
+				DateTime deadline = DateTime.UtcNow.AddMinutes(5.0);
+				while (code == null && error == null)
 				{
 					if (ui.Cancelled)
 					{
 						throw new OperationCanceledException();
 					}
-					if (DateTime.UtcNow > dateTime)
+					if (DateTime.UtcNow > deadline)
 					{
 						throw new ApiException(0, "tiempo agotado esperando la autorización");
 					}
-					TcpListener tcpListener2 = null;
-					foreach (TcpListener item in list)
+					TcpListener ready = null;
+					foreach (TcpListener item in listeners)
 					{
 						if (item.Pending())
 						{
-							tcpListener2 = item;
+							ready = item;
 							break;
 						}
 					}
-					if (tcpListener2 == null)
+					if (ready == null)
 					{
 						Thread.Sleep(100);
 						continue;
 					}
-					using (TcpClient tcpClient = tcpListener2.AcceptTcpClient())
+					using (TcpClient browser = ready.AcceptTcpClient())
 					{
-						tcpClient.ReceiveTimeout = 5000;
-						NetworkStream stream = tcpClient.GetStream();
-						string text5 = ReadLine(stream);
+						browser.ReceiveTimeout = 5000;
+						NetworkStream stream = browser.GetStream();
+						// "GET /callback?code=…&state=… HTTP/1.1"
+						string requestLine = ReadLine(stream);
 						string q = "";
-						string[] array4 = text5.Split(' ');
-						if (array4.Length >= 2 && array4[1].StartsWith("/callback"))
+						string[] parts = requestLine.Split(' ');
+						if (parts.Length >= 2 && parts[1].StartsWith("/callback"))
 						{
-							int num = array4[1].IndexOf('?');
-							if (num >= 0)
+							int question = parts[1].IndexOf('?');
+							if (question >= 0)
 							{
-								q = array4[1].Substring(num + 1);
+								q = parts[1].Substring(question + 1);
 							}
-							Dictionary<string, string> dictionary = ParseQuery(q);
-							string value2;
-							dictionary.TryGetValue("state", out value2);
-							if (dictionary.ContainsKey("error"))
+							Dictionary<string, string> query = ParseQuery(q);
+							string gotState;
+							query.TryGetValue("state", out gotState);
+							if (query.ContainsKey("error"))
 							{
-								text4 = dictionary["error"];
-								goto IL_0366;
+								error = query["error"];
+								goto answer;
 							}
-							if (value2 != text3)
+							if (gotState != state)
 							{
 								Reply(stream, 400, "Respuesta no válida. Vuelve a intentarlo desde StreamDelay.");
 								continue;
 							}
-							if (dictionary.TryGetValue("code", out value))
+							if (query.TryGetValue("code", out code))
 							{
-								goto IL_0366;
+								goto answer;
 							}
 							Reply(stream, 400, "Falta el código.");
 						}
 						else
 						{
+							// Otra petición del navegador (por ejemplo el favicon).
 							Reply(stream, 404, "No encontrado");
 						}
-						goto end_IL_0261;
-						IL_0366:
-						Reply(stream, 200, (text4 == null) ? "¡Listo! StreamDelay ya está conectado a Kick. Puedes cerrar esta pestaña." : ("Kick no ha dado permiso (" + text4 + "). Puedes cerrar esta pestaña."));
-						end_IL_0261:;
+						goto done;
+						answer:
+						// Página que ve el usuario en el navegador al terminar.
+						Reply(stream, 200, (error == null) ? "¡Listo! StreamDelay ya está conectado a Kick. Puedes cerrar esta pestaña." : ("Kick no ha dado permiso (" + error + "). Puedes cerrar esta pestaña."));
+						done:;
 					}
 				}
 			}
 			finally
 			{
-				foreach (TcpListener item2 in list)
+				foreach (TcpListener item in listeners)
 				{
 					try
 					{
-						item2.Stop();
+						item.Stop();
 					}
 					catch
 					{
 					}
 				}
 			}
-			if (text4 != null)
+			if (error != null)
 			{
-				throw new ApiException(0, (text4 == "access_denied") ? "has rechazado el acceso" : ("Kick devolvió: " + text4));
+				throw new ApiException(0, (error == "access_denied") ? "has rechazado el acceso" : ("Kick devolvió: " + error));
 			}
-			SetTokens(Http.Send("POST", IdBase + "/oauth/token", null, null, "application/x-www-form-urlencoded", Http.Form("grant_type", "authorization_code", "code", value, "client_id", ClientId, "client_secret", ClientSecret, "redirect_uri", RedirectUri, "code_verifier", text)));
+			SetTokens(Http.Send("POST", IdBase + "/oauth/token", null, null, "application/x-www-form-urlencoded", Http.Form("grant_type", "authorization_code", "code", code, "client_id", ClientId, "client_secret", ClientSecret, "redirect_uri", RedirectUri, "code_verifier", verifier)));
 			FinishLogin();
 		}
 
+		// Una línea (hasta \n, sin \r), como mucho 8 KB.
 		private static string ReadLine(Stream s)
 		{
-			StringBuilder stringBuilder = new StringBuilder();
-			int num;
-			while ((num = s.ReadByte()) >= 0 && num != 10 && stringBuilder.Length < 8192)
+			StringBuilder sb = new StringBuilder();
+			int b;
+			while ((b = s.ReadByte()) >= 0 && b != 10 && sb.Length < 8192)
 			{
-				if (num != 13)
+				if (b != 13)
 				{
-					stringBuilder.Append((char)num);
+					sb.Append((char)b);
 				}
 			}
-			return stringBuilder.ToString();
+			return sb.ToString();
 		}
 
+		// "a=1&b=2" → diccionario (con los caracteres %xx y + descodificados).
 		private static Dictionary<string, string> ParseQuery(string q)
 		{
-			Dictionary<string, string> dictionary = new Dictionary<string, string>();
-			string[] array = q.Split('&');
-			foreach (string text in array)
+			Dictionary<string, string> result = new Dictionary<string, string>();
+			foreach (string pair in q.Split('&'))
 			{
-				int num = text.IndexOf('=');
-				if (num > 0)
+				int eq = pair.IndexOf('=');
+				if (eq > 0)
 				{
-					dictionary[Uri.UnescapeDataString(text.Substring(0, num).Replace('+', ' '))] = Uri.UnescapeDataString(text.Substring(num + 1).Replace('+', ' '));
+					result[Uri.UnescapeDataString(pair.Substring(0, eq).Replace('+', ' '))] = Uri.UnescapeDataString(pair.Substring(eq + 1).Replace('+', ' '));
 				}
 			}
-			return dictionary;
+			return result;
 		}
 
+		// Respuesta HTML sencilla para el navegador.
 		private static void Reply(Stream s, int code, string msg)
 		{
-			string s2 = "<!doctype html><meta charset=utf-8><title>StreamDelay</title><body style=\"background:#09090C;color:#F4F4F5;font:18px 'Segoe UI',sans-serif;display:grid;place-items:center;height:90vh\"><div style=\"max-width:520px;text-align:center\"><div style=\"font-size:28px;font-weight:700;color:#C09AFD;margin-bottom:12px\">Stream Delay</div>" + WebUtility.HtmlEncode(msg) + "</div>";
-			byte[] bytes = Encoding.UTF8.GetBytes(s2);
-			string s3 = "HTTP/1.1 " + code + " OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: " + bytes.Length + "\r\nConnection: close\r\n\r\n";
-			byte[] bytes2 = Encoding.ASCII.GetBytes(s3);
+			string html = "<!doctype html><meta charset=utf-8><title>StreamDelay</title><body style=\"background:#09090C;color:#F4F4F5;font:18px 'Segoe UI',sans-serif;display:grid;place-items:center;height:90vh\"><div style=\"max-width:520px;text-align:center\"><div style=\"font-size:28px;font-weight:700;color:#C09AFD;margin-bottom:12px\">Stream Delay</div>" + WebUtility.HtmlEncode(msg) + "</div>";
+			byte[] body = Encoding.UTF8.GetBytes(html);
+			string head = "HTTP/1.1 " + code + " OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: " + body.Length + "\r\nConnection: close\r\n\r\n";
+			byte[] headBytes = Encoding.ASCII.GetBytes(head);
 			try
 			{
-				s.Write(bytes2, 0, bytes2.Length);
-				s.Write(bytes, 0, bytes.Length);
+				s.Write(headBytes, 0, headBytes.Length);
+				s.Write(body, 0, body.Length);
 				s.Flush();
 			}
 			catch
@@ -254,69 +268,73 @@ namespace StreamDelay
 			SetTokens(Http.Send("POST", IdBase + "/oauth/token", null, null, "application/x-www-form-urlencoded", Http.Form("grant_type", "refresh_token", "refresh_token", refresh, "client_id", ClientId, "client_secret", ClientSecret)));
 		}
 
+		// Nombre del canal (slug); si no lo hay, el nombre del usuario.
 		protected override void LoadAccount()
 		{
-			List<Dictionary<string, object>> list = Http.Arr(Api("GET", ApiBase + "/v1/channels", null, null), "data");
-			if (list.Count > 0)
+			List<Dictionary<string, object>> channels = Http.Arr(Api("GET", ApiBase + "/v1/channels", null, null), "data");
+			if (channels.Count > 0)
 			{
-				Account = Http.Str(list[0], "slug");
+				Account = Http.Str(channels[0], "slug");
 				if (Account.Length > 0)
 				{
 					return;
 				}
 			}
-			List<Dictionary<string, object>> list2 = Http.Arr(Api("GET", ApiBase + "/v1/users", null, null), "data");
-			Account = ((list2.Count > 0) ? Http.Str(list2[0], "name") : "");
+			List<Dictionary<string, object>> users = Http.Arr(Api("GET", ApiBase + "/v1/users", null, null), "data");
+			Account = ((users.Count > 0) ? Http.Str(users[0], "name") : "");
 		}
 
 		public override List<Category> Search(string q)
 		{
-			List<Category> list = new List<Category>();
+			List<Category> found = new List<Category>();
 			foreach (Dictionary<string, object> item in Http.Arr(Api("GET", ApiBase + "/v2/categories?limit=12&name=" + Uri.EscapeDataString(q), null, null), "data"))
 			{
-				list.Add(new Category(Http.Str(item, "id"), Http.Str(item, "name")));
+				found.Add(new Category(Http.Str(item, "id"), Http.Str(item, "name")));
 			}
-			return list;
+			return found;
 		}
 
 		public override void ReadCurrent(out string title, out Category cat)
 		{
-			List<Dictionary<string, object>> list = Http.Arr(Api("GET", ApiBase + "/v1/channels", null, null), "data");
-			title = ((list.Count > 0) ? Http.Str(list[0], "stream_title") : "");
-			Dictionary<string, object> dictionary = ((list.Count > 0) ? Http.Obj(list[0], "category") : null);
-			cat = ((dictionary != null && Http.Str(dictionary, "id").Length > 0 && Http.Str(dictionary, "id") != "0") ? new Category(Http.Str(dictionary, "id"), Http.Str(dictionary, "name")) : null);
+			List<Dictionary<string, object>> channels = Http.Arr(Api("GET", ApiBase + "/v1/channels", null, null), "data");
+			title = ((channels.Count > 0) ? Http.Str(channels[0], "stream_title") : "");
+			Dictionary<string, object> category = ((channels.Count > 0) ? Http.Obj(channels[0], "category") : null);
+			// Categoría "0" = ninguna.
+			cat = ((category != null && Http.Str(category, "id").Length > 0 && Http.Str(category, "id") != "0") ? new Category(Http.Str(category, "id"), Http.Str(category, "name")) : null);
 		}
 
 		public override void Update(string title, Category cat)
 		{
-			Dictionary<string, object> dictionary = new Dictionary<string, object>();
+			Dictionary<string, object> changes = new Dictionary<string, object>();
 			if (title != null)
 			{
-				dictionary["stream_title"] = title;
+				changes["stream_title"] = title;
 			}
-			long result;
-			if (cat != null && long.TryParse(cat.Id, out result))
+			long categoryId;
+			if (cat != null && long.TryParse(cat.Id, out categoryId))
 			{
-				dictionary["category_id"] = result;
+				changes["category_id"] = categoryId;
 			}
-			Api("PATCH", ApiBase + "/v1/channels", null, dictionary);
+			Api("PATCH", ApiBase + "/v1/channels", null, changes);
 		}
 
+		// Escribe en el chat del canal slug (el propio si está vacío).
 		public void SendChat(string slug, string text)
 		{
 			string url = ApiBase + "/v1/channels" + ((string.IsNullOrEmpty(slug) || slug.Equals(Account, StringComparison.OrdinalIgnoreCase)) ? "" : ("?slug=" + Uri.EscapeDataString(slug)));
-			List<Dictionary<string, object>> list = Http.Arr(Api("GET", url, null, null), "data");
-			if (list.Count == 0)
+			List<Dictionary<string, object>> channels = Http.Arr(Api("GET", url, null, null), "data");
+			if (channels.Count == 0)
 			{
 				throw new ApiException(404, "el canal \"" + slug + "\" no existe");
 			}
-			long result;
-			long.TryParse(Http.Str(list[0], "broadcaster_user_id"), out result);
-			Dictionary<string, object> dictionary = new Dictionary<string, object>();
-			dictionary.Add("type", "user");
-			dictionary.Add("content", text);
-			dictionary.Add("broadcaster_user_id", result);
-			Dictionary<string, object> body = dictionary;
+			long broadcasterId;
+			long.TryParse(Http.Str(channels[0], "broadcaster_user_id"), out broadcasterId);
+			Dictionary<string, object> body = new Dictionary<string, object>
+			{
+				{ "type", "user" },
+				{ "content", text },
+				{ "broadcaster_user_id", broadcasterId }
+			};
 			Dictionary<string, object> d;
 			try
 			{
@@ -330,13 +348,14 @@ namespace StreamDelay
 				}
 				throw;
 			}
-			Dictionary<string, object> dictionary2 = Http.Obj(d, "data");
-			if (dictionary2 != null && Http.Str(dictionary2, "is_sent").ToLowerInvariant() == "false")
+			Dictionary<string, object> data = Http.Obj(d, "data");
+			if (data != null && Http.Str(data, "is_sent").ToLowerInvariant() == "false")
 			{
 				throw new ApiException(400, "Kick no envió el mensaje");
 			}
 		}
-			// ---------- Moderación ----------
+
+		// ---------- Moderación ----------
 
 		private static ApiException ModError(ApiException ex)
 		{

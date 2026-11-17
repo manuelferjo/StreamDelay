@@ -1,3 +1,5 @@
+// Campo de texto con el tema oscuro: un TextBox normal (Box) dentro de un recuadro redondeado
+// que se ilumina en violeta al escribir.
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -11,8 +13,10 @@ namespace StreamDelay
 
 		private bool focused;
 
+		// ReadOnly: siempre de solo lectura (en violeta, como el servidor de OBS).
 		private bool fixedRo;
 
+		// Locked: bloqueado por ahora (en gris, como los canales con el chat encendido).
 		private bool locked;
 
 		public bool ReadOnly
@@ -58,12 +62,12 @@ namespace StreamDelay
 			};
 			base.Controls.Add(Box);
 			TextBox box = Box;
-			EventHandler value = delegate
+			EventHandler onFocus = delegate
 			{
 				focused = true;
 				Invalidate();
 			};
-			box.GotFocus += value;
+			box.GotFocus += onFocus;
 			Box.LostFocus += delegate
 			{
 				focused = false;
@@ -88,13 +92,14 @@ namespace StreamDelay
 		protected override void OnLayout(LayoutEventArgs e)
 		{
 			base.OnLayout(e);
-			int num = Theme.S(12f);
+			// El TextBox va dentro con 12 de margen (centrado en vertical si es de una línea).
+			int pad = Theme.S(12f);
 			if (Box.Multiline)
 			{
-				Box.SetBounds(num, Theme.S(8f), base.Width - 2 * num, base.Height - Theme.S(16f));
+				Box.SetBounds(pad, Theme.S(8f), base.Width - 2 * pad, base.Height - Theme.S(16f));
 				return;
 			}
-			Box.SetBounds(num, (base.Height - Box.Height) / 2, base.Width - 2 * num, Box.Height);
+			Box.SetBounds(pad, (base.Height - Box.Height) / 2, base.Width - 2 * pad, Box.Height);
 		}
 
 		protected override void OnPaint(PaintEventArgs e)

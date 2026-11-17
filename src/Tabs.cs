@@ -1,3 +1,5 @@
+// Barra de pestañas de la ventana (Directo, Chat, Overlays…): todas del mismo ancho, con la
+// elegida resaltada. MainForm.TabPages dice qué página enseña cada una.
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -41,6 +43,7 @@ namespace StreamDelay
 			base.TabStop = false;
 		}
 
+		// Pestaña que hay en la posición x (-1 si no hay pestañas).
 		private int At(int x)
 		{
 			if (Items.Length != 0)
@@ -52,10 +55,10 @@ namespace StreamDelay
 
 		protected override void OnMouseMove(MouseEventArgs e)
 		{
-			int num = At(e.X);
-			if (num != hot)
+			int tab = At(e.X);
+			if (tab != hot)
 			{
-				hot = num;
+				hot = tab;
 				Invalidate();
 			}
 			base.OnMouseMove(e);
@@ -89,14 +92,14 @@ namespace StreamDelay
 					graphics.DrawPath(pen, path);
 				}
 			}
-			float num = Theme.S(4f);
-			float num2 = ((float)base.Width - 2f * num) / (float)Math.Max(1, Items.Length);
+			float pad = Theme.S(4f);
+			float tabWidth = ((float)base.Width - 2f * pad) / (float)Math.Max(1, Items.Length);
 			for (int i = 0; i < Items.Length; i++)
 			{
-				RectangleF r2 = new RectangleF(num + (float)i * num2, num, num2, (float)base.Height - 2f * num);
+				RectangleF cell = new RectangleF(pad + (float)i * tabWidth, pad, tabWidth, (float)base.Height - 2f * pad);
 				if (i == sel)
 				{
-					using (GraphicsPath path2 = Theme.Round(r2, r2.Height / 2f))
+					using (GraphicsPath path2 = Theme.Round(cell, cell.Height / 2f))
 					{
 						using (SolidBrush brush2 = new SolidBrush(Color.FromArgb(34, Theme.Violet)))
 						{
@@ -109,7 +112,7 @@ namespace StreamDelay
 					}
 				}
 				Color c = ((i == sel) ? Theme.VioletPale : ((i == hot) ? Theme.Text : Theme.Muted));
-				Theme.DrawText(graphics, Items[i], Theme.BodySemi(8.5f), c, r2, StringAlignment.Center, StringAlignment.Center);
+				Theme.DrawText(graphics, Items[i], Theme.BodySemi(8.5f), c, cell, StringAlignment.Center, StringAlignment.Center);
 			}
 		}
 	}

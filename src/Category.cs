@@ -1,3 +1,4 @@
+// Categoría o juego de una plataforma (su id y su nombre).
 namespace StreamDelay
 {
 	internal class Category

@@ -1,3 +1,4 @@
+// IConn para la conexión RTMP directa (RtmpClient).
 namespace StreamDelay
 {
 	internal class RtmpConn : IConn

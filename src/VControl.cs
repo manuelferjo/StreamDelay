@@ -1,3 +1,5 @@
+// Base de los controles dibujados a mano (botones, interruptores, campos…): fondo transparente,
+// doble búfer y estado del ratón (hover = encima, pressed = pulsado) para dibujarse distinto.
 using System;
 using System.Drawing;
 using System.Windows.Forms;

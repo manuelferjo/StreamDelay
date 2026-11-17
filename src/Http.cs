@@ -1,3 +1,6 @@
+// Llamadas HTTP a las APIs de las plataformas: envía la petición (JSON o formulario), lee la
+// respuesta como JSON y, si la plataforma devuelve un error, lo convierte en ApiException con un
+// mensaje legible. También ayudas para leer el JSON y para abrir el navegador.
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -22,6 +25,7 @@ namespace StreamDelay
 			};
 			try
 			{
+				// Windows antiguos no activan TLS 1.2 por defecto.
 				ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
 			}
 			catch
@@ -29,21 +33,22 @@ namespace StreamDelay
 			}
 		}
 
+		// Formulario "a=1&b=2" a partir de pares nombre, valor (los valores null se omiten).
 		public static string Form(params string[] kv)
 		{
-			StringBuilder stringBuilder = new StringBuilder();
+			StringBuilder sb = new StringBuilder();
 			for (int i = 0; i + 1 < kv.Length; i += 2)
 			{
 				if (kv[i + 1] != null)
 				{
-					if (stringBuilder.Length > 0)
+					if (sb.Length > 0)
 					{
-						stringBuilder.Append('&');
+						sb.Append('&');
 					}
-					stringBuilder.Append(Uri.EscapeDataString(kv[i])).Append('=').Append(Uri.EscapeDataString(kv[i + 1]));
+					sb.Append(Uri.EscapeDataString(kv[i])).Append('=').Append(Uri.EscapeDataString(kv[i + 1]));
 				}
 			}
-			return stringBuilder.ToString();
+			return sb.ToString();
 		}
 
 		public static string ToJson(object o)
@@ -51,31 +56,33 @@ namespace StreamDelay
 			return json.Serialize(o);
 		}
 
+		// Hace la petición y devuelve la respuesta JSON (null si no es un objeto JSON).
+		// Si el código no es 2xx, lanza ApiException (estado 0 = sin conexión).
 		public static Dictionary<string, object> Send(string method, string url, string bearer, Dictionary<string, string> headers, string contentType, string body)
 		{
-			HttpWebRequest httpWebRequest = (HttpWebRequest)WebRequest.Create(url);
-			httpWebRequest.Method = method;
-			httpWebRequest.UserAgent = "StreamDelay";
-			httpWebRequest.Accept = "application/json";
-			httpWebRequest.Timeout = 20000;
-			httpWebRequest.ReadWriteTimeout = 20000;
+			HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
+			request.Method = method;
+			request.UserAgent = "StreamDelay";
+			request.Accept = "application/json";
+			request.Timeout = 20000;
+			request.ReadWriteTimeout = 20000;
 			if (bearer != null)
 			{
-				httpWebRequest.Headers["Authorization"] = "Bearer " + bearer;
+				request.Headers["Authorization"] = "Bearer " + bearer;
 			}
 			if (headers != null)
 			{
 				foreach (KeyValuePair<string, string> header in headers)
 				{
-					httpWebRequest.Headers[header.Key] = header.Value;
+					request.Headers[header.Key] = header.Value;
 				}
 			}
 			if (body != null)
 			{
 				byte[] bytes = Encoding.UTF8.GetBytes(body);
-				httpWebRequest.ContentType = contentType;
-				httpWebRequest.ContentLength = bytes.Length;
-				using (Stream stream = httpWebRequest.GetRequestStream())
+				request.ContentType = contentType;
+				request.ContentLength = bytes.Length;
+				using (Stream stream = request.GetRequestStream())
 				{
 					stream.Write(bytes, 0, bytes.Length);
 				}
@@ -84,29 +91,30 @@ namespace StreamDelay
 			string text;
 			try
 			{
-				using (HttpWebResponse httpWebResponse = (HttpWebResponse)httpWebRequest.GetResponse())
+				using (HttpWebResponse response = (HttpWebResponse)request.GetResponse())
 				{
-					statusCode = (int)httpWebResponse.StatusCode;
-					text = Read(httpWebResponse);
+					statusCode = (int)response.StatusCode;
+					text = Read(response);
 				}
 			}
 			catch (WebException ex)
 			{
-				HttpWebResponse httpWebResponse2 = ex.Response as HttpWebResponse;
-				if (httpWebResponse2 == null)
+				// Los errores HTTP (4xx, 5xx) llegan como excepción, pero traen respuesta.
+				HttpWebResponse errorResponse = ex.Response as HttpWebResponse;
+				if (errorResponse == null)
 				{
 					throw new ApiException(0, "sin conexión (" + ex.Message + ")");
 				}
-				statusCode = (int)httpWebResponse2.StatusCode;
-				text = Read(httpWebResponse2);
-				httpWebResponse2.Close();
+				statusCode = (int)errorResponse.StatusCode;
+				text = Read(errorResponse);
+				errorResponse.Close();
 			}
-			Dictionary<string, object> dictionary = null;
+			Dictionary<string, object> result = null;
 			if (!string.IsNullOrEmpty(text) && text.TrimStart().StartsWith("{"))
 			{
 				try
 				{
-					dictionary = json.DeserializeObject(text) as Dictionary<string, object>;
+					result = json.DeserializeObject(text) as Dictionary<string, object>;
 				}
 				catch
 				{
@@ -114,9 +122,9 @@ namespace StreamDelay
 			}
 			if (statusCode < 200 || statusCode > 299)
 			{
-				throw new ApiException(statusCode, ErrorText(dictionary, text, statusCode));
+				throw new ApiException(statusCode, ErrorText(result, text, statusCode));
 			}
-			return dictionary;
+			return result;
 		}
 
 		private static string Read(HttpWebResponse r)
@@ -127,13 +135,15 @@ namespace StreamDelay
 				{
 					return "";
 				}
-				using (StreamReader streamReader = new StreamReader(stream, Encoding.UTF8))
+				using (StreamReader reader = new StreamReader(stream, Encoding.UTF8))
 				{
-					return streamReader.ReadToEnd();
+					return reader.ReadToEnd();
 				}
 			}
 		}
 
+		// El mensaje de error de la respuesta, venga como venga según la plataforma:
+		// "message", "error" + "error_description", o un objeto "error": { "message": … }.
 		private static string ErrorText(Dictionary<string, object> d, string text, int status)
 		{
 			if (d != null)
@@ -142,14 +152,13 @@ namespace StreamDelay
 				{
 					return (string)d["message"];
 				}
-				string text2 = Str(d, "error");
-				if (text2.Length > 0 && !(d["error"] is Dictionary<string, object>))
+				string error = Str(d, "error");
+				if (error.Length > 0 && !(d["error"] is Dictionary<string, object>))
 				{
-					string text3 = Str(d, "error_description");
-					return text2 + ((text3.Length > 0) ? (": " + text3) : "");
+					string description = Str(d, "error_description");
+					return error + ((description.Length > 0) ? (": " + description) : "");
 				}
-				string[] array = new string[3] { "message", "error_description", "error" };
-				foreach (string key in array)
+				foreach (string key in new string[3] { "message", "error_description", "error" })
 				{
 					object value;
 					if (d.TryGetValue(key, out value))
@@ -158,18 +167,22 @@ namespace StreamDelay
 						{
 							return (string)value;
 						}
-						Dictionary<string, object> dictionary = value as Dictionary<string, object>;
-						if (dictionary != null && dictionary.ContainsKey("message"))
+						Dictionary<string, object> inner = value as Dictionary<string, object>;
+						if (inner != null && inner.ContainsKey("message"))
 						{
-							return Str(dictionary, "message");
+							return Str(inner, "message");
 						}
 					}
 				}
 			}
-			string text4 = (text ?? "").Trim();
-			return "error " + status + ((text4.Length > 0 && text4.Length < 200) ? (": " + text4) : "");
+			// Sin JSON: el código y, si es corta, la respuesta tal cual.
+			string raw = (text ?? "").Trim();
+			return "error " + status + ((raw.Length > 0 && raw.Length < 200) ? (": " + raw) : "");
 		}
 
+		// ---------- Leer el JSON ----------
+
+		// Valor como texto ("" si no está).
 		public static string Str(Dictionary<string, object> d, string k)
 		{
 			object value;
@@ -180,6 +193,7 @@ namespace StreamDelay
 			return Convert.ToString(value, CultureInfo.InvariantCulture);
 		}
 
+		// Objeto dentro del objeto (null si no está).
 		public static Dictionary<string, object> Obj(Dictionary<string, object> d, string k)
 		{
 			object value;
@@ -190,6 +204,7 @@ namespace StreamDelay
 			return value as Dictionary<string, object>;
 		}
 
+		// Lista de objetos (vacía si no está).
 		public static List<Dictionary<string, object>> Arr(Dictionary<string, object> d, string k)
 		{
 			List<Dictionary<string, object>> list = new List<Dictionary<string, object>>();
@@ -198,17 +213,17 @@ namespace StreamDelay
 			{
 				return list;
 			}
-			IEnumerable enumerable = value as IEnumerable;
-			if (enumerable == null || value is string)
+			IEnumerable items = value as IEnumerable;
+			if (items == null || value is string)
 			{
 				return list;
 			}
-			foreach (object item in enumerable)
+			foreach (object item in items)
 			{
-				Dictionary<string, object> dictionary = item as Dictionary<string, object>;
-				if (dictionary != null)
+				Dictionary<string, object> obj = item as Dictionary<string, object>;
+				if (obj != null)
 				{
-					list.Add(dictionary);
+					list.Add(obj);
 				}
 			}
 			return list;
@@ -224,13 +239,14 @@ namespace StreamDelay
 			return result;
 		}
 
+		// Abre la dirección en el navegador predeterminado.
 		public static void OpenBrowser(string url)
 		{
 			try
 			{
-				ProcessStartInfo processStartInfo = new ProcessStartInfo(url);
-				processStartInfo.UseShellExecute = true;
-				Process.Start(processStartInfo);
+				ProcessStartInfo startInfo = new ProcessStartInfo(url);
+				startInfo.UseShellExecute = true;
+				Process.Start(startInfo);
 			}
 			catch
 			{

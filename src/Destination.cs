@@ -1,3 +1,4 @@
+// Un destino de emisión (Twitch, Kick, YouTube u Otro) tal como se configura en Ajustes.
 namespace StreamDelay
 {
 	internal class Destination

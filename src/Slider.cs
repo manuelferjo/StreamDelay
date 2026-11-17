@@ -1,3 +1,6 @@
+// Barra del delay (0–600 s). Va en escala de raíz cuadrada: los primeros segundos ocupan más
+// sitio y se ajustan con más precisión que los minutos. Con marcas en 30 s, 1, 2 y 5 min.
+// Se mueve con el ratón, la rueda y las flechas (RePág/AvPág: ±10 s).
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -34,10 +37,10 @@ namespace StreamDelay
 			}
 			set
 			{
-				int num = Math.Max(0, Math.Min(max, value));
-				if (num != this.value)
+				int clamped = Math.Max(0, Math.Min(max, value));
+				if (clamped != this.value)
 				{
-					this.value = num;
+					this.value = clamped;
 					Invalidate();
 					if (this.ValueChanged != null)
 					{
@@ -47,6 +50,7 @@ namespace StreamDelay
 			}
 		}
 
+		// Margen a cada lado (para que quepa el círculo en los extremos).
 		private float Pad
 		{
 			get
@@ -63,6 +67,7 @@ namespace StreamDelay
 			base.TabStop = true;
 		}
 
+		// Valor → posición (0 a 1) y al revés.
 		private float PosOf(int v)
 		{
 			return (float)Math.Sqrt((double)v / (double)max);
@@ -111,6 +116,7 @@ namespace StreamDelay
 			Value += ((e.Delta > 0) ? 1 : (-1));
 		}
 
+		// Las flechas son para la barra (si no, Windows las usaría para pasar a otro control).
 		protected override bool IsInputKey(Keys k)
 		{
 			if (k != Keys.Left && k != Keys.Right && k != Keys.Up && k != Keys.Down)
@@ -138,6 +144,7 @@ namespace StreamDelay
 			}
 			else if (e.KeyCode == Keys.Next)
 			{
+				// Next = AvPág.
 				Value -= 10;
 			}
 			base.OnKeyDown(e);
@@ -147,30 +154,32 @@ namespace StreamDelay
 		{
 			Graphics graphics = e.Graphics;
 			Theme.Quality(graphics);
-			float num = (float)base.Height / 2f;
-			float num2 = Theme.S(6f);
-			RectangleF r = new RectangleF(Pad, num - num2 / 2f, (float)base.Width - 2f * Pad, num2);
-			using (GraphicsPath path = Theme.Round(r, num2 / 2f))
+			float middle = (float)base.Height / 2f;
+			float thickness = Theme.S(6f);
+			// Carril.
+			RectangleF rail = new RectangleF(Pad, middle - thickness / 2f, (float)base.Width - 2f * Pad, thickness);
+			using (GraphicsPath path = Theme.Round(rail, thickness / 2f))
 			{
 				using (SolidBrush brush = new SolidBrush(Color.FromArgb(38, 38, 48)))
 				{
 					graphics.FillPath(brush, path);
 				}
 			}
-			float num3 = Pad + PosOf(value) * ((float)base.Width - 2f * Pad);
-			int[] array = new int[4] { 30, 60, 120, 300 };
-			foreach (int v in array)
+			float knobX = Pad + PosOf(value) * ((float)base.Width - 2f * Pad);
+			// Marcas en 30 s, 1 min, 2 min y 5 min.
+			foreach (int v in new int[4] { 30, 60, 120, 300 })
 			{
-				float num4 = Pad + PosOf(v) * ((float)base.Width - 2f * Pad);
+				float markX = Pad + PosOf(v) * ((float)base.Width - 2f * Pad);
 				using (SolidBrush brush2 = new SolidBrush(Color.FromArgb(70, 255, 255, 255)))
 				{
-					graphics.FillEllipse(brush2, num4 - 1.5f, num - 1.5f, 3f, 3f);
+					graphics.FillEllipse(brush2, markX - 1.5f, middle - 1.5f, 3f, 3f);
 				}
 			}
-			if (num3 > Pad + 1f)
+			// Parte rellena, con el degradado de la marca a lo ancho de toda la barra.
+			if (knobX > Pad + 1f)
 			{
-				RectangleF r2 = new RectangleF(Pad, num - num2 / 2f, num3 - Pad, num2);
-				using (GraphicsPath path2 = Theme.Round(r2, num2 / 2f))
+				RectangleF filled = new RectangleF(Pad, middle - thickness / 2f, knobX - Pad, thickness);
+				using (GraphicsPath path2 = Theme.Round(filled, thickness / 2f))
 				{
 					using (LinearGradientBrush brush3 = Theme.Brand(new RectangleF(Pad, 0f, (float)base.Width - 2f * Pad, base.Height), false))
 					{
@@ -178,18 +187,19 @@ namespace StreamDelay
 					}
 				}
 			}
-			float num5 = Theme.S(18f);
+			// Círculo (con brillo al pasar el ratón, arrastrar o tener el foco).
+			float knob = Theme.S(18f);
 			if (hover || dragging || Focused)
 			{
-				Card.Glow(graphics, new RectangleF(num3 - num5, num - num5, 2f * num5, 2f * num5), Color.FromArgb(90, Theme.Violet));
+				Card.Glow(graphics, new RectangleF(knobX - knob, middle - knob, 2f * knob, 2f * knob), Color.FromArgb(90, Theme.Violet));
 			}
 			using (SolidBrush brush4 = new SolidBrush(Theme.Text))
 			{
-				graphics.FillEllipse(brush4, num3 - num5 / 2f, num - num5 / 2f, num5, num5);
+				graphics.FillEllipse(brush4, knobX - knob / 2f, middle - knob / 2f, knob, knob);
 			}
 			using (Pen pen = new Pen(Theme.Violet, 2f))
 			{
-				graphics.DrawEllipse(pen, num3 - num5 / 2f, num - num5 / 2f, num5, num5);
+				graphics.DrawEllipse(pen, knobX - knob / 2f, middle - knob / 2f, knob, knob);
 			}
 		}
 	}

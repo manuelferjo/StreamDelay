@@ -1,3 +1,5 @@
+// Interruptor sí/no con su texto (y, si hay Hint, una segunda línea pequeña debajo).
+// Se cambia con un clic o con la barra espaciadora.
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -66,15 +68,16 @@ namespace StreamDelay
 		{
 			Graphics graphics = e.Graphics;
 			Theme.Quality(graphics);
-			float num = Theme.S(38f);
-			float num2 = Theme.S(22f);
-			float num3 = ((Hint.Length > 0) ? ((float)Theme.S(2f)) : (((float)base.Height - num2) / 2f));
-			RectangleF rectangleF = new RectangleF(1f, num3, num, num2);
-			using (GraphicsPath path = Theme.Round(rectangleF, num2 / 2f))
+			float width = Theme.S(38f);
+			float height = Theme.S(22f);
+			// Con Hint, el interruptor va arriba; sin él, centrado.
+			float top = ((Hint.Length > 0) ? ((float)Theme.S(2f)) : (((float)base.Height - height) / 2f));
+			RectangleF track = new RectangleF(1f, top, width, height);
+			using (GraphicsPath path = Theme.Round(track, height / 2f))
 			{
 				if (on)
 				{
-					using (LinearGradientBrush brush = Theme.Brand(rectangleF, false))
+					using (LinearGradientBrush brush = Theme.Brand(track, false))
 					{
 						graphics.FillPath(brush, path);
 					}
@@ -91,31 +94,33 @@ namespace StreamDelay
 					}
 				}
 			}
-			float num4 = num2 - (float)Theme.S(6f);
-			RectangleF rect = new RectangleF(on ? (rectangleF.Right - num4 - (float)Theme.S(3f)) : (rectangleF.X + (float)Theme.S(3f)), num3 + (float)Theme.S(3f), num4, num4);
+			// Bolita: a la derecha si está activado.
+			float knob = height - (float)Theme.S(6f);
+			RectangleF knobRect = new RectangleF(on ? (track.Right - knob - (float)Theme.S(3f)) : (track.X + (float)Theme.S(3f)), top + (float)Theme.S(3f), knob, knob);
 			using (SolidBrush brush3 = new SolidBrush(on ? Color.FromArgb(14, 14, 18) : Theme.Muted))
 			{
-				graphics.FillEllipse(brush3, rect);
+				graphics.FillEllipse(brush3, knobRect);
 			}
+			// Borde de foco (al llegar con el tabulador).
 			if (Focused && ShowFocusCues)
 			{
 				using (Pen pen2 = new Pen(Color.FromArgb(160, Theme.Violet), 1.5f))
 				{
-					RectangleF r = RectangleF.Inflate(rectangleF, 2f, 2f);
+					RectangleF r = RectangleF.Inflate(track, 2f, 2f);
 					using (GraphicsPath path2 = Theme.Round(r, r.Height / 2f))
 					{
 						graphics.DrawPath(pen2, path2);
 					}
 				}
 			}
-			float num5 = num + (float)Theme.S(12f);
+			float textX = width + (float)Theme.S(12f);
 			if (Hint.Length == 0)
 			{
-				Theme.DrawText(graphics, Text, Theme.BodySemi(9f), base.Enabled ? Theme.Text : Theme.Dim, new RectangleF(num5, 0f, (float)base.Width - num5, base.Height), StringAlignment.Near, StringAlignment.Center);
+				Theme.DrawText(graphics, Text, Theme.BodySemi(9f), base.Enabled ? Theme.Text : Theme.Dim, new RectangleF(textX, 0f, (float)base.Width - textX, base.Height), StringAlignment.Near, StringAlignment.Center);
 				return;
 			}
-			Theme.DrawText(graphics, Text, Theme.BodySemi(9f), Theme.Text, new RectangleF(num5, 0f, (float)base.Width - num5, Theme.S(24f)), StringAlignment.Near, StringAlignment.Center);
-			Theme.DrawText(graphics, Hint, Theme.Body(8f), Theme.Muted, new RectangleF(num5, Theme.S(22f), (float)base.Width - num5, base.Height - Theme.S(22f)), StringAlignment.Near, StringAlignment.Near);
+			Theme.DrawText(graphics, Text, Theme.BodySemi(9f), Theme.Text, new RectangleF(textX, 0f, (float)base.Width - textX, Theme.S(24f)), StringAlignment.Near, StringAlignment.Center);
+			Theme.DrawText(graphics, Hint, Theme.Body(8f), Theme.Muted, new RectangleF(textX, Theme.S(22f), (float)base.Width - textX, base.Height - Theme.S(22f)), StringAlignment.Near, StringAlignment.Near);
 		}
 	}
 }

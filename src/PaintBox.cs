@@ -1,3 +1,4 @@
+// Recuadro que se dibuja con una función (Painter): textos, etiquetas, cifras y paneles de estado.
 using System;
 using System.Drawing;
 using System.Windows.Forms;

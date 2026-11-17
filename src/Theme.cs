@@ -1,3 +1,5 @@
+// Aspecto de la ventana: colores, fuentes (incluidas dentro del .exe), escala según los ppp de la
+// pantalla y ayudas de dibujo (rectángulos redondeados, degradado de la marca, textos).
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -11,6 +13,8 @@ namespace StreamDelay
 {
 	internal static class Theme
 	{
+		// ---------- Colores (los mismos que la web y las páginas del chat y el Mando) ----------
+
 		public static readonly Color Bg = Color.FromArgb(9, 9, 12);
 
 		public static readonly Color Surface = Color.FromArgb(17, 17, 22);
@@ -41,17 +45,20 @@ namespace StreamDelay
 
 		public static readonly Color Green = Color.FromArgb(52, 211, 153);
 
+		// 1 a 96 ppp (100 %), 1,5 a 144 ppp (150 %)…
 		public static float Scale = 1f;
 
 		private static readonly PrivateFontCollection pfc = new PrivateFontCollection();
 
 		private static readonly Dictionary<string, Font> cache = new Dictionary<string, Font>();
 
+		// Medida de diseño → píxeles de esta pantalla.
 		public static int S(float v)
 		{
 			return (int)Math.Round(v * Scale);
 		}
 
+		// Al arrancar: lee la escala de la pantalla y carga las fuentes .ttf que van dentro del .exe.
 		public static void Init()
 		{
 			try
@@ -70,32 +77,32 @@ namespace StreamDelay
 				Scale = 1f;
 			}
 			Assembly assembly = typeof(Theme).Assembly;
-			string[] manifestResourceNames = assembly.GetManifestResourceNames();
-			foreach (string text in manifestResourceNames)
+			foreach (string resource in assembly.GetManifestResourceNames())
 			{
-				if (!text.EndsWith(".ttf", StringComparison.OrdinalIgnoreCase))
+				if (!resource.EndsWith(".ttf", StringComparison.OrdinalIgnoreCase))
 				{
 					continue;
 				}
 				try
 				{
-					byte[] array;
-					using (Stream stream = assembly.GetManifestResourceStream(text))
+					byte[] font;
+					using (Stream stream = assembly.GetManifestResourceStream(resource))
 					{
-						array = new byte[stream.Length];
-						int num;
-						for (int j = 0; j < array.Length; j += num)
+						font = new byte[stream.Length];
+						int got;
+						for (int j = 0; j < font.Length; j += got)
 						{
-							num = stream.Read(array, j, array.Length - j);
-							if (num <= 0)
+							got = stream.Read(font, j, font.Length - j);
+							if (got <= 0)
 							{
 								break;
 							}
 						}
 					}
-					IntPtr intPtr = Marshal.AllocCoTaskMem(array.Length);
-					Marshal.Copy(array, 0, intPtr, array.Length);
-					pfc.AddMemoryFont(intPtr, array.Length);
+					// AddMemoryFont necesita que la memoria siga ahí mientras se use la fuente: no se libera.
+					IntPtr memory = Marshal.AllocCoTaskMem(font.Length);
+					Marshal.Copy(font, 0, memory, font.Length);
+					pfc.AddMemoryFont(memory, font.Length);
 				}
 				catch
 				{
@@ -105,17 +112,18 @@ namespace StreamDelay
 
 		private static FontFamily Family(string name)
 		{
-			FontFamily[] families = pfc.Families;
-			foreach (FontFamily fontFamily in families)
+			foreach (FontFamily family in pfc.Families)
 			{
-				if (string.Equals(fontFamily.Name, name, StringComparison.OrdinalIgnoreCase))
+				if (string.Equals(family.Name, name, StringComparison.OrdinalIgnoreCase))
 				{
-					return fontFamily;
+					return family;
 				}
 			}
 			return null;
 		}
 
+		// Fuente incluida (o la de Windows indicada si no está), a tamaño en puntos y ya escalada.
+		// Se guardan para no crear la misma fuente cada vez que se dibuja.
 		private static Font Make(string family, float size, FontStyle style, string fallback)
 		{
 			string key = family + "|" + size + "|" + (int)style;
@@ -127,15 +135,16 @@ namespace StreamDelay
 			float emSize = size * 96f / 72f * Scale;
 			try
 			{
-				FontFamily fontFamily = Family(family);
-				if (fontFamily != null)
+				FontFamily found = Family(family);
+				if (found != null)
 				{
-					FontStyle style2 = style;
-					if (!fontFamily.IsStyleAvailable(style2))
+					// Si la familia no tiene ese estilo, se usa el que tenga.
+					FontStyle available = style;
+					if (!found.IsStyleAvailable(available))
 					{
-						style2 = ((!fontFamily.IsStyleAvailable(FontStyle.Regular)) ? FontStyle.Bold : FontStyle.Regular);
+						available = ((!found.IsStyleAvailable(FontStyle.Regular)) ? FontStyle.Bold : FontStyle.Regular);
 					}
-					value = new Font(fontFamily, emSize, style2, GraphicsUnit.Pixel);
+					value = new Font(found, emSize, available, GraphicsUnit.Pixel);
 				}
 			}
 			catch
@@ -150,6 +159,7 @@ namespace StreamDelay
 			return value;
 		}
 
+		// Títulos y cifras grandes.
 		public static Font Display(float size)
 		{
 			return Make("Outfit", size, FontStyle.Bold, "Segoe UI Semibold");
@@ -170,6 +180,7 @@ namespace StreamDelay
 			return Make("Plus Jakarta Sans", size, FontStyle.Bold, "Segoe UI Semibold");
 		}
 
+		// Etiquetas en mayúsculas ("DELAY EN DIRECTO").
 		public static Font Mono(float size)
 		{
 			return Make("JetBrains Mono Medium", size, FontStyle.Regular, "Consolas");
@@ -180,23 +191,27 @@ namespace StreamDelay
 			return Make("", size, FontStyle.Regular, "Segoe UI");
 		}
 
+		// ---------- Dibujo ----------
+
+		// Rectángulo con las esquinas redondeadas.
 		public static GraphicsPath Round(RectangleF r, float radius)
 		{
-			GraphicsPath graphicsPath = new GraphicsPath();
-			float num = Math.Min(radius * 2f, Math.Min(r.Width, r.Height));
-			if (num <= 1f)
+			GraphicsPath path = new GraphicsPath();
+			float d = Math.Min(radius * 2f, Math.Min(r.Width, r.Height));
+			if (d <= 1f)
 			{
-				graphicsPath.AddRectangle(r);
-				return graphicsPath;
+				path.AddRectangle(r);
+				return path;
 			}
-			graphicsPath.AddArc(r.X, r.Y, num, num, 180f, 90f);
-			graphicsPath.AddArc(r.Right - num, r.Y, num, num, 270f, 90f);
-			graphicsPath.AddArc(r.Right - num, r.Bottom - num, num, num, 0f, 90f);
-			graphicsPath.AddArc(r.X, r.Bottom - num, num, num, 90f, 90f);
-			graphicsPath.CloseFigure();
-			return graphicsPath;
+			path.AddArc(r.X, r.Y, d, d, 180f, 90f);
+			path.AddArc(r.Right - d, r.Y, d, d, 270f, 90f);
+			path.AddArc(r.Right - d, r.Bottom - d, d, d, 0f, 90f);
+			path.AddArc(r.X, r.Bottom - d, d, d, 90f, 90f);
+			path.CloseFigure();
+			return path;
 		}
 
+		// Degradado de la marca: violeta → amarillo (con withPale, pasando por violeta claro).
 		public static LinearGradientBrush Brand(RectangleF r, bool withPale)
 		{
 			if (r.Width < 1f)
@@ -207,15 +222,15 @@ namespace StreamDelay
 			{
 				r.Height = 1f;
 			}
-			LinearGradientBrush linearGradientBrush = new LinearGradientBrush(new RectangleF(r.X - 1f, r.Y - 1f, r.Width + 2f, r.Height + 2f), Violet, Yellow, 20f);
+			LinearGradientBrush brush = new LinearGradientBrush(new RectangleF(r.X - 1f, r.Y - 1f, r.Width + 2f, r.Height + 2f), Violet, Yellow, 20f);
 			if (withPale)
 			{
-				ColorBlend colorBlend = new ColorBlend(3);
-				colorBlend.Colors = new Color[3] { Violet, VioletPale, Yellow };
-				colorBlend.Positions = new float[3] { 0f, 0.45f, 1f };
-				linearGradientBrush.InterpolationColors = colorBlend;
+				ColorBlend blend = new ColorBlend(3);
+				blend.Colors = new Color[3] { Violet, VioletPale, Yellow };
+				blend.Positions = new float[3] { 0f, 0.45f, 1f };
+				brush.InterpolationColors = blend;
 			}
-			return linearGradientBrush;
+			return brush;
 		}
 
 		public static void Quality(Graphics g)
@@ -226,29 +241,31 @@ namespace StreamDelay
 			g.InterpolationMode = InterpolationMode.HighQualityBicubic;
 		}
 
+		// Texto en una línea (con "…" si no cabe).
 		public static void DrawText(Graphics g, string s, Font f, Color c, RectangleF r, StringAlignment h, StringAlignment v)
 		{
-			using (StringFormat stringFormat = new StringFormat())
+			using (StringFormat format = new StringFormat())
 			{
 				using (SolidBrush brush = new SolidBrush(c))
 				{
-					stringFormat.Alignment = h;
-					stringFormat.LineAlignment = v;
-					stringFormat.Trimming = StringTrimming.EllipsisCharacter;
-					stringFormat.FormatFlags = StringFormatFlags.NoWrap;
-					g.DrawString(s, f, brush, r, stringFormat);
+					format.Alignment = h;
+					format.LineAlignment = v;
+					format.Trimming = StringTrimming.EllipsisCharacter;
+					format.FormatFlags = StringFormatFlags.NoWrap;
+					g.DrawString(s, f, brush, r, format);
 				}
 			}
 		}
 
+		// Texto en varias líneas.
 		public static void DrawWrapped(Graphics g, string s, Font f, Color c, RectangleF r)
 		{
-			using (StringFormat stringFormat = new StringFormat())
+			using (StringFormat format = new StringFormat())
 			{
 				using (SolidBrush brush = new SolidBrush(c))
 				{
-					stringFormat.Trimming = StringTrimming.EllipsisWord;
-					g.DrawString(s, f, brush, r, stringFormat);
+					format.Trimming = StringTrimming.EllipsisWord;
+					g.DrawString(s, f, brush, r, format);
 				}
 			}
 		}
@@ -258,13 +275,15 @@ namespace StreamDelay
 			return g.MeasureString(s, f, new PointF(0f, 0f), StringFormat.GenericTypographic);
 		}
 
+		// Altura de la fuente sobre la línea base, en píxeles (para alinear textos de distinto tamaño).
 		public static float Ascent(Graphics g, Font f)
 		{
-			FontFamily fontFamily = f.FontFamily;
-			float num = ((f.Unit == GraphicsUnit.Pixel) ? f.Size : (f.SizeInPoints * g.DpiY / 72f));
-			return num * (float)fontFamily.GetCellAscent(f.Style) / (float)fontFamily.GetEmHeight(f.Style);
+			FontFamily family = f.FontFamily;
+			float pixels = ((f.Unit == GraphicsUnit.Pixel) ? f.Size : (f.SizeInPoints * g.DpiY / 72f));
+			return pixels * (float)family.GetCellAscent(f.Style) / (float)family.GetEmHeight(f.Style);
 		}
 
+		// Mezcla de dos colores (t = 0 → a, t = 1 → b).
 		public static Color Mix(Color a, Color b, float t)
 		{
 			return Color.FromArgb((int)((float)(int)a.A + (float)(b.A - a.A) * t), (int)((float)(int)a.R + (float)(b.R - a.R) * t), (int)((float)(int)a.G + (float)(b.G - a.G) * t), (int)((float)(int)a.B + (float)(b.B - a.B) * t));
@@ -273,19 +292,22 @@ namespace StreamDelay
 		[DllImport("dwmapi.dll")]
 		private static extern int DwmSetWindowAttribute(IntPtr hwnd, int attr, ref int value, int size);
 
+		// Barra de título oscura (Windows 10/11): modo oscuro (atributo 20, o 19 en Windows 10 antiguos),
+		// color de la barra (35) y del borde (34). En versiones que no lo admiten no pasa nada.
 		public static void DarkTitleBar(IntPtr hwnd)
 		{
 			try
 			{
-				int value = 1;
-				if (DwmSetWindowAttribute(hwnd, 20, ref value, 4) != 0)
+				int dark = 1;
+				if (DwmSetWindowAttribute(hwnd, 20, ref dark, 4) != 0)
 				{
-					DwmSetWindowAttribute(hwnd, 19, ref value, 4);
+					DwmSetWindowAttribute(hwnd, 19, ref dark, 4);
 				}
-				int value2 = Bg.R | (Bg.G << 8) | (Bg.B << 16);
-				DwmSetWindowAttribute(hwnd, 35, ref value2, 4);
-				int value3 = 3811891;
-				DwmSetWindowAttribute(hwnd, 34, ref value3, 4);
+				// Los colores van como 0x00BBGGRR.
+				int caption = Bg.R | (Bg.G << 8) | (Bg.B << 16);
+				DwmSetWindowAttribute(hwnd, 35, ref caption, 4);
+				int border = 3811891;
+				DwmSetWindowAttribute(hwnd, 34, ref border, 4);
 			}
 			catch
 			{

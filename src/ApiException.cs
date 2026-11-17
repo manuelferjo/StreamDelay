@@ -1,3 +1,4 @@
+// Error de una plataforma. Status es el código HTTP (0 = sin conexión).
 using System;
 
 namespace StreamDelay

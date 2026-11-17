@@ -1,3 +1,6 @@
+// Base de las conexiones con Twitch, YouTube y Kick (pestaña Título, chat y moderación).
+// Guarda la app (ID y secreto de cliente) y los tokens de acceso, los renueva cuando caducan y
+// hace las llamadas a la API. Cada plataforma pone su forma de iniciar sesión y sus llamadas.
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -13,6 +16,7 @@ namespace StreamDelay
 
 		public bool Enabled = true;
 
+		// Token de acceso, token para renovarlo y cuándo caduca el de acceso.
 		protected string access = "";
 
 		protected string refresh = "";
@@ -21,6 +25,7 @@ namespace StreamDelay
 
 		public string Account = "";
 
+		// Últimos resultados de buscar categoría y la elegida.
 		public List<Category> Results = new List<Category>();
 
 		public Category Chosen;
@@ -31,10 +36,12 @@ namespace StreamDelay
 
 		public abstract string Name { get; }
 
+		// Prefijo de sus ajustes en StreamDelay.ini ("twitch", "kick"…).
 		public abstract string Key { get; }
 
 		public abstract bool NeedsSecret { get; }
 
+		// Panel de desarrolladores donde se crea la app.
 		public abstract string ConsoleUrl { get; }
 
 		public virtual int TitleMax
@@ -45,6 +52,7 @@ namespace StreamDelay
 			}
 		}
 
+		// Tiene los datos de la app.
 		public bool Configured
 		{
 			get
@@ -61,6 +69,7 @@ namespace StreamDelay
 			}
 		}
 
+		// Ha iniciado sesión.
 		public bool Connected
 		{
 			get
@@ -81,8 +90,10 @@ namespace StreamDelay
 
 		public abstract void Update(string title, Category cat);
 
+		// Pide un token de acceso nuevo con el de renovación.
 		protected abstract void DoRefresh();
 
+		// Lee el nombre de la cuenta conectada.
 		protected abstract void LoadAccount();
 
 		public void Logout()
@@ -93,23 +104,26 @@ namespace StreamDelay
 			Results.Clear();
 		}
 
+		// Guarda los tokens de una respuesta OAuth (caducan un minuto antes de lo que dice, por si acaso).
 		protected void SetTokens(Dictionary<string, object> r)
 		{
-			string text = Http.Str(r, "access_token");
-			if (text.Length == 0)
+			string newAccess = Http.Str(r, "access_token");
+			if (newAccess.Length == 0)
 			{
 				throw new ApiException(0, "la plataforma no devolvió el acceso");
 			}
-			access = text;
-			string text2 = Http.Str(r, "refresh_token");
-			if (text2.Length > 0)
+			access = newAccess;
+			string newRefresh = Http.Str(r, "refresh_token");
+			if (newRefresh.Length > 0)
 			{
-				refresh = text2;
+				refresh = newRefresh;
 			}
-			int num = Http.Int(r, "expires_in", 3600);
-			expires = DateTime.UtcNow.AddSeconds(Math.Max(60, num - 60));
+			int seconds = Http.Int(r, "expires_in", 3600);
+			expires = DateTime.UtcNow.AddSeconds(Math.Max(60, seconds - 60));
 		}
 
+		// Token de acceso válido (lo renueva si ha caducado). Si la plataforma ya no acepta la
+		// renovación, cierra la sesión y pide volver a conectar.
 		protected string Token()
 		{
 			lock (tokenLock)
@@ -138,19 +152,21 @@ namespace StreamDelay
 			}
 		}
 
+		// Llamada a la API con el token. Reintenta una vez: si falla la red en una lectura (GET), o si
+		// la plataforma dice 401 (se fuerza a renovar el token).
 		protected Dictionary<string, object> Api(string method, string url, Dictionary<string, string> headers, object body)
 		{
-			string body2 = ((body == null) ? null : Http.ToJson(body));
+			string json = ((body == null) ? null : Http.ToJson(body));
 			try
 			{
-				return Http.Send(method, url, Token(), headers, "application/json", body2);
+				return Http.Send(method, url, Token(), headers, "application/json", json);
 			}
 			catch (ApiException ex)
 			{
 				if (ex.Status == 0 && method == "GET")
 				{
 					Thread.Sleep(700);
-					return Http.Send(method, url, Token(), headers, "application/json", body2);
+					return Http.Send(method, url, Token(), headers, "application/json", json);
 				}
 				if (ex.Status != 401 || refresh.Length == 0)
 				{
@@ -160,7 +176,7 @@ namespace StreamDelay
 				{
 					expires = DateTime.MinValue;
 				}
-				return Http.Send(method, url, Token(), headers, "application/json", body2);
+				return Http.Send(method, url, Token(), headers, "application/json", json);
 			}
 		}
 
@@ -169,26 +185,29 @@ namespace StreamDelay
 			LoadAccount();
 		}
 
+		// ---------- StreamDelay.ini ----------
+		// Los tokens van juntos (acceso, renovación y caducidad) y cifrados, igual que el secreto.
+
 		public void Load(Func<string, string> get)
 		{
 			ClientId = get(Key + "_client");
 			ClientSecret = Secret.Unprotect(get(Key + "_secret"));
 			Enabled = get(Key + "_on") != "0";
 			Account = get(Key + "_account");
-			string text = Secret.Unprotect(get(Key + "_token"));
-			string[] array = text.Split('\n');
-			if (array.Length >= 3)
+			string tokens = Secret.Unprotect(get(Key + "_token"));
+			string[] parts = tokens.Split('\n');
+			if (parts.Length >= 3)
 			{
-				access = array[0];
-				refresh = array[1];
-				long result;
-				expires = (long.TryParse(array[2], out result) ? new DateTime(result, DateTimeKind.Utc) : DateTime.MinValue);
+				access = parts[0];
+				refresh = parts[1];
+				long ticks;
+				expires = (long.TryParse(parts[2], out ticks) ? new DateTime(ticks, DateTimeKind.Utc) : DateTime.MinValue);
 			}
-			string text2 = get(Key + "_cat_id");
-			string text3 = get(Key + "_cat_name");
-			if (text2.Length > 0 && text3.Length > 0)
+			string catId = get(Key + "_cat_id");
+			string catName = get(Key + "_cat_name");
+			if (catId.Length > 0 && catName.Length > 0)
 			{
-				Chosen = new Category(text2, text3);
+				Chosen = new Category(catId, catName);
 			}
 		}
 
@@ -203,51 +222,57 @@ namespace StreamDelay
 			lines.Add(Key + "_cat_name=" + ((Chosen != null) ? Chosen.Name.Replace("\n", " ") : ""));
 		}
 
+		// ---------- Utilidades ----------
+
+		// La categoría que mejor coincide con lo escrito: igual, luego que empiece igual, y si no la primera.
 		public static Category Best(List<Category> list, string q)
 		{
 			if (list.Count == 0)
 			{
 				return null;
 			}
-			string text = Norm(q);
+			string wanted = Norm(q);
 			foreach (Category item in list)
 			{
-				if (Norm(item.Name) == text)
+				if (Norm(item.Name) == wanted)
 				{
 					return item;
 				}
 			}
-			foreach (Category item2 in list)
+			foreach (Category item in list)
 			{
-				if (Norm(item2.Name).StartsWith(text))
+				if (Norm(item.Name).StartsWith(wanted))
 				{
-					return item2;
+					return item;
 				}
 			}
 			return list[0];
 		}
 
+		// Solo letras y números, en minúsculas ("Grand Theft Auto V" → "grandtheftautov").
 		public static string Norm(string s)
 		{
-			StringBuilder stringBuilder = new StringBuilder();
-			string text = (s ?? "").ToLowerInvariant();
-			foreach (char c in text)
+			StringBuilder sb = new StringBuilder();
+			string lower = (s ?? "").ToLowerInvariant();
+			foreach (char c in lower)
 			{
 				if (char.IsLetterOrDigit(c))
 				{
-					stringBuilder.Append(c);
+					sb.Append(c);
 				}
 			}
-			return stringBuilder.ToString();
+			return sb.ToString();
 		}
 
+		// Inicio de sesión con código en otro dispositivo (Twitch, YouTube): pregunta cada "interval"
+		// segundos si el usuario ya lo ha aprobado, hasta que caduque el código.
 		protected Dictionary<string, object> PollDevice(ILoginUi ui, string tokenUrl, string[] form, int interval, int expiresIn)
 		{
-			DateTime dateTime = DateTime.UtcNow.AddSeconds(Math.Max(60, expiresIn));
-			int num = Math.Max(2, interval);
-			while (DateTime.UtcNow < dateTime)
+			DateTime deadline = DateTime.UtcNow.AddSeconds(Math.Max(60, expiresIn));
+			int every = Math.Max(2, interval);
+			while (DateTime.UtcNow < deadline)
 			{
-				for (int i = 0; i < num * 10; i++)
+				for (int i = 0; i < every * 10; i++)
 				{
 					if (ui.Cancelled)
 					{
@@ -261,21 +286,22 @@ namespace StreamDelay
 				}
 				catch (ApiException ex)
 				{
-					string text = ex.Message.ToLowerInvariant();
-					if (text.Contains("authorization_pending") || text.Contains("pending"))
+					string message = ex.Message.ToLowerInvariant();
+					if (message.Contains("authorization_pending") || message.Contains("pending"))
 					{
 						continue;
 					}
-					if (text.Contains("slow_down"))
+					if (message.Contains("slow_down"))
 					{
-						num += 5;
+						// La plataforma pide preguntar menos a menudo.
+						every += 5;
 						continue;
 					}
-					if (text.Contains("denied"))
+					if (message.Contains("denied"))
 					{
 						throw new ApiException(ex.Status, "has rechazado el acceso");
 					}
-					if (text.Contains("expired"))
+					if (message.Contains("expired"))
 					{
 						throw new ApiException(ex.Status, "el código ha caducado, vuelve a intentarlo");
 					}

@@ -1,3 +1,4 @@
+// Aspectos de VButton.
 namespace StreamDelay
 {
 	internal enum ButtonKind

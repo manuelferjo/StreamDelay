@@ -1,3 +1,6 @@
+// Botón de la ventana. Kind decide el aspecto: Primary (degradado de la marca), Ghost (gris),
+// Danger (rojo, "Cortar ya"), Pill (pastilla pequeña, Selected = elegida) y Link (solo texto).
+// Muted: Primary apagado (por ejemplo "Delay aplicado").
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
@@ -41,18 +44,20 @@ namespace StreamDelay
 		{
 			Graphics graphics = e.Graphics;
 			Theme.Quality(graphics);
-			RectangleF rectangleF = new RectangleF(0.5f, 0.5f, (float)base.Width - 1.5f, (float)base.Height - 1.5f);
+			RectangleF rect = new RectangleF(0.5f, 0.5f, (float)base.Width - 1.5f, (float)base.Height - 1.5f);
+			// Al pulsarlo se encoge un poco.
 			if (pressed)
 			{
-				rectangleF.Inflate(-1f, -1f);
+				rect.Inflate(-1f, -1f);
 			}
-			float num = ((Kind == ButtonKind.Pill) ? (rectangleF.Height / 2f) : ((float)Theme.S(12f)));
+			float radius = ((Kind == ButtonKind.Pill) ? (rect.Height / 2f) : ((float)Theme.S(12f)));
 			Color c = Theme.Text;
 			Font f = ((Kind == ButtonKind.Pill) ? Theme.Mono(FontSize) : Theme.BodyBold(FontSize));
-			ButtonKind buttonKind = ((!base.Enabled && (Kind == ButtonKind.Danger || Kind == ButtonKind.Ghost)) ? ButtonKind.Ghost : Kind);
-			using (GraphicsPath path = Theme.Round(rectangleF, num))
+			// Un botón rojo desactivado se ve como uno gris.
+			ButtonKind look = ((!base.Enabled && (Kind == ButtonKind.Danger || Kind == ButtonKind.Ghost)) ? ButtonKind.Ghost : Kind);
+			using (GraphicsPath path = Theme.Round(rect, radius))
 			{
-				switch (buttonKind)
+				switch (look)
 				{
 				case ButtonKind.Primary:
 				{
@@ -71,10 +76,11 @@ namespace StreamDelay
 					}
 					if (hover)
 					{
-						for (int num2 = 3; num2 >= 1; num2--)
+						// Halo violeta de tres capas alrededor.
+						for (int ring = 3; ring >= 1; ring--)
 						{
-							RectangleF r = RectangleF.Inflate(rectangleF, num2 * 2, num2 * 2);
-							using (GraphicsPath path2 = Theme.Round(r, num + (float)(num2 * 2)))
+							RectangleF r = RectangleF.Inflate(rect, ring * 2, ring * 2);
+							using (GraphicsPath path2 = Theme.Round(r, radius + (float)(ring * 2)))
 							{
 								using (SolidBrush brush6 = new SolidBrush(Color.FromArgb(18, Theme.Violet)))
 								{
@@ -83,7 +89,7 @@ namespace StreamDelay
 							}
 						}
 					}
-					using (LinearGradientBrush brush7 = Theme.Brand(rectangleF, false))
+					using (LinearGradientBrush brush7 = Theme.Brand(rect, false))
 					{
 						graphics.FillPath(brush7, path);
 					}
@@ -150,21 +156,24 @@ namespace StreamDelay
 					break;
 				}
 				}
+				// Borde de puntos al llegar con el tabulador.
 				if (Focused && ShowFocusCues && Kind != ButtonKind.Link)
 				{
-					Pen pen6 = new Pen(Color.FromArgb(160, Theme.Violet), 1.5f);
-					pen6.DashStyle = DashStyle.Dot;
-					using (Pen pen7 = pen6)
+					using (Pen focusPen = new Pen(Color.FromArgb(160, Theme.Violet), 1.5f)
 					{
-						RectangleF r2 = RectangleF.Inflate(rectangleF, -3f, -3f);
-						using (GraphicsPath path3 = Theme.Round(r2, Math.Max(2f, num - 3f)))
+						DashStyle = DashStyle.Dot
+					})
+					{
+						RectangleF r2 = RectangleF.Inflate(rect, -3f, -3f);
+						using (GraphicsPath path3 = Theme.Round(r2, Math.Max(2f, radius - 3f)))
 						{
-							graphics.DrawPath(pen7, path3);
+							graphics.DrawPath(focusPen, path3);
 						}
 					}
 				}
 			}
-			Theme.DrawText(graphics, Text, f, c, rectangleF, (Kind != ButtonKind.Link) ? StringAlignment.Center : StringAlignment.Far, StringAlignment.Center);
+			// Los enlaces van alineados a la derecha; el resto, centrados.
+			Theme.DrawText(graphics, Text, f, c, rect, (Kind != ButtonKind.Link) ? StringAlignment.Center : StringAlignment.Far, StringAlignment.Center);
 		}
 	}
 }

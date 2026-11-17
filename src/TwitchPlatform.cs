@@ -1,3 +1,6 @@
+// Twitch: inicio de sesión con código (se escribe en twitch.tv/activate), título y categoría,
+// escribir en el chat, moderar y suscribirse a los follows (EventSub por WebSocket).
+// Twitch exige mandar el ID de cliente en cada llamada (cabecera Client-Id, ver H).
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -46,16 +49,19 @@ namespace StreamDelay
 			}
 		}
 
+		// Cabeceras que pide Twitch en cada llamada.
 		private Dictionary<string, string> H()
 		{
-			Dictionary<string, string> dictionary = new Dictionary<string, string>();
-			dictionary.Add("Client-Id", ClientId);
-			return dictionary;
+			Dictionary<string, string> headers = new Dictionary<string, string>();
+			headers.Add("Client-Id", ClientId);
+			return headers;
 		}
 
+		// Flujo "device code": Twitch da un código, el usuario lo escribe en su web y aquí se
+		// pregunta cada pocos segundos si ya lo ha aprobado (PollDevice).
 		public override void Login(ILoginUi ui)
 		{
-			Dictionary<string, object> d = Http.Send("POST", IdBase + "/oauth2/device", null, null, "application/x-www-form-urlencoded", Http.Form("client_id", ClientId, "scopes", "channel:manage:broadcast moderator:read:followers user:write:chat moderator:manage:chat_messages moderator:manage:banned_users"));
+			Dictionary<string, object> d = Http.Send("POST", IdBase + "/oauth2/device", null, null, "application/x-www-form-urlencoded", Http.Form("client_id", ClientId, "scopes", Scopes));
 			string url = Http.Str(d, "verification_uri");
 			ui.ShowCode(Http.Str(d, "user_code"), url);
 			Dictionary<string, object> tokens = PollDevice(ui, IdBase + "/oauth2/token", new string[8]
@@ -63,7 +69,7 @@ namespace StreamDelay
 				"client_id",
 				ClientId,
 				"scopes",
-				"channel:manage:broadcast moderator:read:followers user:write:chat moderator:manage:chat_messages moderator:manage:banned_users",
+				Scopes,
 				"device_code",
 				Http.Str(d, "device_code"),
 				"grant_type",
@@ -101,18 +107,19 @@ namespace StreamDelay
 			}
 		}
 
+		// ¿El token tiene el permiso de leer follows? (si se conectó con una versión antigua, no).
 		public bool CanReadFollows()
 		{
-			Dictionary<string, object> dictionary = Http.Send("GET", IdBase + "/oauth2/validate", null, new Dictionary<string, string> { 
+			Dictionary<string, object> validation = Http.Send("GET", IdBase + "/oauth2/validate", null, new Dictionary<string, string> {
 			{
 				"Authorization",
 				"OAuth " + Token()
 			} }, null, null);
 			object value;
-			IEnumerable enumerable = ((dictionary != null && dictionary.TryGetValue("scopes", out value)) ? (value as IEnumerable) : null);
-			if (enumerable != null)
+			IEnumerable scopes = ((validation != null && validation.TryGetValue("scopes", out value)) ? (value as IEnumerable) : null);
+			if (scopes != null)
 			{
-				foreach (object item in enumerable)
+				foreach (object item in scopes)
 				{
 					if ("moderator:read:followers".Equals(item))
 					{
@@ -123,6 +130,7 @@ namespace StreamDelay
 			return false;
 		}
 
+		// ID numérico del canal (el propio si channelLogin está vacío o es la cuenta conectada).
 		private string BroadcasterId(string channelLogin)
 		{
 			EnsureUser();
@@ -140,12 +148,13 @@ namespace StreamDelay
 
 		public void SendChat(string channelLogin, string text)
 		{
-			string value = BroadcasterId(channelLogin);
-			Dictionary<string, object> dictionary = new Dictionary<string, object>();
-			dictionary.Add("broadcaster_id", value);
-			dictionary.Add("sender_id", userId);
-			dictionary.Add("message", text);
-			Dictionary<string, object> body = dictionary;
+			string broadcasterId = BroadcasterId(channelLogin);
+			Dictionary<string, object> body = new Dictionary<string, object>
+			{
+				{ "broadcaster_id", broadcasterId },
+				{ "sender_id", userId },
+				{ "message", text }
+			};
 			Dictionary<string, object> d;
 			try
 			{
@@ -159,11 +168,12 @@ namespace StreamDelay
 				}
 				throw;
 			}
+			// Twitch puede aceptar la llamada pero no publicar el mensaje (AutoMod, modo seguidores…).
 			List<Dictionary<string, object>> list = Http.Arr(d, "data");
 			if (list.Count > 0 && Http.Str(list[0], "is_sent").ToLowerInvariant() == "false")
 			{
-				string text2 = Http.Str(Http.Obj(list[0], "drop_reason"), "message");
-				throw new ApiException(400, (text2.Length > 0) ? text2 : "Twitch no envió el mensaje");
+				string reason = Http.Str(Http.Obj(list[0], "drop_reason"), "message");
+				throw new ApiException(400, (reason.Length > 0) ? reason : "Twitch no envió el mensaje");
 			}
 		}
 
@@ -217,23 +227,31 @@ namespace StreamDelay
 			}
 		}
 
+		// Pide a Twitch que avise de los follows por la conexión EventSub (sessionId).
 		public void SubscribeFollows(string sessionId, string channelLogin)
 		{
-			string value = BroadcasterId(channelLogin);
-			Dictionary<string, object> dictionary = new Dictionary<string, object>();
-			dictionary.Add("type", "channel.follow");
-			dictionary.Add("version", "2");
-			dictionary.Add("condition", new Dictionary<string, object>
+			string broadcasterId = BroadcasterId(channelLogin);
+			Dictionary<string, object> body = new Dictionary<string, object>
 			{
-				{ "broadcaster_user_id", value },
-				{ "moderator_user_id", userId }
-			});
-			dictionary.Add("transport", new Dictionary<string, object>
-			{
-				{ "method", "websocket" },
-				{ "session_id", sessionId }
-			});
-			Dictionary<string, object> body = dictionary;
+				{ "type", "channel.follow" },
+				{ "version", "2" },
+				{
+					"condition",
+					new Dictionary<string, object>
+					{
+						{ "broadcaster_user_id", broadcasterId },
+						{ "moderator_user_id", userId }
+					}
+				},
+				{
+					"transport",
+					new Dictionary<string, object>
+					{
+						{ "method", "websocket" },
+						{ "session_id", sessionId }
+					}
+				}
+			};
 			Api("POST", ApiBase + "/eventsub/subscriptions", H(), body);
 		}
 
@@ -258,16 +276,16 @@ namespace StreamDelay
 		public override void Update(string title, Category cat)
 		{
 			EnsureUser();
-			Dictionary<string, object> dictionary = new Dictionary<string, object>();
+			Dictionary<string, object> changes = new Dictionary<string, object>();
 			if (title != null)
 			{
-				dictionary["title"] = title;
+				changes["title"] = title;
 			}
 			if (cat != null)
 			{
-				dictionary["game_id"] = cat.Id;
+				changes["game_id"] = cat.Id;
 			}
-			Api("PATCH", ApiBase + "/channels?broadcaster_id=" + userId, H(), dictionary);
+			Api("PATCH", ApiBase + "/channels?broadcaster_id=" + userId, H(), changes);
 		}
 	}
 }

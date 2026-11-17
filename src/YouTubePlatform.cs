@@ -1,3 +1,6 @@
+// YouTube: inicio de sesión con código (Google "TVs y dispositivos"), título y categoría del
+// directo en curso o programado, escribir en el chat y moderar. YouTube no busca categorías:
+// tiene una lista fija (All) y se propone una según el juego (Suggest).
 using System;
 using System.Collections.Generic;
 
@@ -75,13 +78,14 @@ namespace StreamDelay
 
 		public override void Login(ILoginUi ui)
 		{
-			Dictionary<string, object> d = Http.Send("POST", AuthBase + "/device/code", null, null, "application/x-www-form-urlencoded", Http.Form("client_id", ClientId, "scope", "https://www.googleapis.com/auth/youtube"));
-			string text = Http.Str(d, "verification_url");
-			if (text.Length == 0)
+			Dictionary<string, object> d = Http.Send("POST", AuthBase + "/device/code", null, null, "application/x-www-form-urlencoded", Http.Form("client_id", ClientId, "scope", Scope));
+			// Google lo ha llamado de las dos formas.
+			string url = Http.Str(d, "verification_url");
+			if (url.Length == 0)
 			{
-				text = Http.Str(d, "verification_uri");
+				url = Http.Str(d, "verification_uri");
 			}
-			ui.ShowCode(Http.Str(d, "user_code"), text);
+			ui.ShowCode(Http.Str(d, "user_code"), url);
 			Dictionary<string, object> tokens = PollDevice(ui, AuthBase + "/token", new string[8]
 			{
 				"client_id",
@@ -111,11 +115,10 @@ namespace StreamDelay
 		public override List<Category> Search(string q)
 		{
 			List<Category> list = new List<Category>();
-			string text = Platform.Norm(q);
-			Category[] all = All;
-			foreach (Category category in all)
+			string wanted = Platform.Norm(q);
+			foreach (Category category in All)
 			{
-				if (text.Length == 0 || Platform.Norm(category.Name).Contains(text))
+				if (wanted.Length == 0 || Platform.Norm(category.Name).Contains(wanted))
 				{
 					list.Add(category);
 				}
@@ -123,34 +126,36 @@ namespace StreamDelay
 			return list;
 		}
 
+		// Categoría de YouTube para un juego o categoría de Twitch/Kick: charla → Gente y blogs,
+		// música → Música, deportes → Deportes, y el resto Videojuegos.
 		public static Category Suggest(string gameName)
 		{
-			string text = Platform.Norm(gameName);
-			if (text.Length == 0)
+			string game = Platform.Norm(gameName);
+			if (game.Length == 0)
 			{
 				return null;
 			}
-			if (text.Contains("justchatting") || text.Contains("charlando") || text == "irl" || text.Contains("chatting"))
+			if (game.Contains("justchatting") || game.Contains("charlando") || game == "irl" || game.Contains("chatting"))
 			{
 				return All[1];
 			}
-			if (text.Contains("music") || text.Contains("musica"))
+			if (game.Contains("music") || game.Contains("musica"))
 			{
 				return All[4];
 			}
-			if (text.Contains("sport") || text.Contains("deporte"))
+			if (game.Contains("sport") || game.Contains("deporte"))
 			{
 				return All[5];
 			}
 			return All[0];
 		}
 
+		// El directo en curso o, si no hay, el próximo programado.
 		private string BroadcastId()
 		{
-			string[] array = new string[2] { "active", "upcoming" };
-			foreach (string text in array)
+			foreach (string status in new string[2] { "active", "upcoming" })
 			{
-				List<Dictionary<string, object>> list = Http.Arr(Api("GET", ApiBase + "/liveBroadcasts?part=id&broadcastType=all&maxResults=5&broadcastStatus=" + text, null, null), "items");
+				List<Dictionary<string, object>> list = Http.Arr(Api("GET", ApiBase + "/liveBroadcasts?part=id&broadcastType=all&maxResults=5&broadcastStatus=" + status, null, null), "items");
 				if (list.Count > 0)
 				{
 					return Http.Str(list[0], "id");
@@ -163,12 +168,11 @@ namespace StreamDelay
 		{
 			Dictionary<string, object> d = Snippet(BroadcastId());
 			title = Http.Str(d, "title");
-			string text = Http.Str(d, "categoryId");
+			string categoryId = Http.Str(d, "categoryId");
 			cat = null;
-			Category[] all = All;
-			foreach (Category category in all)
+			foreach (Category category in All)
 			{
-				if (category.Id == text)
+				if (category.Id == categoryId)
 				{
 					cat = category;
 				}
@@ -187,31 +191,33 @@ namespace StreamDelay
 
 		public override void Update(string title, Category cat)
 		{
-			string text = BroadcastId();
-			Dictionary<string, object> dictionary = Snippet(text);
-			Dictionary<string, object> dictionary2 = new Dictionary<string, object>();
-			dictionary2["title"] = title ?? Http.Str(dictionary, "title");
-			dictionary2["categoryId"] = ((cat != null) ? cat.Id : Http.Str(dictionary, "categoryId"));
-			dictionary2["description"] = Http.Str(dictionary, "description");
+			// YouTube sustituye el "snippet" entero: hay que volver a mandar la descripción, las etiquetas
+			// y los idiomas que ya tenía, o se borrarían.
+			string videoId = BroadcastId();
+			Dictionary<string, object> current = Snippet(videoId);
+			Dictionary<string, object> snippet = new Dictionary<string, object>();
+			snippet["title"] = title ?? Http.Str(current, "title");
+			snippet["categoryId"] = ((cat != null) ? cat.Id : Http.Str(current, "categoryId"));
+			snippet["description"] = Http.Str(current, "description");
 			object value;
-			if (dictionary.TryGetValue("tags", out value) && value != null)
+			if (current.TryGetValue("tags", out value) && value != null)
 			{
-				dictionary2["tags"] = value;
+				snippet["tags"] = value;
 			}
-			string[] array = new string[2] { "defaultLanguage", "defaultAudioLanguage" };
-			foreach (string text2 in array)
+			foreach (string field in new string[2] { "defaultLanguage", "defaultAudioLanguage" })
 			{
-				if (Http.Str(dictionary, text2).Length > 0)
+				if (Http.Str(current, field).Length > 0)
 				{
-					dictionary2[text2] = Http.Str(dictionary, text2);
+					snippet[field] = Http.Str(current, field);
 				}
 			}
-			Dictionary<string, object> dictionary3 = new Dictionary<string, object>();
-			dictionary3["id"] = text;
-			dictionary3["snippet"] = dictionary2;
-			Api("PUT", ApiBase + "/videos?part=snippet", null, dictionary3);
+			Dictionary<string, object> video = new Dictionary<string, object>();
+			video["id"] = videoId;
+			video["snippet"] = snippet;
+			Api("PUT", ApiBase + "/videos?part=snippet", null, video);
 		}
 
+		// Escribe en el chat del directo en curso (el ID del chat se guarda 10 minutos).
 		public void SendChat(string text)
 		{
 			if (liveChatId.Length == 0 || DateTime.UtcNow - liveChatAt > TimeSpan.FromMinutes(10.0))
@@ -224,17 +230,21 @@ namespace StreamDelay
 					throw new ApiException(404, "no estás en directo en YouTube");
 				}
 			}
-			Dictionary<string, object> dictionary = new Dictionary<string, object>();
-			dictionary.Add("snippet", new Dictionary<string, object>
+			Dictionary<string, object> body = new Dictionary<string, object>
 			{
-				{ "liveChatId", liveChatId },
-				{ "type", "textMessageEvent" },
 				{
-					"textMessageDetails",
-					new Dictionary<string, object> { { "messageText", text } }
+					"snippet",
+					new Dictionary<string, object>
+					{
+						{ "liveChatId", liveChatId },
+						{ "type", "textMessageEvent" },
+						{
+							"textMessageDetails",
+							new Dictionary<string, object> { { "messageText", text } }
+						}
+					}
 				}
-			});
-			Dictionary<string, object> body = dictionary;
+			};
 			try
 			{
 				Api("POST", ApiBase + "/liveChat/messages?part=snippet", null, body);
@@ -252,7 +262,7 @@ namespace StreamDelay
 				throw;
 			}
 		}
-			// ---------- Moderación ----------
+		// ---------- Moderación ----------
 
 		private string LiveChatId()
 		{
