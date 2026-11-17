@@ -553,6 +553,14 @@ namespace StreamDelay
 			"Chat en pantalla", "On-screen chat",
 			"Twitch, Kick y YouTube juntos; cada mensaje dura 30 s.", "Twitch, Kick and YouTube together; each message stays 30 s.",
 			"En OBS: + → Navegador → pega la URL · 1920x1080 (chat: 500x700).", "In OBS: + → Browser → paste the URL · 1920x1080 (chat: 500x700).",
+			// TikTok vertical
+			"Imagen vertical (Aitum Vertical)", "Vertical video (Aitum Vertical)",
+			"En Aitum Vertical: ", "In Aitum Vertical: ",
+			" · clave tiktok", " · key tiktok",
+			" · vertical", " · vertical",
+			"TikTok vertical: esperando a Aitum Vertical en ", "TikTok vertical: waiting for Aitum Vertical at ",
+			" (con el mismo delay).", " (with the same delay).",
+			"TikTok vertical: ", "TikTok vertical: ",
 			// Personalizar overlays
 			"Personalizar →", "Customize →",
 			"Personalizar overlays", "Customize overlays",

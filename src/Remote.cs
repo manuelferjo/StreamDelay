@@ -391,7 +391,7 @@ namespace StreamDelay
 			Sink[] sinks;
 			try
 			{
-				sinks = engine.Sinks.ToArray();
+				sinks = AllSinks();
 			}
 			catch
 			{
@@ -665,7 +665,7 @@ namespace StreamDelay
 				Sink[] sinks;
 				try
 				{
-					sinks = engine.Sinks.ToArray();
+					sinks = AllSinks();
 				}
 				catch
 				{
@@ -812,6 +812,7 @@ namespace StreamDelay
 				else
 				{
 					engine.CutNow();
+					CutVertical();
 					AppendLog("Mando: «Cortar ya» pulsado a distancia.");
 					msg = "Transmisión cortada";
 				}

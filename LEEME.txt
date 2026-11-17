@@ -9,6 +9,10 @@ Novedades de la 3.3
   Retro, Claro), colores, fondo, borde, brillo, forma (redondeada,
   píldora, recta o círculo), 12 fuentes, el texto del overlay de delay
   y fondo en los mensajes del chat en pantalla. Se ve al momento en OBS.
+- TikTok en vertical: con el plugin Aitum Vertical, OBS manda una imagen
+  vertical por el puerto siguiente (1936) y StreamDelay la envía solo a
+  TikTok con el mismo delay que el resto. Ajustes -> Destinos -> TikTok
+  -> Editar -> "Imagen vertical". Pasos en la guía.
 
 Novedades de la 3.2.1
 - El comando del chat para guardar clips ahora es !guardar y solo lo

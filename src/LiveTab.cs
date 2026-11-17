@@ -173,6 +173,7 @@ namespace StreamDelay
 				if (I18n.Show(this, "Esto vacía el búfer y corta la transmisión en la plataforma ahora mismo. ¿Seguir?", "Cortar ya", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation) == DialogResult.Yes)
 				{
 					engine.CutNow();
+					CutVertical();
 				}
 			};
 
@@ -386,6 +387,7 @@ namespace StreamDelay
 				if (!engine.OutputActive || I18n.Show(this, "Se está transmitiendo. Detener corta la transmisión. ¿Seguir?", "Detener", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation) == DialogResult.Yes)
 				{
 					engine.Stop();
+					StopVertical();
 					AppendLog("Servicio detenido.");
 					RefreshStatus();
 				}
@@ -439,13 +441,25 @@ namespace StreamDelay
 			}
 			engine.InputPort = port;
 			engine.AllowLan = tgLan.Checked;
-			engine.Destinations = EnabledDestinations();
+			List<Destination> mainDests = EnabledDestinations();
+			if (VerticalOn)
+			{
+				// TikTok va por el motor vertical (imagen de Aitum Vertical).
+				mainDests.Remove(dTikTok);
+			}
+			engine.Destinations = mainDests;
 			try
 			{
 				engine.Start();
+				if (VerticalOn)
+				{
+					StartVertical();
+				}
 			}
 			catch (Exception ex)
 			{
+				engine.Stop();
+				StopVertical();
 				I18n.Show(this, ex.Message + "\n\nPuede que otro programa use ese puerto (otro servidor RTMP u otra copia de StreamDelay).\nCambia el puerto en Ajustes → OBS (por ejemplo a 1936) y copia de nuevo el servidor en OBS.", "No se puede iniciar", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 				return;
 			}
@@ -489,6 +503,7 @@ namespace StreamDelay
 			seconds = Math.Max(0, Math.Min(MaxDelay, seconds));
 			int previous = engine.TargetMs / 1000;
 			engine.TargetMs = seconds * 1000;
+			SyncVertical();
 			if (slider.Value != seconds)
 			{
 				slider.Value = seconds;
@@ -513,6 +528,7 @@ namespace StreamDelay
 		private void SetEnabled(bool on)
 		{
 			engine.Enabled = on;
+			SyncVertical();
 			AppendLog(on ? "Delay activado." : "Delay desactivado (en directo).");
 			AnnounceDelaySoon();
 			SaveConfig();

@@ -741,7 +741,7 @@ namespace StreamDelay
 			}
 			else if (engine.OutputActive)
 			{
-				int liveCount = engine.LiveCount;
+				int liveCount = engine.LiveCount + engineV.LiveCount;
 				state = (engine.Replaying ? "REPITIENDO" : ((liveCount > 1) ? ("EN DIRECTO · " + liveCount) : "EN DIRECTO"));
 				color = (engine.Replaying ? Theme.Violet : Theme.Red);
 			}
@@ -983,6 +983,7 @@ namespace StreamDelay
 			}
 			SaveConfig();
 			engine.Stop();
+			StopVertical();
 			base.OnFormClosing(e);
 		}
 
@@ -1045,6 +1046,9 @@ namespace StreamDelay
 						case "lang":
 							I18n.English = value == "en";
 							break;
+						case "tiktok_vertical":
+							tiktokVertical = value == "1";
+							break;
 						}
 					}
 					catch
@@ -1073,7 +1077,8 @@ namespace StreamDelay
 					"port=" + port,
 					"lan=" + (tgLan.Checked ? "1" : "0"),
 					"ffmpeg=" + (tgFfmpeg.Checked ? "1" : "0"),
-					"lang=" + I18n.Lang
+					"lang=" + I18n.Lang,
+					"tiktok_vertical=" + (tiktokVertical ? "1" : "0")
 				};
 				SaveDestinations(lines);
 				SaveTitleConfig(lines);

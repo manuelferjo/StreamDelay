@@ -102,6 +102,7 @@ namespace StreamDelay
 			tgReplay.CheckedChanged += delegate
 			{
 				engine.ReplayOnIncrease = tgReplay.Checked;
+				SyncVertical();
 				if (!loading)
 				{
 					SaveConfig();
@@ -246,6 +247,10 @@ namespace StreamDelay
 				host = host.Substring(0, 12) + "…" + host.Substring(host.Length - 12);
 			}
 			string keyState = ((d.Key.Trim().Length > 0) ? "clave guardada" : (d.IsTwitch ? "clave: la pone OBS" : "falta la clave"));
+			if (d == dTikTok && tiktokVertical)
+			{
+				keyState += " · vertical";
+			}
 			return host + " · " + keyState;
 		}
 
@@ -345,14 +350,17 @@ namespace StreamDelay
 		// Ventana "Destino": servidor y clave de transmisión.
 		private void EditDestination(Destination d)
 		{
-			Form f = DarkForm("Destino: " + d.Name, 440, 392);
+			// TikTok tiene además la opción de imagen vertical (60 px más de ventana).
+			bool isTikTok = d == dTikTok;
+			float extra = isTikTok ? 60f : 0f;
+			Form f = DarkForm("Destino: " + d.Name, 440, 392 + (int)extra);
 			string note = (d.IsTwitch ? "Con la Transmisión mejorada de OBS (servicio Twitch con servidor personalizado) la clave la pone OBS y puedes dejarla vacía." : ((d.Id == "kick") ? "Copia el \"Stream URL\" y la \"Stream Key\" de tu panel de Kick (Settings → Stream URL & Key)." : ((d.Id == "youtube") ? "Copia la clave de YouTube Studio → Emitir en directo → Configuración de la emisión." : ((d.Id == "tiktok") ? "Si tu cuenta de TikTok tiene clave de emisión, está en TikTok LIVE Producer (en la web): copia el \"Server URL\" y la \"Stream Key\". TikTok suele dar una clave nueva en cada directo." : "Cualquier plataforma que admita RTMP: copia su URL de servidor y su clave."))));
 			Card card = new Card
 			{
 				Title = d.Name,
 				Subtitle = (d.IsTwitch ? "Recibe todas las calidades de OBS" : "Recibe la calidad principal y crea el resto")
 			};
-			Place(f, card, 20f, 18f, 400f, 292f);
+			Place(f, card, 20f, 18f, 400f, 292f + extra);
 			Label(card, "SERVIDOR", 20f, 64f, 200f);
 			VButton byDefault = new VButton
 			{
@@ -392,6 +400,17 @@ namespace StreamDelay
 			{
 				Theme.DrawWrapped(g, note + " La clave se guarda cifrada en StreamDelay.ini.", Theme.Body(8f), Theme.Muted, r);
 			});
+			Toggle tVertical = null;
+			if (isTikTok)
+			{
+				tVertical = new Toggle
+				{
+					Text = "Imagen vertical (Aitum Vertical)",
+					Hint = "En Aitum Vertical: " + VerticalServer + " · clave tiktok",
+					Checked = tiktokVertical
+				};
+				Place(card, tVertical, 18f, 288f, 364f, 44f);
+			}
 			VButton cancel = new VButton
 			{
 				Kind = ButtonKind.Ghost,
@@ -404,8 +423,8 @@ namespace StreamDelay
 				Text = "Guardar",
 				FontSize = 10f
 			};
-			Place(f, cancel, 20f, 326f, 130f, 44f);
-			Place(f, save, 160f, 326f, 260f, 44f);
+			Place(f, cancel, 20f, 326f + extra, 130f, 44f);
+			Place(f, save, 160f, 326f + extra, 260f, 44f);
 			cancel.Click += delegate
 			{
 				f.Close();
@@ -421,6 +440,10 @@ namespace StreamDelay
 				{
 					d.Server = server;
 					d.Key = key.Box.Text.Trim();
+					if (tVertical != null)
+					{
+						tiktokVertical = tVertical.Checked;
+					}
 					// Con servidor y clave, se activa solo.
 					if (server.Length > 0 && (d.Key.Length > 0 || d.IsTwitch))
 					{
@@ -452,7 +475,7 @@ namespace StreamDelay
 			}
 			bool running = engine.Running;
 			List<Destination> list = EnabledDestinations();
-			int liveCount = engine.LiveCount;
+			int liveCount = engine.LiveCount + engineV.LiveCount;
 			Theme.DrawText(g, running ? "EMITIENDO EN" : "SE EMITIRÁ EN", Theme.Mono(7f), Theme.Muted, new RectangleF(S(16f), S(6f), S(200f), S(20f)), StringAlignment.Near, StringAlignment.Center);
 			string summary = ((!running) ? (list.Count + ((list.Count == 1) ? " DESTINO" : " DESTINOS")) : ((liveCount > 0) ? (liveCount + " EN DIRECTO") : "AÚN SIN DIRECTO"));
 			Theme.DrawText(g, summary, Theme.Mono(7f), (liveCount > 0) ? Theme.Mix(Theme.Red, Color.White, 0.3f) : Theme.Dim, new RectangleF(S(200f), S(6f), r.Width - S(216f), S(20f)), StringAlignment.Far, StringAlignment.Center);
@@ -471,7 +494,7 @@ namespace StreamDelay
 				Sink sink = null;
 				if (running)
 				{
-					foreach (Sink candidate in engine.Sinks)
+					foreach (Sink candidate in AllSinks())
 					{
 						if (candidate.D == item)
 						{
@@ -510,7 +533,9 @@ namespace StreamDelay
 						filledDot = false;
 						break;
 					default:
-						state = (engine.InputActive ? "CARGANDO DELAY" : "ESPERANDO A OBS");
+						// TikTok vertical espera a su propia señal (Aitum Vertical).
+						bool inputOn = (item == dTikTok && VerticalOn) ? engineV.InputActive : engine.InputActive;
+						state = (inputOn ? "CARGANDO DELAY" : "ESPERANDO A OBS");
 						color = Theme.Violet;
 						filledDot = false;
 						break;
