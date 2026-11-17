@@ -1,0 +1,356 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>StreamDelay · Delay dinámico gratis para OBS</title>
+<meta name="description" content="Programa gratuito para Windows: retrasa tu directo de OBS los segundos que quieras, cambia el delay en pleno directo y emite a Twitch, Kick y YouTube a la vez. Con chat conjunto, mando desde el móvil y overlays.">
+<meta property="og:title" content="StreamDelay · Delay dinámico gratis para OBS">
+<meta property="og:description" content="Retrasa tu directo los segundos que quieras y cámbialo sin cortar. Twitch, Kick y YouTube a la vez.">
+<meta property="og:image" content="img/directo.png">
+<meta name="theme-color" content="#09090c">
+<link rel="icon" href="logo.png">
+<style>
+  /* Fuentes del propio programa (licencia SIL OFL), servidas desde aquí: sin Google Fonts. */
+  @font-face { font-family: "Outfit"; src: url("fuentes/Outfit-Bold.ttf") format("truetype"); font-weight: 700; font-display: swap; }
+  @font-face { font-family: "Jakarta"; src: url("fuentes/PlusJakartaSans-Regular.ttf") format("truetype"); font-weight: 400; font-display: swap; }
+  @font-face { font-family: "Jakarta"; src: url("fuentes/PlusJakartaSans-SemiBold.ttf") format("truetype"); font-weight: 600; font-display: swap; }
+  @font-face { font-family: "Jakarta"; src: url("fuentes/PlusJakartaSans-Bold.ttf") format("truetype"); font-weight: 700; font-display: swap; }
+  @font-face { font-family: "JBMono"; src: url("fuentes/JetBrainsMono-Medium.ttf") format("truetype"); font-weight: 500; font-display: swap; }
+
+  /* Los mismos colores que la ventana del programa (src/Theme.cs). */
+  :root {
+    --bg: #09090c;
+    --surface: #111116;
+    --elevated: #171720;
+    --input: #0e0e13;
+    --border: #26262e;
+    --border-hi: #383646;
+    --text: #f4f4f5;
+    --muted: #a1a1aa;
+    --dim: #71717a;
+    --violet: #c09afd;
+    --violet-pale: #e3d5ff;
+    --yellow: #ede103;
+    --red: #ff4655;
+    --green: #34d399;
+    --brand: linear-gradient(110deg, var(--violet) 0%, var(--violet-pale) 45%, var(--yellow) 100%);
+    --radius: 18px;
+    --mono: "JBMono", ui-monospace, Consolas, monospace;
+    --display: "Outfit", "Jakarta", system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 400 16px/1.6 "Jakarta", system-ui, -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  /* Brillos de fondo, como en la ventana. */
+  body::before {
+    content: "";
+    position: fixed; inset: 0; z-index: -1; pointer-events: none;
+    background:
+      radial-gradient(60vw 40vw at 10% -10%, rgba(192,154,253,.16), transparent 70%),
+      radial-gradient(50vw 35vw at 95% 0%, rgba(237,225,3,.08), transparent 70%),
+      radial-gradient(60vw 40vw at 0% 100%, rgba(192,154,253,.07), transparent 70%);
+  }
+  a { color: var(--violet); text-decoration: none; }
+  a:hover { color: var(--violet-pale); }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 24px; }
+  .grad { background: var(--brand); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .label { font: 500 12px/1.4 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+
+  /* Cabecera */
+  header { position: sticky; top: 0; z-index: 10; background: rgba(9,9,12,.78); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,.06); }
+  header .wrap { display: flex; align-items: center; gap: 24px; height: 64px; }
+  .logo { display: flex; align-items: center; gap: 10px; color: var(--text); font: 700 20px/1 var(--display); }
+  .logo img { width: 32px; height: 32px; }
+  nav { margin-left: auto; display: flex; gap: 22px; font-weight: 600; font-size: 15px; }
+  nav a { color: var(--muted); }
+  nav a:hover { color: var(--text); }
+
+  /* Botones */
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 52px; padding: 0 26px; border-radius: 14px; font: 700 16px/1.2 "Jakarta", sans-serif; border: 1px solid transparent; transition: transform .15s, filter .15s, border-color .15s; }
+  .btn:hover { transform: translateY(-1px); }
+  .btn-primary { background: var(--brand); color: #15121c; }
+  .btn-primary:hover { color: #15121c; filter: brightness(1.06); }
+  .btn-ghost { background: var(--elevated); color: var(--text); border-color: var(--border-hi); }
+  .btn-ghost:hover { color: var(--text); border-color: var(--violet); }
+  .btn small { font: 500 12px/1 var(--mono); opacity: .75; }
+
+  /* Portada */
+  .hero { display: grid; grid-template-columns: 1.1fr .9fr; gap: 56px; align-items: center; padding: 72px 0 56px; }
+  .hero h1 { font: 700 clamp(38px, 5.4vw, 62px)/1.05 var(--display); margin: 14px 0 20px; letter-spacing: -.01em; }
+  .hero p.lead { font-size: 19px; color: var(--muted); margin: 0 0 30px; max-width: 34em; }
+  .hero .actions { display: flex; flex-wrap: wrap; gap: 12px; }
+  .hero .req { margin-top: 18px; font-size: 14px; color: var(--dim); }
+  .pill { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; border: 1px solid rgba(192,154,253,.35); background: rgba(192,154,253,.08); font: 500 12px/1 var(--mono); letter-spacing: .06em; color: var(--violet-pale); text-transform: uppercase; }
+  .pill i { width: 7px; height: 7px; border-radius: 50%; background: var(--red); box-shadow: 0 0 0 4px rgba(255,70,85,.18); animation: latido 1s ease-in-out infinite alternate; }
+  @keyframes latido { from { box-shadow: 0 0 0 2px rgba(255,70,85,.15); } to { box-shadow: 0 0 0 6px rgba(255,70,85,.25); } }
+  .shot { position: relative; justify-self: center; }
+  .shot img { display: block; width: 100%; max-width: 420px; height: auto; border-radius: 14px; border: 1px solid var(--border-hi); box-shadow: 0 30px 80px -20px rgba(0,0,0,.8), 0 0 0 1px rgba(255,255,255,.03); }
+  .shot::before { content: ""; position: absolute; inset: 10% -8% -6%; z-index: -1; background: radial-gradient(closest-side, rgba(192,154,253,.28), transparent); filter: blur(10px); }
+
+  section { padding: 64px 0; }
+  section h2 { font: 700 clamp(28px, 3.6vw, 40px)/1.15 var(--display); margin: 10px 0 14px; }
+  section .intro { color: var(--muted); max-width: 40em; margin: 0 0 36px; font-size: 17px; }
+
+  /* Cómo funciona: OBS → StreamDelay → plataformas */
+  .flow { display: grid; grid-template-columns: 1fr auto 1.2fr auto 1fr; align-items: center; gap: 14px; }
+  .node { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px 22px; }
+  .node .label { margin-bottom: 6px; }
+  .node strong { display: block; font: 700 20px/1.25 var(--display); }
+  .node span { color: var(--muted); font-size: 14px; }
+  .node.center { border-color: rgba(192,154,253,.45); background: linear-gradient(180deg, rgba(192,154,253,.10), rgba(17,17,22,1) 70%); text-align: center; }
+  .node.center .big { font: 700 44px/1 var(--display); margin: 6px 0; }
+  .arrow { color: var(--dim); font: 500 13px/1.3 var(--mono); text-align: center; }
+  .arrow b { display: block; font-size: 22px; color: var(--violet); }
+  .dests { display: grid; gap: 8px; }
+  .dest { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 10px 14px; font-weight: 600; }
+  .dest i { width: 8px; height: 8px; border-radius: 50%; background: var(--red); }
+  .dest em { margin-left: auto; font: 500 11px/1 var(--mono); color: #ff8a94; font-style: normal; letter-spacing: .05em; }
+
+  /* Funciones */
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
+  .card h3 { font: 700 19px/1.3 var(--display); margin: 0 0 8px; }
+  .card p { margin: 0; color: var(--muted); font-size: 15px; }
+  .card .ico { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; margin-bottom: 16px; background: rgba(192,154,253,.12); border: 1px solid rgba(192,154,253,.3); color: var(--violet-pale); }
+  .card .ico svg { width: 20px; height: 20px; }
+
+  /* Galería de pestañas */
+  .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
+  .tabs button { font: 600 15px/1 "Jakarta", sans-serif; color: var(--muted); background: var(--surface); border: 1px solid var(--border); border-radius: 999px; padding: 11px 18px; cursor: pointer; }
+  .tabs button:hover { color: var(--text); }
+  .tabs button[aria-selected="true"] { color: var(--text); border-color: var(--violet); background: rgba(192,154,253,.12); }
+  .gallery { display: grid; grid-template-columns: auto 1fr; gap: 40px; align-items: center; }
+  .gallery img { width: 100%; max-width: 380px; border-radius: 14px; border: 1px solid var(--border-hi); box-shadow: 0 24px 60px -24px rgba(0,0,0,.9); }
+  .gallery h3 { font: 700 26px/1.2 var(--display); margin: 0 0 10px; }
+  .gallery p { color: var(--muted); margin: 0 0 12px; }
+  .gallery ul { margin: 0; padding-left: 20px; color: var(--muted); }
+  .gallery li { margin: 6px 0; }
+
+  /* Pasos */
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; counter-reset: paso; }
+  .step { position: relative; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px 24px 24px 24px; }
+  .step::before { counter-increment: paso; content: counter(paso); display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: var(--brand); color: #15121c; font: 700 17px/1 var(--display); margin-bottom: 14px; }
+  .step h3 { margin: 0 0 6px; font: 700 18px/1.3 var(--display); }
+  .step p { margin: 0; color: var(--muted); font-size: 15px; }
+  code { font: 500 13px/1.4 var(--mono); background: var(--input); border: 1px solid var(--border); border-radius: 8px; padding: 2px 7px; color: var(--violet-pale); white-space: nowrap; }
+
+  /* Privacidad */
+  .trust { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+  .trust div { border-top: 2px solid var(--border-hi); padding-top: 16px; }
+  .trust strong { display: block; font: 700 17px/1.3 var(--display); margin-bottom: 6px; }
+  .trust span { color: var(--muted); font-size: 15px; }
+
+  .cta { text-align: center; background: linear-gradient(180deg, rgba(192,154,253,.10), transparent); border: 1px solid var(--border); border-radius: 24px; padding: 48px 24px; }
+  .cta h2 { margin-top: 0; }
+  .cta .actions { display: flex; justify-content: center; flex-wrap: wrap; gap: 12px; }
+
+  footer { border-top: 1px solid var(--border); padding: 28px 0 40px; color: var(--dim); font-size: 14px; }
+  footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 24px; justify-content: space-between; }
+
+  @media (max-width: 900px) {
+    .hero { grid-template-columns: 1fr; padding-top: 48px; gap: 40px; }
+    .grid, .steps { grid-template-columns: 1fr 1fr; }
+    .trust { grid-template-columns: 1fr 1fr; }
+    .flow { grid-template-columns: 1fr; }
+    .arrow b { transform: rotate(90deg); }
+    .gallery { grid-template-columns: 1fr; justify-items: center; }
+  }
+  @media (max-width: 620px) {
+    .wrap { padding: 0 16px; }
+    nav a:not(.nav-gh) { display: none; }
+    .grid, .steps, .trust { grid-template-columns: 1fr; }
+    .hero .actions .btn { width: 100%; }
+    section { padding: 48px 0; }
+  }
+  @media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } html { scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <a class="logo" href="#"><img src="logo.png" alt="">Stream&nbsp;<span class="grad">Delay</span></a>
+    <nav>
+      <a href="#como">Cómo funciona</a>
+      <a href="#funciones">Funciones</a>
+      <a href="#instalar">Instalar</a>
+      <a href="guia.html">Guía</a>
+      <a class="nav-gh" href="https://github.com/manuelferjo/StreamDelay">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="wrap">
+    <section class="hero">
+      <div>
+        <span class="pill"><i></i>Gratis · Código abierto · Windows</span>
+        <h1>El delay de tu directo, <span class="grad">cuando tú quieras</span></h1>
+        <p class="lead">StreamDelay retrasa lo que envía OBS los segundos que elijas y lo manda a Twitch, Kick y YouTube a la vez. Sube, baja o quita el delay en pleno directo, sin cortar el stream.</p>
+        <div class="actions">
+          <a class="btn btn-primary js-descarga" href="https://github.com/manuelferjo/StreamDelay/releases/latest">Descargar gratis <small class="js-version"></small></a>
+          <a class="btn btn-ghost" href="guia.html">Ver la guía</a>
+        </div>
+        <p class="req">Windows 10 u 11 y OBS Studio. Sin instalar nada: descomprime y ábrelo.</p>
+      </div>
+      <div class="shot"><img src="img/directo.png" width="466" height="675" alt="Ventana de StreamDelay: delay de 30 segundos activado, listo para emitir en Twitch"></div>
+    </section>
+  </div>
+
+  <section id="como">
+    <div class="wrap">
+      <span class="label">Cómo funciona</span>
+      <h2>OBS envía, StreamDelay espera, tu público ve el pasado</h2>
+      <p class="intro">En OBS solo cambias el servidor de emisión. StreamDelay guarda los últimos segundos y los reenvía con el retraso que marques. El vídeo no se vuelve a codificar, así que casi no usa CPU.</p>
+      <div class="flow">
+        <div class="node"><div class="label">Tu PC</div><strong>OBS Studio</strong><span>Emite a StreamDelay, en tu propio PC</span></div>
+        <div class="arrow"><b>→</b>RTMP</div>
+        <div class="node center"><div class="label">StreamDelay</div><div class="big grad">30 s</div><span>Cámbialo en directo: al subirlo repite lo último, al bajarlo salta hacia delante</span></div>
+        <div class="arrow"><b>→</b>a la vez</div>
+        <div class="dests">
+          <div class="dest"><i></i>Twitch<em>EN DIRECTO</em></div>
+          <div class="dest"><i></i>Kick<em>EN DIRECTO</em></div>
+          <div class="dest"><i></i>YouTube<em>EN DIRECTO</em></div>
+          <div class="dest"><i style="background:var(--violet)"></i>Otro servidor RTMP</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="funciones">
+    <div class="wrap">
+      <span class="label">Funciones</span>
+      <h2>Todo lo del directo, en una ventana</h2>
+      <p class="intro">Pensado para streamers: el delay es lo principal, pero también te ahorra tener abiertas otras cinco cosas.</p>
+      <div class="grid">
+        <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></svg></div><h3>Delay dinámico</h3><p>Hasta 10 minutos. Cámbialo, actívalo o quítalo en directo, con botones guardados y atajos de teclado (Ctrl+Alt+D).</p></div>
+        <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h6M14 6h6M14 12h6M14 18h6M10 12l4-6M10 12l4 6"/></svg></div><h3>Multistream</h3><p>Twitch, Kick, YouTube y otro destino a la vez con el mismo delay. OBS codifica una sola vez.</p></div>
+        <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg></div><h3>Chat conjunto</h3><p>Los tres chats en uno, con emotes de 7TV, BTTV y FFZ, subs, raids, bits, follows y donaciones. Escribe en todos a la vez y modera.</p></div>
+        <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg></div><h3>Mando desde el móvil</h3><p>Controla el delay desde el móvil (con código QR), el Stream Deck o un panel de OBS. Te avisa si algo falla.</p></div>
+        <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M14 8h4v3h-4z"/></svg></div><h3>Overlays para OBS</h3><p>Delay en pantalla, espectadores de cada plataforma y chat en pantalla. Copias la URL y listo.</p></div>
+        <div class="card"><div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h10M4 17h7"/></svg></div><h3>Título y categoría</h3><p>Cambia el título y el juego en Twitch, Kick y YouTube con un solo botón (para TikTok, lo copia).</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="pestanas">
+    <div class="wrap">
+      <span class="label">Por dentro</span>
+      <h2>Échale un vistazo</h2>
+      <div class="tabs" role="tablist">
+        <button role="tab" aria-selected="true" data-tab="0">Chat</button>
+        <button role="tab" aria-selected="false" data-tab="1">Overlays</button>
+        <button role="tab" aria-selected="false" data-tab="2">Mando</button>
+        <button role="tab" aria-selected="false" data-tab="3">Título</button>
+        <button role="tab" aria-selected="false" data-tab="4">Ajustes</button>
+      </div>
+      <div class="gallery">
+        <img id="g-img" src="img/chat.png" width="466" height="675" alt="">
+        <div>
+          <h3 id="g-title"></h3>
+          <p id="g-text"></p>
+          <ul id="g-list"></ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="instalar">
+    <div class="wrap">
+      <span class="label">Instalar</span>
+      <h2>Listo en tres pasos</h2>
+      <p class="intro">No hace falta instalar nada ni crear cuentas. Tus claves de emisión se guardan cifradas en tu PC.</p>
+      <div class="steps">
+        <div class="step"><h3>Descarga y descomprime</h3><p>Baja el ZIP, descomprímelo en una carpeta (por ejemplo, Documentos) y abre <code>StreamDelay.exe</code>.</p></div>
+        <div class="step"><h3>Pon tu destino</h3><p>En Ajustes → Destinos, activa tus plataformas y pega la clave de emisión de cada una.</p></div>
+        <div class="step"><h3>Apunta OBS a StreamDelay</h3><p>En OBS, servidor personalizado <code>rtmp://127.0.0.1:1935/app</code>. Pulsa Iniciar en StreamDelay y emite como siempre.</p></div>
+      </div>
+      <p class="intro" style="margin-top:24px">¿Varias calidades en Twitch, dos PCs o el Stream Deck? Está todo en la <a href="guia.html">guía completa</a>.</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="trust">
+        <div><strong>Gratis de verdad</strong><span>Sin anuncios, sin versión de pago y sin límites.</span></div>
+        <div><strong>Tus claves, en tu PC</strong><span>Cifradas con tu usuario de Windows. No se envían a nadie.</span></div>
+        <div><strong>Se actualiza solo</strong><span>Al abrirlo te avisa si hay versión nueva, y la instala sin perder tu configuración.</span></div>
+        <div><strong>Código abierto</strong><span>Todo el código está en GitHub, con licencia MIT.</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="cta">
+        <h2>Ponle delay a tu próximo directo</h2>
+        <p class="intro" style="margin:0 auto 28px">Descárgalo, ábrelo y en dos minutos estás emitiendo.</p>
+        <div class="actions">
+          <a class="btn btn-primary js-descarga" href="https://github.com/manuelferjo/StreamDelay/releases/latest">Descargar gratis <small class="js-version"></small></a>
+          <a class="btn btn-ghost" href="https://github.com/manuelferjo/StreamDelay">Ver el código</a>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>StreamDelay · by Vortexs · <a href="https://github.com/manuelferjo/StreamDelay/blob/main/LICENSE">Licencia MIT</a></span>
+    <span><a href="https://github.com/manuelferjo/StreamDelay/releases">Todas las versiones</a> · <a href="https://github.com/manuelferjo/StreamDelay/issues">¿Algún problema?</a></span>
+  </div>
+</footer>
+
+<script>
+  // Galería de pestañas.
+  var tabs = [
+    { img: "chat", title: "Chat conjunto", text: "Twitch, Kick y YouTube en un solo chat, sin iniciar sesión. Ábrelo en el navegador o ponlo como panel en OBS.",
+      list: ["Espectadores de cada plataforma y el total", "Follows de Twitch y donaciones de StreamElements y Streamlabs", "Avisos automáticos al activar o quitar el delay", "Comandos como !delay para tus moderadores"] },
+    { img: "overlays", title: "Overlays para OBS", text: "Cada overlay con su botón de copiar URL y su vista previa. Los cambios se ven al momento en OBS.",
+      list: ["Delay en pantalla, con transición al activarlo", "Espectadores: elige plataformas, esquina y tamaño", "Chat en pantalla"] },
+    { img: "mando", title: "Mando a distancia", text: "Controla el delay desde el móvil (misma wifi, con código QR), como panel en OBS o con el Stream Deck.",
+      list: ["Delays guardados: un clic y aplicado", "Avisos si se cae una plataforma o tu subida no da para todo", "La dirección lleva una clave privada"] },
+    { img: "titulo", title: "Título y categoría", text: "Escribe el título y el juego una vez y actualízalos en todas tus plataformas a la vez.",
+      list: ["Busca la categoría en Twitch y Kick y propone la de YouTube", "Títulos recientes a un clic", "Para TikTok, copia el título para pegarlo en LIVE Studio"] },
+    { img: "ajustes", title: "Ajustes", text: "Tus destinos y lo que necesita OBS, en una pantalla.",
+      list: ["Twitch, Kick, YouTube y cualquier servidor RTMP", "Botón para copiar el servidor de OBS", "Modo para emitir con dos PCs"] }
+  ];
+  var buttons = document.querySelectorAll(".tabs button");
+  function show(i) {
+    var t = tabs[i];
+    var img = document.getElementById("g-img");
+    img.src = "img/" + t.img + ".png";
+    img.alt = "Pestaña " + t.title + " de StreamDelay";
+    document.getElementById("g-title").textContent = t.title;
+    document.getElementById("g-text").textContent = t.text;
+    var ul = document.getElementById("g-list");
+    ul.innerHTML = "";
+    t.list.forEach(function (s) { var li = document.createElement("li"); li.textContent = s; ul.appendChild(li); });
+    buttons.forEach(function (b, k) { b.setAttribute("aria-selected", k === i ? "true" : "false"); });
+  }
+  buttons.forEach(function (b, k) { b.addEventListener("click", function () { show(k); }); });
+  show(0);
+
+  // Enlace directo al ZIP de la última versión (si no se puede, se queda el enlace a la página de versiones).
+  fetch("https://api.github.com/repos/manuelferjo/StreamDelay/releases/latest")
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (rel) {
+      if (!rel) return;
+      var zip = (rel.assets || []).filter(function (a) { return /\.zip$/i.test(a.name); })[0];
+      document.querySelectorAll(".js-version").forEach(function (el) {
+        el.textContent = String(rel.tag_name || "").replace(/^v/i, "v") + (zip ? " · " + Math.round(zip.size / 1024) + " KB" : "");
+      });
+      if (zip) document.querySelectorAll(".js-descarga").forEach(function (a) { a.href = zip.browser_download_url; });
+    })
+    .catch(function () {});
+</script>
+</body>
+</html>

@@ -1,0 +1,49 @@
+# Publica la web del proyecto (GitHub Pages): web/index.html con sus capturas, más la guía
+# (GUIA.html), el logo y las fuentes del programa, que se copian de su sitio para no repetirlos.
+name: Web
+
+on:
+  push:
+    branches: [main]
+    paths: ["web/**", "GUIA.html", "res/logo.png", ".github/workflows/web.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.despliegue.outputs.page_url }}
+    steps:
+      - name: Descargar el código
+        uses: actions/checkout@v7
+
+      - name: Montar la web
+        run: |
+          mkdir -p _site/fuentes
+          cp -r web/. _site/
+          cp GUIA.html _site/guia.html
+          cp res/logo.png _site/logo.png
+          cp res/*.ttf res/OFL-*.txt _site/fuentes/
+          ls -R _site
+
+      - name: Preparar GitHub Pages
+        uses: actions/configure-pages@v6
+
+      - name: Subir la web
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: _site
+
+      - name: Publicar
+        id: despliegue
+        uses: actions/deploy-pages@v5

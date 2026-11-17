@@ -7,6 +7,9 @@ ILDiff.cs  Compara dos StreamDelay.exe instrucción por instrucción, clase por
            variables, añadir comentarios) no cambia lo que hace el programa.
            Compilar:  %WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe /out:ildiff.exe ILDiff.cs
            Usar:      ildiff.exe antes.exe despues.exe [Clase1,Clase2]
+           Con ILDIFF_TODO=1 lista todos los métodos distintos, y con
+           ILDIFF_VOLCAR=carpeta guarda el código de cada uno en carpeta\A y
+           carpeta\B para compararlos con cualquier programa de diferencias.
 
 VerifyChat.cs  Pasa mensajes de ejemplo de Twitch, Kick, YouTube y donaciones
            por las clases del chat de un StreamDelay.exe e imprime el resultado.

@@ -4,6 +4,14 @@
 
 OBS envía el directo a StreamDelay, que lo retrasa los segundos que elijas y lo reenvía a Twitch, Kick, YouTube o cualquier servidor RTMP. El delay se puede cambiar, activar o quitar **en pleno directo**, sin cortar el stream.
 
+**Web:** [manuelferjo.github.io/StreamDelay](https://manuelferjo.github.io/StreamDelay/) · **Descarga:** [última versión](https://github.com/manuelferjo/StreamDelay/releases/latest)
+
+<p align="center">
+  <img src="web/img/directo.png" width="300" alt="Pestaña Directo: delay de 30 segundos activado">
+  <img src="web/img/chat.png" width="300" alt="Pestaña Chat: chat conjunto de Twitch, Kick y YouTube">
+  <img src="web/img/mando.png" width="300" alt="Pestaña Mando: control desde el móvil, delays guardados y avisos">
+</p>
+
 ## Funciones
 
 - **Delay dinámico**: elige los segundos y cámbialos en directo. Al subirlo se repiten los últimos segundos emitidos; al bajarlo, el stream salta hacia delante. Atajos de teclado globales.
@@ -31,7 +39,11 @@ build.bat
 
 Crea `StreamDelay.exe` en la misma carpeta. El código está en `src/` y los recursos (página del chat, overlays, fuentes, icono) en `res/`.
 
-GitHub compila el programa y pasa las pruebas del chat con cada cambio (pestaña **Actions**).
+La ventana principal (`MainForm`) está repartida en un archivo por pestaña: `LiveTab.cs` (Directo), `ChatTab.cs`, `Extras.cs` (Overlays), `Remote.cs` (Mando), `TitleTab.cs`, `SettingsTab.cs` y, en `MainForm.cs`, lo común (Registro, atajos y `StreamDelay.ini`). El resumen está al principio de `MainForm.cs`.
+
+GitHub compila el programa y pasa las pruebas del chat con cada cambio (pestaña **Actions**). Para comprobar que un cambio de limpieza no altera nada, `pruebas/ILDiff.cs` compara dos `.exe` instrucción por instrucción (ver `pruebas/LEEME.txt`).
+
+La web está en `web/` y se publica sola en GitHub Pages al subir cambios (`.github/workflows/web.yml`).
 
 ## Publicar una versión
 
