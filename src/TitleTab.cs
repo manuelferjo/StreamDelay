@@ -424,7 +424,7 @@ namespace StreamDelay
 			ContextMenuStrip menu = DarkMenu();
 			if (list.Count == 0)
 			{
-				ToolStripMenuItem hint = new ToolStripMenuItem("Escribe una categoría y pulsa Buscar")
+				ToolStripMenuItem hint = new ToolStripMenuItem(I18n.Tr("Escribe una categoría y pulsa Buscar"))
 				{
 					Enabled = false
 				};
@@ -452,7 +452,7 @@ namespace StreamDelay
 			if (p.Chosen != null)
 			{
 				menu.Items.Add(new ToolStripSeparator());
-				ToolStripMenuItem none = new ToolStripMenuItem("No cambiar la categoría en " + p.Name);
+				ToolStripMenuItem none = new ToolStripMenuItem(I18n.Tr("No cambiar la categoría en ") + p.Name);
 				none.Click += delegate
 				{
 					p.Chosen = null;
@@ -474,7 +474,7 @@ namespace StreamDelay
 			ContextMenuStrip menu = DarkMenu();
 			if (recentTitles.Count == 0)
 			{
-				menu.Items.Add(new ToolStripMenuItem("Aún no hay títulos usados")
+				menu.Items.Add(new ToolStripMenuItem(I18n.Tr("Aún no hay títulos usados"))
 				{
 					Enabled = false
 				});
@@ -519,7 +519,7 @@ namespace StreamDelay
 			}
 			if (title.Length == 0 && targets.Exists((Platform p) => p.Chosen == null))
 			{
-				MessageBox.Show(this, "Escribe un título (o elige una categoría) antes de actualizar.", "Título vacío");
+				I18n.Show(this, "Escribe un título (o elige una categoría) antes de actualizar.", "Título vacío");
 				fldTitle.Box.Focus();
 				return;
 			}
@@ -605,7 +605,7 @@ namespace StreamDelay
 		{
 			if (p.Connected)
 			{
-				if (MessageBox.Show(this, "¿Desconectar " + p.Name + ((p.Account.Length > 0) ? (" (" + p.Account + ")") : "") + "?\n\nTendrás que volver a autorizarlo para cambiar el título.", "Desconectar", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+				if (I18n.Show(this, "¿Desconectar " + p.Name + ((p.Account.Length > 0) ? (" (" + p.Account + ")") : "") + "?\n\nTendrás que volver a autorizarlo para cambiar el título.", "Desconectar", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
 				{
 					p.Logout();
 					SaveConfig();
@@ -736,7 +736,7 @@ namespace StreamDelay
 				string newSecret = ((sec != null) ? sec.Box.Text.Trim() : "");
 				if (newId.Length < 8 || (p.NeedsSecret && newSecret.Length < 8))
 				{
-					MessageBox.Show(f, p.NeedsSecret ? "Pega el Client ID y el Client Secret." : "Pega el ID de cliente.", "Faltan datos");
+					I18n.Show(f, p.NeedsSecret ? "Pega el Client ID y el Client Secret." : "Pega el ID de cliente.", "Faltan datos");
 				}
 				else
 				{

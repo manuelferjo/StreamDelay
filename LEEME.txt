@@ -1,7 +1,19 @@
-STREAM DELAY 3.1 - delay dinámico gratuito para OBS (by Vortexs)
+STREAM DELAY 3.2 - delay dinámico gratuito para OBS (by Vortexs)
 ================================================================
 
 Abre GUIA.html (doble clic) para ver la guía completa.
+
+Novedades de la 3.2
+- Clips: guarda los últimos 60 s que ha visto el público (con el delay
+  ya aplicado) en Vídeos\StreamDelay. Con el botón Clip de Directo,
+  Ctrl+Alt+C, el Mando, el Stream Deck o !clip en el chat (contesta
+  "Clip guardado"). En MP4 si tienes ffmpeg; si no, en FLV (VLC).
+  Registro -> Clips abre la carpeta.
+- TikTok como destino (Ajustes -> Destinos), si tu cuenta tiene clave
+  de emisión (TikTok LIVE Producer).
+- En inglés: botón English / Español arriba. Cambia el programa, el
+  chat, el Mando y los overlays que ve el público. Por defecto, el
+  idioma de Windows.
 
 Novedades de la 3.1
 - Actualización automática: al abrirse, StreamDelay mira si hay una

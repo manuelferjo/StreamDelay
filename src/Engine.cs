@@ -151,6 +151,9 @@ namespace StreamDelay
 		// lastOut cuando empezó la repetición (-1 si no se está repitiendo).
 		private long replayL0 = -1L;
 
+		// Los últimos 65 s emitidos, para los clips.
+		public readonly ClipBuffer Clips = new ClipBuffer();
+
 		public List<Sink> Sinks
 		{
 			get
@@ -1132,6 +1135,8 @@ namespace StreamDelay
 			{
 				sink.Offer(p, outTs, sentSeq, now);
 			}
+			// Lo emitido también se guarda un rato para poder sacar clips.
+			Clips.Add(p, outTs);
 		}
 
 		// ---------- Repetición ----------

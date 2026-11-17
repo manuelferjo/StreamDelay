@@ -244,6 +244,7 @@ namespace StreamDelay
 		// Texto en una línea (con "…" si no cabe).
 		public static void DrawText(Graphics g, string s, Font f, Color c, RectangleF r, StringAlignment h, StringAlignment v)
 		{
+			s = I18n.Tr(s);
 			using (StringFormat format = new StringFormat())
 			{
 				using (SolidBrush brush = new SolidBrush(c))
@@ -260,6 +261,7 @@ namespace StreamDelay
 		// Texto en varias líneas.
 		public static void DrawWrapped(Graphics g, string s, Font f, Color c, RectangleF r)
 		{
+			s = I18n.Tr(s);
 			using (StringFormat format = new StringFormat())
 			{
 				using (SolidBrush brush = new SolidBrush(c))

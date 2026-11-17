@@ -262,7 +262,7 @@ namespace StreamDelay
 				{
 				}
 			}
-			MessageBox.Show(this, "No se pudo abrir la página del chat: los puertos " + ChatPort + "–" + (ChatPort + 9) + " están ocupados.", "Chat");
+			I18n.Show(this, "No se pudo abrir la página del chat: los puertos " + ChatPort + "–" + (ChatPort + 9) + " están ocupados.", "Chat");
 			return false;
 		}
 
@@ -385,7 +385,7 @@ namespace StreamDelay
 				loading = false;
 				if (userAction)
 				{
-					MessageBox.Show(this, "Escribe al menos un canal (Twitch, Kick o YouTube) para activar el chat.", "Chat");
+					I18n.Show(this, "Escribe al menos un canal (Twitch, Kick o YouTube) para activar el chat.", "Chat");
 				}
 				return;
 			}

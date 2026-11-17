@@ -111,6 +111,7 @@
       <button class="ghost" data-a="menos">− 5 s</button>
       <button class="ghost" data-a="mas">+ 5 s</button>
     </div>
+    <button class="ghost" data-a="clip" style="width:100%;margin-top:10px">🎬 Guardar clip (últimos 60 s)</button>
 
     <div class="card"><div class="lbl">Delays guardados</div><div id="presets"></div></div>
     <div class="card"><div class="lbl">Destinos</div><div id="dests"><div class="empty">—</div></div></div>
@@ -128,6 +129,55 @@
 <script>
 (function () {
   var q = new URLSearchParams(location.search);
+  // Idioma: lo pone StreamDelay al enviar la página ('es' o 'en').
+  var LANG = ('__SD_LANG__' === 'en' || q.get('lang') === 'en') ? 'en' : 'es';
+  var EN_TXT = {
+    'Mando · StreamDelay': 'Remote · StreamDelay',
+    'Mando': 'Remote',
+    '· Mando': '· Remote',
+    'Conectando…': 'Connecting…',
+    'Escanea con la cámara del móvil': "Scan with your phone's camera",
+    'El móvil tiene que estar en la misma wifi que este PC.': 'The phone must be on the same Wi-Fi as this PC.',
+    '⚠ Aviso': '⚠ Warning',
+    'Activar delay': 'Turn delay on',
+    'Quitar delay': 'Turn delay off',
+    '🎬 Guardar clip (últimos 60 s)': '🎬 Save clip (last 60 s)',
+    'Delays guardados': 'Saved delays',
+    'Destinos': 'Destinations',
+    'Últimos avisos': 'Latest alerts',
+    'Todo en orden.': 'All good.',
+    'Mantén pulsado para CORTAR YA': 'Hold to CUT NOW',
+    'Sonido de aviso en este dispositivo': 'Alert sound on this device',
+    'Primero activa <b>Permitir desde el móvil</b> en StreamDelay → pestaña Mando, y vuelve a pulsar «Código QR».': 'First turn on <b>Allow from phone</b> in StreamDelay → Remote tab, and click «QR code» again.',
+    'No se pudo dibujar el QR: escribe la dirección de arriba en el navegador del móvil.': "Couldn't draw the QR: type the address above in your phone's browser.",
+    'En directo': 'Live', 'Reintentando': 'Retrying', 'Conectando': 'Connecting', 'Esperando': 'Waiting', 'Preparado': 'Ready', 'Sin clave': 'No key', 'Parado': 'Stopped',
+    'Activando delay': 'Delay going on', 'Subiendo delay': 'Delay going up', 'Bajando delay': 'Delay going down', 'Delay quitado': 'Delay removed',
+    'Delay activado': 'Delay on',
+    'Sin delay': 'No delay',
+    'Servicio parado en StreamDelay': 'Service stopped in StreamDelay',
+    'Esperando a OBS…': 'Waiting for OBS…',
+    ' en ': ' on ',
+    ' plataforma': ' platform',
+    ' plataformas': ' platforms',
+    ' · tu público va ': ' · your viewers are ',
+    ' s por detrás': ' s behind',
+    'OBS conectado · llenando el delay': 'OBS connected · filling the delay',
+    'No hay destinos activados.': 'No destinations turned on.',
+    'Conectado': 'Connected',
+    'Sin conexión con StreamDelay': 'No connection to StreamDelay',
+    'No se pudo contactar con StreamDelay': "Couldn't reach StreamDelay",
+    'Clave incorrecta: copia de nuevo la URL': 'Wrong key: copy the URL again'
+  };
+  function T(s) { return (LANG === 'en' && EN_TXT[s]) || s; }
+  if (LANG === 'en') {
+    document.documentElement.lang = 'en';
+    document.title = T(document.title);
+    (function walk(n) {
+      if (n.nodeType === 3) { var k = n.nodeValue.trim(); if (k && EN_TXT[k]) n.nodeValue = n.nodeValue.replace(k, EN_TXT[k]); return; }
+      if (n.nodeType !== 1 || n.tagName === 'SCRIPT' || n.tagName === 'STYLE') return;
+      for (var c = n.firstChild; c; c = c.nextSibling) walk(c);
+    })(document.body);
+  }
   var K = q.get('k') || '';
   var API = '/mando/api?k=' + encodeURIComponent(K) + '&a=';
   var $ = function (id) { return document.getElementById(id); };
@@ -301,14 +351,14 @@
     fetch(API + 'estado', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (s) {
       if (!s.lan) {
         $('qrurl').textContent = '';
-        $('qrnote').innerHTML = 'Primero activa <b>Permitir desde el móvil</b> en StreamDelay → pestaña Mando, y vuelve a pulsar «Código QR».';
+        $('qrnote').innerHTML = T('Primero activa <b>Permitir desde el móvil</b> en StreamDelay → pestaña Mando, y vuelve a pulsar «Código QR».');
         $('qr').style.display = 'none';
         return;
       }
       $('qrurl').textContent = s.lan;
       // El QR se genera aquí mismo: sin internet y sin cargar código de fuera (la URL lleva la clave del mando).
       try { $('qr').innerHTML = QR.svg(s.lan, 260); }
-      catch (e) { $('qr').style.display = 'none'; $('qrnote').textContent = 'No se pudo dibujar el QR: escribe la dirección de arriba en el navegador del móvil.'; }
+      catch (e) { $('qr').style.display = 'none'; $('qrnote').textContent = T('No se pudo dibujar el QR: escribe la dirección de arriba en el navegador del móvil.'); }
     });
     return;
   }
@@ -336,21 +386,21 @@
   function toast(m) { var t = $('toast'); t.textContent = m; t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(function () { t.classList.remove('show'); }, 1800); }
 
   // ---------- Pintar el estado ----------
-  var lastSeq = null, ST = { live: 'En directo', retry: 'Reintentando', connecting: 'Conectando', wait: 'Esperando', ready: 'Preparado', nokey: 'Sin clave', off: 'Parado' };
-  var TR = { on: 'Activando delay', up: 'Subiendo delay', down: 'Bajando delay', off: 'Delay quitado' };
+  var lastSeq = null, ST = { live: T('En directo'), retry: T('Reintentando'), connecting: T('Conectando'), wait: T('Esperando'), ready: T('Preparado'), nokey: T('Sin clave'), off: T('Parado') };
+  var TR = { on: T('Activando delay'), up: T('Subiendo delay'), down: T('Bajando delay'), off: T('Delay quitado') };
   function render(s) {
     if (!s || s.error) { if (s && s.error) toast(s.error); return; }
     var hero = $('hero'), t = s.tr && TR[s.tr.k] ? s.tr : null;
     hero.className = 'card ' + (s.on ? 'on' : 'off') + (t ? ' tr' : '');
-    $('heroLbl').textContent = t ? TR[t.k] : s.on ? 'Delay activado' : 'Delay';
-    $('state').innerHTML = s.on ? secs(s.s) : 'Sin delay';
+    $('heroLbl').textContent = t ? TR[t.k] : s.on ? T('Delay activado') : 'Delay';
+    $('state').innerHTML = s.on ? secs(s.s) : T('Sin delay');
     $('bar').style.width = t ? Math.round(t.p * 100) + '%' : '0';
     var nLive = (s.dests || []).filter(function (d) { return d.st === 'live'; }).length;
-    $('sub').innerHTML = !s.running ? 'Servicio parado en StreamDelay' : !s.input ? 'Esperando a OBS…' :
-      nLive ? '<span class="live">● EN DIRECTO</span> en ' + nLive + (nLive === 1 ? ' plataforma' : ' plataformas') + (s.on ? ' · tu público va ' + s.s + ' s por detrás' : '') :
-      'OBS conectado · llenando el delay';
+    $('sub').innerHTML = !s.running ? T('Servicio parado en StreamDelay') : !s.input ? T('Esperando a OBS…') :
+      nLive ? '<span class="live">● ' + (LANG === 'en' ? 'LIVE' : 'EN DIRECTO') + '</span>' + T(' en ') + nLive + (nLive === 1 ? T(' plataforma') : T(' plataformas')) + (s.on ? T(' · tu público va ') + s.s + T(' s por detrás') : '') :
+      T('OBS conectado · llenando el delay');
     var tg = $('toggle');
-    tg.textContent = s.on ? 'Quitar delay' : 'Activar delay' + (s.s > 0 ? ' (' + s.s + ' s)' : '');
+    tg.textContent = s.on ? T('Quitar delay') : T('Activar delay') + (s.s > 0 ? ' (' + s.s + ' s)' : '');
     tg.className = 'big ' + (s.on ? 'stop' : 'go');
 
     var pre = $('presets');
@@ -367,31 +417,31 @@
     $('dests').innerHTML = (s.dests || []).length ? s.dests.map(function (d) {
       return '<div class="dest"><b>' + esc(d.name) + '</b>' + (d.q ? '<span class="q">' + esc(d.q) + '</span>' : '') +
         '<span class="chip ' + d.st + '">' + (d.st === 'retry' && d.note ? esc(d.note) : ST[d.st] || d.st) + '</span></div>';
-    }).join('') : '<div class="empty">No hay destinos activados.</div>';
+    }).join('') : '<div class="empty">' + T('No hay destinos activados.') + '</div>';
 
     var pr = s.problems || [];
     $('alert').classList.toggle('show', pr.length > 0);
     $('alertTxt').innerHTML = pr.map(esc).join('<br>');
     $('events').innerHTML = (s.events || []).length ? s.events.slice(0, 6).map(function (e) {
       return '<div class="ev ' + esc(e.lv) + '"><time>' + esc(e.t) + '</time><span>' + esc(e.m) + '</span></div>';
-    }).join('') : '<div class="empty">Todo en orden.</div>';
+    }).join('') : '<div class="empty">' + T('Todo en orden.') + '</div>';
     if (lastSeq !== null && s.seq > lastSeq) beep();
     lastSeq = s.seq;
     $('ver').textContent = 'v' + s.ver;
   }
 
-  function setConn(ok) { $('conn').className = 'conn ' + (ok ? 'ok' : 'bad'); $('connTxt').textContent = ok ? 'Conectado' : 'Sin conexión con StreamDelay'; }
+  function setConn(ok) { $('conn').className = 'conn ' + (ok ? 'ok' : 'bad'); $('connTxt').textContent = ok ? T('Conectado') : T('Sin conexión con StreamDelay'); }
   function act(a) {
     unlock();
     if (navigator.vibrate) navigator.vibrate(15);
     return fetch(API + a, { cache: 'no-store' }).then(function (r) { return r.json(); })
       .then(function (s) { setConn(true); render(s); if (s.msg) toast(s.msg); })
-      .catch(function () { setConn(false); toast('No se pudo contactar con StreamDelay'); });
+      .catch(function () { setConn(false); toast(T('No se pudo contactar con StreamDelay')); });
   }
   function poll() {
     fetch(API + 'estado', { cache: 'no-store' }).then(function (r) { if (r.status === 403) throw 'k'; return r.json(); })
       .then(function (s) { setConn(true); render(s); })
-      .catch(function (e) { setConn(false); if (e === 'k') $('connTxt').textContent = 'Clave incorrecta: copia de nuevo la URL'; })
+      .catch(function (e) { setConn(false); if (e === 'k') $('connTxt').textContent = T('Clave incorrecta: copia de nuevo la URL'); })
       .then(function () { setTimeout(poll, 1000); });
   }
 

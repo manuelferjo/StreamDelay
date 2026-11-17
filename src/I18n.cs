@@ -1,0 +1,762 @@
+// Idioma: español (el original) o inglés.
+//
+// El programa está escrito en español y se traduce justo al enseñar cada texto: al dibujar
+// (Theme.DrawText / DrawWrapped), en los avisos (I18n.Show), en el registro (AppendLog), en las
+// respuestas del chat y en las páginas (chat, Mando, overlays). Así los valores internos no cambian.
+// Tr busca, en este orden:
+//   1. la frase entera en Words;
+//   2. Patterns (frases con números o nombres dentro);
+//   3. trozos de frase de Words (de 5 letras o más) dentro del texto, para los mensajes que se
+//      montan juntando trozos ("Kick" + ": no se pudo actualizar (" + error + ").").
+// Lo que no encuentra se queda en español. Para traducir algo nuevo, añádelo a Words.
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Text;
+using System.Text.RegularExpressions;
+using System.Windows.Forms;
+
+namespace StreamDelay
+{
+	internal static class I18n
+	{
+		public static bool English;
+
+		// "es" o "en" (para las páginas).
+		public static string Lang
+		{
+			get
+			{
+				return English ? "en" : "es";
+			}
+		}
+
+		// Por defecto, el idioma de Windows: español si Windows está en español, si no inglés.
+		public static bool DefaultEnglish
+		{
+			get
+			{
+				try
+				{
+					return CultureInfo.CurrentUICulture.TwoLetterISOLanguageName != "es";
+				}
+				catch
+				{
+					return false;
+				}
+			}
+		}
+
+		private static readonly Dictionary<string, string> words = new Dictionary<string, string>();
+
+		private static readonly List<KeyValuePair<Regex, string>> patterns = new List<KeyValuePair<Regex, string>>();
+
+		private static Regex fragments;
+
+		private static readonly Dictionary<string, string> cache = new Dictionary<string, string>();
+
+		private static readonly Regex timePrefix = new Regex("^(\\d\\d:\\d\\d:\\d\\d )(.*)$", RegexOptions.Singleline);
+
+		static I18n()
+		{
+			for (int i = 0; i + 1 < Words.Length; i += 2)
+			{
+				words[Words[i]] = Words[i + 1];
+			}
+			for (int i = 0; i + 1 < Patterns.Length; i += 2)
+			{
+				patterns.Add(new KeyValuePair<Regex, string>(new Regex(Patterns[i], RegexOptions.Singleline), Patterns[i + 1]));
+			}
+			// Trozos: los más largos primero. Si empiezan o acaban en letra, tienen que ser palabras enteras.
+			List<string> keys = new List<string>();
+			foreach (string k in words.Keys)
+			{
+				if (k.Trim().Length >= 5)
+				{
+					keys.Add(k);
+				}
+			}
+			keys.Sort((string a, string b) => b.Length.CompareTo(a.Length));
+			StringBuilder sb = new StringBuilder();
+			foreach (string k in keys)
+			{
+				if (sb.Length > 0)
+				{
+					sb.Append('|');
+				}
+				if (char.IsLetter(k[0]))
+				{
+					sb.Append("(?<!\\p{L})");
+				}
+				sb.Append(Regex.Escape(k));
+				if (char.IsLetter(k[k.Length - 1]))
+				{
+					sb.Append("(?!\\p{L})");
+				}
+			}
+			fragments = new Regex(sb.ToString());
+		}
+
+		// El texto en el idioma elegido.
+		public static string Tr(string s)
+		{
+			if (!English || string.IsNullOrEmpty(s))
+			{
+				return s;
+			}
+			lock (cache)
+			{
+				string done;
+				if (cache.TryGetValue(s, out done))
+				{
+					return done;
+				}
+				string result = Translate(s);
+				if (cache.Count > 4000)
+				{
+					cache.Clear();
+				}
+				cache[s] = result;
+				return result;
+			}
+		}
+
+		private static string Translate(string s)
+		{
+			string en;
+			if (words.TryGetValue(s, out en))
+			{
+				return en;
+			}
+			// Líneas del registro con la hora delante.
+			Match time = timePrefix.Match(s);
+			if (time.Success)
+			{
+				return time.Groups[1].Value + Translate(time.Groups[2].Value);
+			}
+			string t = s;
+			foreach (KeyValuePair<Regex, string> p in patterns)
+			{
+				t = p.Key.Replace(t, p.Value);
+			}
+			if (words.TryGetValue(t, out en))
+			{
+				return en;
+			}
+			return fragments.Replace(t, (Match m) => words[m.Value]);
+		}
+
+		// ---------- Avisos (MessageBox traducido) ----------
+
+		public static DialogResult Show(IWin32Window owner, string text)
+		{
+			return MessageBox.Show(owner, Tr(text));
+		}
+
+		public static DialogResult Show(IWin32Window owner, string text, string caption)
+		{
+			return MessageBox.Show(owner, Tr(text), Tr(caption));
+		}
+
+		public static DialogResult Show(IWin32Window owner, string text, string caption, MessageBoxButtons buttons)
+		{
+			return MessageBox.Show(owner, Tr(text), Tr(caption), buttons);
+		}
+
+		public static DialogResult Show(IWin32Window owner, string text, string caption, MessageBoxButtons buttons, MessageBoxIcon icon)
+		{
+			return MessageBox.Show(owner, Tr(text), Tr(caption), buttons, icon);
+		}
+
+		// ---------- Frases con datos dentro (expresiones regulares) ----------
+
+		private static readonly string[] Patterns = new string[]
+		{
+			"^Follows y donaciones · (\\d+) activos?", "Follows & donations · $1 active",
+			"^Follows y donaciones · (\\d+) configurados?", "Follows & donations · $1 set up",
+			"^Delay ↑ a (\\d+) s: el público verá una repetición de (\\d+) s\\.$", "Delay ↑ to $1 s: viewers will see a $2 s replay.",
+			"^Delay ↑ a (\\d+) s: el público verá una pausa de (\\d+) s\\.$", "Delay ↑ to $1 s: viewers will see a $2 s pause.",
+			"^Delay ↓ a (\\d+) s: el público saltará (\\d+) s\\.$", "Delay ↓ to $1 s: viewers will skip $2 s.",
+			"^(\\d+) MIN( \\d+ S)? DE RETRASO$", "$1 MIN$2 DELAY",
+			"(\\d+) CAL\\.", "$1 QUAL.",
+			"^Calidades que envía OBS: ", "Qualities sent by OBS: ",
+			"^Calidad que envía OBS: ", "Quality sent by OBS: ",
+			"mensaje de (.+?) borrado", "message from $1 deleted",
+			"^(.+?) expulsado (\\d+) min", "$1 timed out for $2 min",
+			"^(.+?) baneado", "$1 banned",
+			"^(.+?) lleva (\\d+) meses suscrito", "$1 has been subscribed for $2 months",
+			"^(.+?) ha regalado (\\d+) suscripciones", "$1 gifted $2 subs",
+			"^Clip de (\\d+) s guardado: ", "$1 s clip saved: ",
+			"^Reintento en (\\d+) s$", "Retrying in $1 s",
+			"^(\\d+) DESTINOS$", "$1 DESTINATIONS",
+			"^(\\d+) DESTINO$", "$1 DESTINATION",
+			"^(\\d+) EN DIRECTO$", "$1 LIVE",
+		};
+
+		// ---------- Español → inglés ----------
+
+		private static readonly string[] Words = new string[]
+		{
+			// Pestañas, cabecera y estados
+			"Directo", "Live",
+			"Chat", "Chat",
+			"Overlays", "Overlays",
+			"Mando", "Remote",
+			"Título", "Title",
+			"Ajustes", "Settings",
+			"Registro", "Log",
+			"APAGADO", "OFF",
+			"EN DIRECTO", "LIVE",
+			"EN DIRECTO · ", "LIVE · ",
+			"REPITIENDO", "REPLAYING",
+			"CARGANDO DELAY", "LOADING DELAY",
+			"ESPERANDO A OBS", "WAITING FOR OBS",
+			"English", "English",
+			"Español", "Español",
+			// Directo
+			"DELAY EN DIRECTO", "LIVE DELAY",
+			"Activado", "On",
+			"Desactivado", "Off",
+			"Aplicar delay", "Apply delay",
+			"Delay aplicado", "Delay applied",
+			"Aplicar ", "Apply ",
+			"SEGUNDOS DE RETRASO", "SECONDS OF DELAY",
+			"SIN APLICAR", "NOT APPLIED",
+			"DESACTIVADO · EL PÚBLICO VE EL DIRECTO SIN RETRASO", "OFF · VIEWERS SEE THE STREAM WITH NO DELAY",
+			"REPITIENDO LO ÚLTIMO MIENTRAS SUBE EL DELAY", "REPLAYING THE LAST BIT WHILE THE DELAY GOES UP",
+			"DELAY REAL ", "ACTUAL DELAY ",
+			" S · BÚFER ", " S · BUFFER ",
+			"Sin delay", "No delay",
+			"SE EMITIRÁ EN", "WILL STREAM TO",
+			"EMITIENDO EN", "STREAMING TO",
+			" DESTINO", " DESTINATION",
+			" DESTINOS", " DESTINATIONS",
+			"AÚN SIN DIRECTO", "NOT LIVE YET",
+			"Ningún destino activo · actívalos en Ajustes", "No destination on · turn them on in Settings",
+			"PREPARADO", "READY",
+			"CONECTANDO", "CONNECTING",
+			"REINTENTANDO", "RETRYING",
+			"FALTA CLAVE", "KEY MISSING",
+			"Falta el servidor", "Server missing",
+			"Falta la clave", "Key missing",
+			"Conectando…", "Connecting…",
+			"En directo", "Live",
+			"CALIDADES", "QUALITIES",
+			" calidad", " quality",
+			" calidades", " qualities",
+			"Conectado", "Connected",
+			"Esperando…", "Waiting…",
+			"Esperando", "Waiting",
+			"Sin 1080p: OBS → Vídeo", "No 1080p: OBS → Video",
+			"Twitch: 1 sola calidad", "Twitch: only 1 quality",
+			"Cada plataforma crea el resto", "Each platform makes the rest",
+			"OVERLAYS OBS", "OBS OVERLAYS",
+			"Gestionar", "Manage",
+			"Delay · espectadores · chat", "Delay · viewers · chat",
+			"▶  Iniciar servicio", "▶  Start service",
+			"▶  Iniciar · ", "▶  Start · ",
+			"▶  Iniciar en ", "▶  Start on ",
+			" destinos", " destinations",
+			"■  Detener servicio", "■  Stop service",
+			"Cortar ya", "Cut now",
+			"Clip", "Clip",
+			"ÚLTIMO EVENTO", "LAST EVENT",
+			"⚠ AVISO", "⚠ WARNING",
+			"Esto vacía el búfer y corta la transmisión en la plataforma ahora mismo. ¿Seguir?", "This empties the buffer and cuts the stream on the platform right now. Continue?",
+			"Se está transmitiendo. Detener corta la transmisión. ¿Seguir?", "You are live. Stopping cuts the stream. Continue?",
+			"Se está transmitiendo. Cerrar corta la transmisión. ¿Seguir?", "You are live. Closing cuts the stream. Continue?",
+			"Detener", "Stop",
+			"Cerrar", "Close",
+			"Servicio detenido.", "Service stopped.",
+			"No se puede iniciar", "Can't start",
+			"Falta ffmpeg", "ffmpeg is missing",
+			"El modo clásico necesita ffmpeg (gratuito) y no lo encuentra en este PC.", "Classic mode needs ffmpeg (free) and it isn't on this PC.",
+			"El ffmpeg que hay en este PC no sirve:\n", "The ffmpeg on this PC doesn't work:\n",
+			"Modo clásico: ffmpeg ", "Classic mode: ffmpeg ",
+			" (solo se envía la calidad principal).", " (only the main quality is sent).",
+			"Esperando a OBS en ", "Waiting for OBS at ",
+			". Destinos: ", ". Destinations: ",
+			"Twitch sin clave guardada: se usará la que ponga OBS (servicio Twitch).", "Twitch has no saved key: the one OBS sends will be used (Twitch service).",
+			"Si Windows pregunta por el Firewall, permite el acceso en redes privadas.", "If Windows asks about the Firewall, allow access on private networks.",
+			"No se pudo abrir winget (", "Couldn't open winget (",
+			").\n\nDescarga ffmpeg de gyan.dev/ffmpeg/builds y copia ffmpeg.exe junto a StreamDelay.exe.", ").\n\nDownload ffmpeg from gyan.dev/ffmpeg/builds and put ffmpeg.exe next to StreamDelay.exe.",
+			"Delay activado.", "Delay on.",
+			"Delay desactivado (en directo).", "Delay off (live).",
+			"OBS está enviando como máximo ", "OBS is sending at most ",
+			"p: tu público no tendrá 1080p.\n\nAún no ha salido nada en directo (está en el delay). Para arreglarlo:\n1. Detén la transmisión en OBS.\n2. OBS → Ajustes → Vídeo → Resolución de salida (escalada): 1920x1080.\n3. Si usas Transmisión mejorada: Ajustes → Emisión → Ancho de banda máximo: Auto.\n4. Vuelve a iniciar la transmisión.", "p: your viewers won't get 1080p.\n\nNothing has gone live yet (it's in the delay). To fix it:\n1. Stop the stream in OBS.\n2. OBS → Settings → Video → Output (scaled) resolution: 1920x1080.\n3. If you use Enhanced Broadcasting: Settings → Stream → Maximum bandwidth: Auto.\n4. Start the stream again.",
+			"Sin calidad 1080p", "No 1080p quality",
+			"Se acaba de guardar un clip: espera unos segundos.", "A clip was just saved: wait a few seconds.",
+			"Se acaba de guardar un clip", "A clip was just saved",
+			// Registro y general
+			"Registro", "Log",
+			"Si pides ayuda, copia este texto: no incluye tu clave.", "If you ask for help, copy this text: it doesn't include your key.",
+			"Copiar", "Copy",
+			"Guía", "Guide",
+			"Clips", "Clips",
+			"Versión", "Version",
+			"¡Copiado!", "Copied!",
+			"No encuentro GUIA.html junto a StreamDelay.exe.", "GUIA.html isn't next to StreamDelay.exe.",
+			". Atajos: Ctrl+Alt+D activar/desactivar · Ctrl+Alt+↑/↓ ±5 s · Ctrl+Alt+C guardar clip", ". Shortcuts: Ctrl+Alt+D on/off · Ctrl+Alt+↑/↓ ±5 s · Ctrl+Alt+C save clip",
+			"Para varias calidades: en OBS usa el servicio Twitch con servidor personalizado ", "For several qualities: in OBS use the Twitch service with custom server ",
+			" y activa Transmisión mejorada.", " and turn on Enhanced Broadcasting.",
+			"Aviso: Ctrl+Alt+D ya lo usa otro programa.", "Warning: another program already uses Ctrl+Alt+D.",
+			"Aviso: Ctrl+Alt+↑ ya lo usa otro programa.", "Warning: another program already uses Ctrl+Alt+↑.",
+			"Aviso: Ctrl+Alt+↓ ya lo usa otro programa.", "Warning: another program already uses Ctrl+Alt+↓.",
+			"Aviso: Ctrl+Alt+C ya lo usa otro programa.", "Warning: another program already uses Ctrl+Alt+C.",
+			"Cancelar", "Cancel",
+			"Guardar", "Save",
+			"Editar", "Edit",
+			"Editar →", "Edit →",
+			"Mostrar", "Show",
+			"Ocultar", "Hide",
+			"Copiar URL", "Copy URL",
+			"Vista previa", "Preview",
+			"Por defecto", "Default",
+			"Sin conectar", "Not connected",
+			"Sin configurar", "Not set up",
+			"Conectar", "Connect",
+			"Desconectar", "Disconnect",
+			"Configurar", "Set up",
+			// Clips
+			"No se pudo guardar el clip: ", "Couldn't save the clip: ",
+			"No se pudo abrir la carpeta de clips (", "Couldn't open the clips folder (",
+			"aún no se ha emitido nada", "nothing has been streamed yet",
+			"todavía no ha salido ningún fotograma clave", "no keyframe has gone out yet",
+			"🎬 Clip guardado: los últimos ", "🎬 Clip saved: the last ",
+			" s. ¡Gracias, ", " s. Thanks, ",
+			"botón Clip", "Clip button",
+			"Guardar clip (últimos 60 s)", "Save clip (last 60 s)",
+			"Guardando clip (últimos ", "Saving clip (last ",
+			"!clip de ", "!clip by ",
+			// Ajustes
+			"Destinos", "Destinations",
+			"Se emite a la vez en los activados", "Streams to all the ones turned on at once",
+			"Otro", "Other",
+			"Sin servidor · pulsa Editar", "No server · click Edit",
+			"clave guardada", "key saved",
+			"clave: la pone OBS", "key: set by OBS",
+			"falta la clave", "key missing",
+			"Activa al menos un destino en Ajustes → Destinos.", "Turn on at least one destination in Settings → Destinations.",
+			"Sin destinos", "No destinations",
+			": el servidor debe empezar por rtmp:// o rtmps://", ": the server must start with rtmp:// or rtmps://",
+			"El servidor debe empezar por rtmp:// o rtmps://", "The server must start with rtmp:// or rtmps://",
+			"Servidor no válido", "Invalid server",
+			": en Destinos va el servidor de la plataforma, no la dirección local.\n\nLa dirección local (127.0.0.1) es la que se pone en OBS.", ": Destinations need the platform's server, not the local address.\n\nThe local address (127.0.0.1) is the one you put in OBS.",
+			" no tiene", " has no",
+			" no tienen", " have no",
+			" clave guardada, así que no se emitirá ahí (salvo que OBS mande su clave).\n\n¿Iniciar igualmente?", " saved key, so nothing will be streamed there (unless OBS sends its key).\n\nStart anyway?",
+			"Destino: ", "Destination: ",
+			"Con la Transmisión mejorada de OBS (servicio Twitch con servidor personalizado) la clave la pone OBS y puedes dejarla vacía.", "With OBS Enhanced Broadcasting (Twitch service with custom server) OBS sets the key and you can leave it empty.",
+			"Copia el \"Stream URL\" y la \"Stream Key\" de tu panel de Kick (Settings → Stream URL & Key).", "Copy the \"Stream URL\" and \"Stream Key\" from your Kick dashboard (Settings → Stream URL & Key).",
+			"Copia la clave de YouTube Studio → Emitir en directo → Configuración de la emisión.", "Copy the key from YouTube Studio → Go live → Stream settings.",
+			"Si tu cuenta de TikTok tiene clave de emisión, está en TikTok LIVE Producer (en la web): copia el \"Server URL\" y la \"Stream Key\". TikTok suele dar una clave nueva en cada directo.", "If your TikTok account has a stream key, it's in TikTok LIVE Producer (on the web): copy the \"Server URL\" and \"Stream Key\". TikTok usually gives a new key for every stream.",
+			"Cualquier plataforma que admita RTMP: copia su URL de servidor y su clave.", "Any platform that accepts RTMP: copy its server URL and key.",
+			"Recibe todas las calidades de OBS", "Gets every quality from OBS",
+			"Recibe la calidad principal y crea el resto", "Gets the main quality and makes the rest",
+			"SERVIDOR", "SERVER",
+			"CLAVE DE TRANSMISIÓN", "STREAM KEY",
+			" La clave se guarda cifrada en StreamDelay.ini.", " The key is saved encrypted in StreamDelay.ini.",
+			"Cómo configurarlo →", "How to set it up →",
+			"SERVIDOR PERSONALIZADO PARA OBS", "CUSTOM SERVER FOR OBS",
+			"PUERTO", "PORT",
+			"OBS en otro PC de la red", "OBS on another PC on the network",
+			"Configuración de 2 PCs", "2-PC setup",
+			"Al subir el delay, repetir lo último (si no, se congela)", "When the delay goes up, replay the last bit (otherwise it freezes)",
+			"Ventana siempre visible", "Window always on top",
+			"Modo clásico con ffmpeg (solo una calidad)", "Classic mode with ffmpeg (one quality only)",
+			// Destinos al emitir (Sink)
+			"OBS usa otra clave: reconectando.", "OBS is using another key: reconnecting.",
+			"falta el servidor (Ajustes → Destinos).", "server missing (Settings → Destinations).",
+			"falta la clave: ponla en Ajustes → Destinos o usa el servicio Twitch en OBS con tu clave.", "key missing: set it in Settings → Destinations or use the Twitch service in OBS with your key.",
+			"falta la clave: escríbela en Ajustes → Destinos.", "key missing: type it in Settings → Destinations.",
+			"Reintento en ", "Retrying in ",
+			"no se pudo conectar (", "couldn't connect (",
+			"). Reintento en ", "). Retrying in ",
+			"revisa el servidor y la clave. Con Transmisión mejorada la clave la pone OBS (servicio Twitch): vuelve a iniciar la transmisión en OBS.", "check the server and key. With Enhanced Broadcasting OBS sets the key (Twitch service): start the stream again in OBS.",
+			"revisa el servidor y la clave (sin espacios) y que no haya otro programa emitiendo con esa clave.", "check the server and key (no spaces) and that no other program is streaming with that key.",
+			"enviando (ffmpeg, modo clásico).", "sending (ffmpeg, classic mode).",
+			"enviando", "sending",
+			" con Transmisión mejorada (todas las calidades).", " with Enhanced Broadcasting (every quality).",
+			"la calidad más alta", "the highest quality",
+			" crea el resto a partir de ella).", " makes the rest from it).",
+			"conexión cerrada", "connection closed",
+			"conexión perdida (", "connection lost (",
+			"la plataforma rechaza la conexión repetidamente: revisa el servidor y la clave y que no haya otro programa emitiendo con la misma clave.", "the platform keeps rejecting the connection: check the server and key and that no other program is streaming with the same key.",
+			"la conexión con ", "the connection to ",
+			" va demasiado lenta", " is too slow",
+			"ahora recibe ", "now gets ",
+			// Motor
+			"Nueva conexión de OBS: sustituye a la anterior.", "New OBS connection: it replaces the previous one.",
+			"OBS conectado (", "OBS connected (",
+			" Usaré la clave que envía OBS.", " I'll use the key OBS sends.",
+			"OBS desconectado.", "OBS disconnected.",
+			"Transmisión mejorada detectada: llegan varias calidades de OBS.", "Enhanced Broadcasting detected: several qualities are coming from OBS.",
+			"Aviso: no se pudo leer la resolución de la pista de vídeo ", "Warning: couldn't read the resolution of video track ",
+			" (¿códec distinto de H.264?). Kick y YouTube reciben la mejor pista H.264.", " (codec other than H.264?). Kick and YouTube get the best H.264 track.",
+			" (Twitch las recibe todas; Kick, YouTube y Otro, la de ", " (Twitch gets all of them; Kick, YouTube and Other get the ",
+			"ATENCIÓN: OBS envía como máximo ", "WARNING: OBS is sending at most ",
+			"p, así que el público no tendrá 1080p. Arréglalo en OBS → Ajustes → Vídeo → Resolución de salida (escalada): 1920x1080", "p, so viewers won't get 1080p. Fix it in OBS → Settings → Video → Output (scaled) resolution: 1920x1080",
+			", y en Emisión pon \"Ancho de banda máximo\" en Auto.", ", and in Stream set \"Maximum bandwidth\" to Auto.",
+			"Repetición interrumpida.", "Replay interrupted.",
+			"Repitiendo los últimos ", "Replaying the last ",
+			" s mientras sube el delay.", " s while the delay goes up.",
+			"Búfer vaciado y salida cortada.", "Buffer emptied and output cut.",
+			"Transmisión terminada.", "Stream ended.",
+			"Saltados ", "Skipped ",
+			" s para volver al delay elegido.", " s to get back to the chosen delay.",
+			"(clave)", "(key)",
+			"este ffmpeg no incluye RTMP", "this ffmpeg doesn't include RTMP",
+			"este ffmpeg no incluye RTMPS (necesario para este servidor)", "this ffmpeg doesn't include RTMPS (needed for this server)",
+			"no se pudo ejecutar (", "couldn't run it (",
+			"El puerto ", "Port ",
+			" está ocupado o bloqueado (", " is in use or blocked (",
+			"ffmpeg terminó", "ffmpeg exited",
+			"  → No se encuentra el servidor: revisa la URL o tu conexión a internet.", "  → Server not found: check the URL or your internet connection.",
+			"  → El servidor de la plataforma rechazó la conexión: revisa la URL del servidor.", "  → The platform's server refused the connection: check the server URL.",
+			"  → La plataforma rechazó la clave: cópiala de nuevo (sin espacios).", "  → The platform rejected the key: copy it again (no spaces).",
+			"  → Fallo de conexión segura (rtmps): prueba la versión rtmp:// del servidor si la plataforma la ofrece.", "  → Secure connection failed (rtmps): try the rtmp:// version of the server if the platform has one.",
+			"  → Se cortó la conexión con la plataforma.", "  → The connection to the platform was cut.",
+			"sin conexión (", "no connection (",
+			"no responde ", "no answer from ",
+			// Avisos si algo falla (Remote)
+			"OBS ha dejado de enviar vídeo (si has terminado el directo, no pasa nada).", "OBS stopped sending video (if you ended the stream, that's fine).",
+			"OBS vuelve a enviar vídeo.", "OBS is sending video again.",
+			" se ha caído. Reintentando solo…", " went down. Retrying automatically…",
+			" vuelve a estar en directo.", " is live again.",
+			": caído, reintentando (", ": down, retrying (",
+			" va con retraso: tu conexión no da para enviar todo (baja el bitrate o quita un destino).", " is lagging: your connection can't send everything (lower the bitrate or remove a destination).",
+			": la subida no da para todo", ": not enough upload",
+			" ya va bien otra vez.", " is fine again.",
+			// Chat
+			"Chat conjunto", "Combined chat",
+			"Twitch, Kick y YouTube en un solo chat. Sin iniciar sesión.", "Twitch, Kick and YouTube in one chat. No login needed.",
+			"TWITCH · NOMBRE DEL CANAL", "TWITCH · CHANNEL NAME",
+			"KICK · NOMBRE DEL CANAL", "KICK · CHANNEL NAME",
+			"YOUTUBE · @CANAL O ENLACE DEL DIRECTO", "YOUTUBE · @CHANNEL OR STREAM LINK",
+			"Abrir chat", "Open chat",
+			"URL para OBS", "URL for OBS",
+			"Follows y donaciones", "Follows & donations",
+			"Follows y donaciones · sin configurar", "Follows & donations · not set up",
+			" · revisar", " · check",
+			"Avisos de delay y comandos del chat", "Delay notices and chat commands",
+			"Los overlays para OBS (chat, delay, espectadores) están en la pestaña Overlays.", "The OBS overlays (chat, delay, viewers) are in the Overlays tab.",
+			"ESPECTADORES", "VIEWERS",
+			"TOTAL ", "TOTAL ",
+			"No configurado", "Not set up",
+			"Chat apagado", "Chat off",
+			"Chat conectado", "Chat connected",
+			"Sin directo", "Offline",
+			"Conectando", "Connecting",
+			"Overlay de delay: ", "Delay overlay: ",
+			" (en OBS: fuente Navegador de 1920x1080 con esa URL; sale arriba a la derecha).", " (in OBS: a 1920x1080 Browser source with that URL; it shows top right).",
+			"No se pudo abrir la página del chat: los puertos ", "Couldn't open the chat page: ports ",
+			" están ocupados.", " are in use.",
+			"no está conectado (pestaña Título)", "not connected (Title tab)",
+			"sin respuesta", "no answer",
+			"Mensaje enviado al chat (", "Message sent to chat (",
+			". Fallos: ", ". Failed: ",
+			"Escribe al menos un canal (Twitch, Kick o YouTube) para activar el chat.", "Type at least one channel (Twitch, Kick or YouTube) to turn on the chat.",
+			"Chat conjunto activado. Página del chat: ", "Combined chat on. Chat page: ",
+			"Chat conjunto desactivado.", "Combined chat off.",
+			"Follows de Twitch", "Twitch follows",
+			"Con tu cuenta de Twitch de la pestaña Título.", "With your Twitch account from the Title tab.",
+			"Twitch no está conectado. Conéctalo para ver los follows en el chat (tienes que ser el dueño del canal o moderador).", "Twitch isn't connected. Connect it to see follows in the chat (you must be the channel owner or a moderator).",
+			"Cuenta: ", "Account: ",
+			". Se activa al encender el chat. Si conectaste Twitch antes de esta versión, vuelve a conectarlo una vez para dar el permiso de follows.", ". It starts when you turn on the chat. If you connected Twitch before this version, connect it again once to give the follows permission.",
+			". Estado: ", ". Status: ",
+			"Volver a conectar Twitch", "Reconnect Twitch",
+			"Conectar Twitch", "Connect Twitch",
+			"Donaciones", "Donations",
+			"Pega el token del servicio que uses (o los dos).", "Paste the token of the service you use (or both).",
+			"¿Dónde está?", "Where is it?",
+			"StreamElements: Cuenta → Canales → \"Mostrar secretos\" → JWT Token. Streamlabs: Ajustes → API Settings → API Tokens → \"Your Socket API Token\". Se guardan cifrados en StreamDelay.ini.", "StreamElements: Account → Channels → \"Show secrets\" → JWT Token. Streamlabs: Settings → API Settings → API Tokens → \"Your Socket API Token\". They're saved encrypted in StreamDelay.ini.",
+			// Eventos del chat (página del chat)
+			" se ha suscrito", " subscribed",
+			" con Prime", " with Prime",
+			" de nivel 2", " at tier 2",
+			" de nivel 3", " at tier 3",
+			" ha regalado una suscripción a ", " gifted a sub to ",
+			" al chat", " to the chat",
+			" hace raid con ", " is raiding with ",
+			" hace host con ", " is hosting with ",
+			" espectadores", " viewers",
+			" continúa su suscripción", " is continuing their sub",
+			" te sigue", " followed you",
+			" ha donado ", " donated ",
+			" ha enviado un Super Chat de ", " sent a Super Chat of ",
+			" ha enviado un Super Sticker de ", " sent a Super Sticker of ",
+			" ha enviado ", " sent ",
+			" suscripción", " sub",
+			"Anónimo", "Anonymous",
+			"nuevo miembro", "new member",
+			// Comandos y avisos en el chat
+			"⏱️ Delay activado: el directo va con {s} s de retraso.", "⏱️ Delay on: the stream is now {s} s behind.",
+			"🔴 Delay desactivado: ahora veis el directo en tiempo real.", "🔴 Delay off: you are now watching in real time.",
+			"Clave del mando incorrecta", "Wrong remote key",
+			"El directo va con ", "The stream has ",
+			" s de delay.", " s of delay.",
+			"Ahora mismo no hay delay: el directo va en tiempo real.", "No delay right now: the stream is in real time.",
+			": no se pudo contestar (", ": couldn't reply (",
+			"Comando ", "Command ",
+			"Moderación ", "Moderation ",
+			"acción desconocida", "unknown action",
+			"plataforma desconocida", "unknown platform",
+			"conecta tu cuenta de ", "connect your ",
+			" en la pestaña Título para moderar", " account in the Title tab to moderate",
+			"este mensaje no trae los datos necesarios", "this message doesn't have the needed data",
+			"Aviso de delay en el chat: no se manda porque no estás en directo.", "Delay notice in chat: not sent because you're not live.",
+			"Aviso de delay: ", "Delay notice: ",
+			" no está conectado en la pestaña Título.", " isn't connected in the Title tab.",
+			"Aviso de delay en el chat: no se pudo enviar (", "Delay notice in chat: couldn't send (",
+			"Aviso de delay en el chat (", "Delay notice in chat (",
+			"Avisos y comandos del chat", "Chat notices and commands",
+			"Avisos de delay en el chat", "Delay notices in chat",
+			"Avisar en el chat del delay", "Tell the chat about the delay",
+			"Escribe en tus chats al activar o desactivar el delay.", "Writes in your chats when you turn the delay on or off.",
+			"Mandar el aviso automáticamente", "Send the notice automatically",
+			"Solo si estoy en directo", "Only when I'm live",
+			"EN QUÉ CHATS (CUENTAS DE LA PESTAÑA TÍTULO)", "WHICH CHATS (ACCOUNTS FROM THE TITLE TAB)",
+			" (sin conectar)", " (not connected)",
+			"AL ACTIVAR ({s} = SEGUNDOS)", "WHEN TURNED ON ({s} = SECONDS)",
+			"AL DESACTIVAR", "WHEN TURNED OFF",
+			"Se espera 3 s por si lo cambias otra vez, y se manda solo el estado final.", "It waits 3 s in case you change it again, and only sends the final state.",
+			"Comandos del chat", "Chat commands",
+			"Respuestas automáticas, una por línea: !comando = respuesta", "Automatic replies, one per line: !command = reply",
+			"Contestar a los comandos", "Reply to commands",
+			"{delay} = si hay delay y cuánto · {s} segundos · {user} quién pregunta. Contesta en la plataforma donde se escribe (como mucho una vez cada 20 s). !clip guarda los últimos 60 s (carpeta Vídeos, StreamDelay).", "{delay} = whether there's delay and how much · {s} seconds · {user} who asks. Replies on the platform where it's written (at most once every 20 s). !clip saves the last 60 s (Videos folder, StreamDelay).",
+			"Se enviará ahora a los chats elegidos el mensaje del estado actual (", "The message for the current state will be sent now to the chosen chats (",
+			"delay activado", "delay on",
+			"delay desactivado", "delay off",
+			"). ¿Enviar?", "). Send it?",
+			"Probar aviso ahora", "Test notice now",
+			"Probar aviso", "Test notice",
+			// Overlays
+			"Overlay de ", "Overlay of ",
+			" (en OBS: fuente Navegador).", " (in OBS: Browser source).",
+			"Delay", "Delay",
+			"Arriba a la derecha: «DELAY 30 s» o «EN DIRECTO · Sin delay».", "Top right: «DELAY 30 s» or «LIVE · No delay».",
+			"TAMAÑO", "SIZE",
+			"Normal", "Normal",
+			"Grande", "Large",
+			"Enorme", "Huge",
+			"Ocultar sin delay", "Hide with no delay",
+			"Espectadores", "Viewers",
+			"De cada plataforma y el total. Necesita el chat activado.", "From each platform and the total. Needs the chat turned on.",
+			"QUÉ MOSTRAR (NINGUNO = NO SE VE NADA)", "WHAT TO SHOW (NONE = NOTHING SHOWS)",
+			"POSICIÓN", "POSITION",
+			"Arriba dcha.", "Top right",
+			"Arriba izq.", "Top left",
+			"Abajo dcha.", "Bottom right",
+			"Abajo izq.", "Bottom left",
+			"En columna", "In a column",
+			"Total", "Total",
+			"Chat en pantalla", "On-screen chat",
+			"Twitch, Kick y YouTube juntos; cada mensaje dura 30 s.", "Twitch, Kick and YouTube together; each message stays 30 s.",
+			"En OBS: + → Navegador → pega la URL · 1920x1080 (chat: 500x700).", "In OBS: + → Browser → paste the URL · 1920x1080 (chat: 500x700).",
+			// Mando
+			"Mando a distancia", "Remote control",
+			"El delay desde el móvil, una tablet o como panel en OBS.", "The delay from your phone, a tablet or as a panel in OBS.",
+			"Nueva clave →", "New key →",
+			"Nueva clave", "New key",
+			"Se crea una clave nueva: las URL que tengas copiadas (móvil, panel de OBS, Stream Deck) dejarán de funcionar y tendrás que copiarlas otra vez. ¿Seguir?", "A new key will be created: the URLs you copied (phone, OBS panel, Stream Deck) will stop working and you'll have to copy them again. Continue?",
+			"Mando: clave nueva creada. Copia de nuevo las URL del mando.", "Remote: new key created. Copy the remote URLs again.",
+			"Permitir desde el móvil (misma wifi)", "Allow from phone (same Wi-Fi)",
+			"Código QR", "QR code",
+			"Abrir aquí", "Open here",
+			"Stream Deck", "Stream Deck",
+			"En el móvil: abre esa URL o escanea el QR. Conectado a la misma wifi que el PC.", "On your phone: open that URL or scan the QR. On the same Wi-Fi as the PC.",
+			"Ahora solo desde este PC (panel de OBS: Docks → Docks de navegador).", "Only from this PC for now (OBS panel: Docks → Browser docks).",
+			"Delays guardados", "Saved delays",
+			"Un clic en Directo los aplica. 0 s = quitar el delay.", "One click in Live applies them. 0 s = no delay.",
+			"Un clic los aplica (en Directo, en el móvil y en el Stream Deck).", "One click applies them (in Live, on your phone and on the Stream Deck).",
+			"NOMBRE (OPCIONAL)", "NAME (OPTIONAL)",
+			"SEGUNDOS (0 = SIN DELAY)", "SECONDS (0 = NO DELAY)",
+			"Avisos si algo falla", "Alerts if something fails",
+			"Si se cae una plataforma o tu subida no da para todo.", "If a platform goes down or your upload can't keep up.",
+			"Sonar un aviso", "Play a sound",
+			"Parpadear en la barra", "Flash the taskbar",
+			"Avisar si la subida no da para todo", "Warn if upload can't keep up",
+			"Aviso de prueba: así suena y se ve si se cae una plataforma.", "Test alert: this is how it sounds and looks if a platform goes down.",
+			"Los avisos también salen en el mando del móvil y en Directo (abajo, en rojo).", "Alerts also show on the phone remote and in Live (at the bottom, in red).",
+			"(se abre al iniciar StreamDelay)", "(opens when StreamDelay starts)",
+			"Activar / quitar delay", "Turn delay on / off",
+			"Activar delay", "Turn delay on",
+			"Quitar delay", "Turn delay off",
+			"Subir 5 s", "Up 5 s",
+			"Bajar 5 s", "Down 5 s",
+			"Delay guardado 1 (", "Saved delay 1 (",
+			"Delay guardado 2 (", "Saved delay 2 (",
+			"Delay guardado 3 (", "Saved delay 3 (",
+			"Cortar ya (¡sin confirmación!)", "Cut now (no confirmation!)",
+			"En el Stream Deck: arrastra la acción «Sitio web» (Sistema) a un botón, pega la URL y marca «GET request in background» / «Acceder en segundo plano». Funciona en este PC. Los delays 4–6 son igual cambiando n=4, 5 o 6.", "On the Stream Deck: drag the «Website» action (System) to a key, paste the URL and tick «GET request in background». It works on this PC. Delays 4–6 work the same changing n=4, 5 or 6.",
+			"Mando: acceso desde la red local activado (http://", "Remote: access from the local network on (http://",
+			"No se pudo abrir el servidor local: puertos 8935–8944 ocupados.", "Couldn't open the local server: ports 8935–8944 are in use.",
+			"IP-DE-ESTE-PC", "THIS-PC-IP",
+			"Delay activado", "Delay on",
+			"Delay quitado", "Delay off",
+			"No estás emitiendo", "You're not streaming",
+			"Transmisión cortada", "Stream cut",
+			"Mando: «Cortar ya» pulsado a distancia.", "Remote: «Cut now» pressed remotely.",
+			"Aviso de prueba desde el mando.", "Test alert from the remote.",
+			"Aviso de prueba enviado", "Test alert sent",
+			// Título
+			"Título y categoría", "Title and category",
+			"TÍTULO", "TITLE",
+			"Recientes", "Recent",
+			"CATEGORÍA O JUEGO", "CATEGORY OR GAME",
+			"Buscar", "Search",
+			"Copiar título", "Copy title",
+			"elige categoría", "pick a category",
+			"sin conectar", "not connected",
+			"Manual: copia y pega en LIVE Studio", "Manual: copy and paste into LIVE Studio",
+			"TIKTOK · COPIAR Y PEGAR", "TIKTOK · COPY AND PASTE",
+			"Actualizando…", "Updating…",
+			"Actualizar en ", "Update on ",
+			" plataforma", " platform",
+			" plataformas", " platforms",
+			"Copiar título para TikTok", "Copy title for TikTok",
+			"Conecta una plataforma", "Connect a platform",
+			": no se pudo leer el título actual (", ": couldn't read the current title (",
+			": no se pudo buscar la categoría (", ": couldn't search the category (",
+			": no hay ninguna categoría que coincida con \"", ": no category matches \"",
+			"Escribe una categoría y pulsa Buscar", "Type a category and click Search",
+			"No cambiar la categoría en ", "Don't change the category on ",
+			"Aún no hay títulos usados", "No titles used yet",
+			": sin conectar (pulsa Conectar en la pestaña Título).", ": not connected (click Connect in the Title tab).",
+			"Escribe un título (o elige una categoría) antes de actualizar.", "Type a title (or pick a category) before updating.",
+			"Título vacío", "Empty title",
+			"TikTok: título copiado. Pégalo en TikTok LIVE Studio (TikTok no permite cambiarlo desde otros programas).", "TikTok: title copied. Paste it in TikTok LIVE Studio (TikTok doesn't let other programs change it).",
+			": el título se recorta a ", ": the title is cut to ",
+			" caracteres.", " characters.",
+			": título", ": title",
+			" y categoría (", " and category (",
+			" actualizados.", " updated.",
+			": no se pudo actualizar (", ": couldn't update (",
+			"¡Actualizado!", "Updated!",
+			"Con errores: mira el Registro", "With errors: check the Log",
+			"¿Desconectar ", "Disconnect ",
+			"?\n\nTendrás que volver a autorizarlo para cambiar el título.", "?\n\nYou'll have to authorize it again to change the title.",
+			": desconectado.", ": disconnected.",
+			"1. Abre el panel de desarrolladores de Twitch (botón de abajo) e inicia sesión. Twitch exige tener activada la verificación en dos pasos.", "1. Open the Twitch developer console (button below) and log in. Twitch requires two-factor authentication.",
+			"2. Pulsa \"Registrar tu aplicación\" y rellena: Nombre: StreamDelay-tucanal · URL de redirección OAuth: http://localhost · Categoría: Application Integration · Tipo de cliente: Público.", "2. Click \"Register Your Application\" and fill in: Name: StreamDelay-yourchannel · OAuth Redirect URL: http://localhost · Category: Application Integration · Client Type: Public.",
+			"3. Pulsa Crear, después Administrar, y copia aquí el \"ID de cliente\".", "3. Click Create, then Manage, and copy the \"Client ID\" here.",
+			"1. Abre Kick → Ajustes → Developer (botón de abajo) y pulsa Create App. Kick exige la verificación en dos pasos.", "1. Open Kick → Settings → Developer (button below) and click Create App. Kick requires two-factor authentication.",
+			"2. Redirect URL: http://localhost:", "2. Redirect URL: http://localhost:",
+			"/callback (cópiala con el botón). Marca los permisos: Read user information, Read channel information, Write to channel information y el de escribir en el chat (chat:write, para el chat conjunto).", "/callback (copy it with the button). Tick the permissions: Read user information, Read channel information, Write to channel information and the chat write one (chat:write, for the combined chat).",
+			"3. Guarda la app y copia aquí el Client ID y el Client Secret.", "3. Save the app and copy the Client ID and Client Secret here.",
+			"1. Abre Google Cloud (botón de abajo), crea un proyecto \"StreamDelay\" y en Biblioteca habilita \"YouTube Data API v3\".", "1. Open Google Cloud (button below), create a \"StreamDelay\" project and in Library enable \"YouTube Data API v3\".",
+			"2. Pantalla de consentimiento / Google Auth Platform: tipo Externo, pon un nombre y tu correo. En Público, pulsa \"Publicar aplicación\" (si no, Google te desconecta cada 7 días).", "2. Consent screen / Google Auth Platform: type External, add a name and your email. In Audience, click \"Publish app\" (otherwise Google disconnects you every 7 days).",
+			"3. Credenciales → Crear credenciales → ID de cliente OAuth → tipo \"TVs y dispositivos de entrada limitada\". Copia aquí el ID de cliente y el secreto.", "3. Credentials → Create credentials → OAuth client ID → type \"TVs and Limited Input devices\". Copy the client ID and secret here.",
+			"Configurar ", "Set up ",
+			"Crea tu app de ", "Create your app on ",
+			"Solo una vez. Es gratis y tarda unos minutos.", "Only once. It's free and takes a few minutes.",
+			"Abrir panel de ", "Open the console for ",
+			"Copiar URL de redirección", "Copy redirect URL",
+			"ID DE CLIENTE", "CLIENT ID",
+			"Se guardan cifrados en StreamDelay.ini (solo tu usuario de Windows puede leerlos). No compartas ese archivo.", "They're saved encrypted in StreamDelay.ini (only your Windows user can read them). Don't share that file.",
+			"Guardar y conectar", "Save and connect",
+			"Pega el Client ID y el Client Secret.", "Paste the Client ID and Client Secret.",
+			"Pega el ID de cliente.", "Paste the Client ID.",
+			"Faltan datos", "Missing data",
+			"Conectar ", "Connect ",
+			"Preparando…", "Getting ready…",
+			"Se ha abierto la página de ", "The page of ",
+			" (y el código está copiado). Inicia sesión y escribe este código:", " has opened (and the code is copied). Log in and type this code:",
+			"Abrir página", "Open page",
+			"Copiar código", "Copy code",
+			"ESPERANDO A QUE LO APRUEBES…", "WAITING FOR YOUR APPROVAL…",
+			"Se ha abierto el navegador. Inicia sesión en ", "The browser has opened. Log in to ",
+			" y pulsa \"Allow\" / \"Permitir\".\n\nCuando termines, esta ventana se cerrará sola.", " and click \"Allow\".\n\nWhen you're done, this window will close by itself.",
+			"Abrir de nuevo", "Open again",
+			": conectado", ": connected",
+			" como ", " as ",
+			": no se pudo conectar (", ": couldn't connect (",
+			"No se pudo conectar: ", "Couldn't connect: ",
+			"\n\nRevisa el ID de cliente", "\n\nCheck the client ID",
+			" y el secreto", " and secret",
+			" (Configurar de nuevo: desconecta y vuelve a conectar).", " (To set it up again: disconnect and connect).",
+			// Mensajes de las plataformas
+			"la plataforma no devolvió el acceso", "the platform didn't return access",
+			"sesión caducada: vuelve a conectar ", "session expired: connect again ",
+			"el código ha caducado, vuelve a intentarlo", "the code expired, try again",
+			"has rechazado el acceso", "you denied access",
+			"tiempo agotado esperando la autorización", "timed out waiting for authorization",
+			" está ocupado; cierra el programa que lo use y vuelve a intentarlo", " is in use; close the program using it and try again",
+			"el puerto ", "port ",
+			"Kick devolvió: ", "Kick returned: ",
+			"falta permiso de chat: marca chat:write en tu app de Kick y vuelve a conectar Kick", "chat permission missing: tick chat:write in your Kick app and connect Kick again",
+			"Kick no envió el mensaje", "Kick didn't send the message",
+			"falta permiso de moderación: marca moderation:ban y moderation:chat_message:manage en tu app de Kick y vuelve a conectar Kick", "moderation permission missing: tick moderation:ban and moderation:chat_message:manage in your Kick app and connect Kick again",
+			"falta permiso: vuelve a conectar Twitch", "permission missing: connect Twitch again",
+			"Twitch no envió el mensaje", "Twitch didn't send the message",
+			"falta permiso de moderación: vuelve a conectar Twitch en la pestaña Título (o no eres moderador de ese canal)", "moderation permission missing: connect Twitch again in the Title tab (or you're not a moderator of that channel)",
+			"no se encontró tu usuario de Twitch", "your Twitch user wasn't found",
+			"solo el dueño del canal o un moderador puede ver sus follows", "only the channel owner or a moderator can see its follows",
+			"sesión de Twitch caducada: vuelve a conectar Twitch", "Twitch session expired: connect Twitch again",
+			"Twitch retiró el permiso de follows: vuelve a conectar Twitch", "Twitch removed the follows permission: connect Twitch again",
+			"Twitch pidió reconectar", "Twitch asked to reconnect",
+			"no hay ningún directo en curso ni programado en tu canal", "there's no live or scheduled stream on your channel",
+			"no se encontró el vídeo del directo", "the stream's video wasn't found",
+			"no estás en directo en YouTube", "you're not live on YouTube",
+			"se ha gastado el cupo diario de la API de YouTube", "the YouTube API daily quota is used up",
+			"YouTube no deja moderar con esta cuenta (vuelve a conectar YouTube en la pestaña Título)", "YouTube doesn't allow moderating with this account (connect YouTube again in the Title tab)",
+			"no se encontró el mensaje en YouTube", "the message wasn't found on YouTube",
+			"Kick no devolvió el chat del canal", "Kick didn't return the channel chat",
+			"no se pudo conectar con el chat de Kick", "couldn't connect to the Kick chat",
+			"error: canal suspendido o inexistente", "error: channel suspended or doesn't exist",
+			"YouTube pide aceptar cookies; vuelve a intentarlo", "YouTube asks to accept cookies; try again",
+			"token incorrecto o caducado", "wrong or expired token",
+			"token incorrecto", "wrong token",
+			"no se pudo conectar", "couldn't connect",
+			"sin respuesta del servidor", "no answer from the server",
+			"Videojuegos", "Gaming",
+			"Gente y blogs", "People & Blogs",
+			"Entretenimiento", "Entertainment",
+			"Humor", "Comedy",
+			"Música", "Music",
+			"Deportes", "Sports",
+			"Ciencia y tecnología", "Science & Technology",
+			"Educación", "Education",
+			"Consejos y estilo", "Howto & Style",
+			"Cine y animación", "Film & Animation",
+			"Motor", "Autos & Vehicles",
+			"Viajes y eventos", "Travel & Events",
+			"Animales", "Pets & Animals",
+			"Noticias y política", "News & Politics",
+			// Actualizaciones
+			"Actualizaciones", "Updates",
+			"StreamDelay actualizado a la versión ", "StreamDelay updated to version ",
+			". Tu configuración se ha conservado.", ". Your settings were kept.",
+			"No se pudo comprobar si hay versiones nuevas", "Couldn't check for new versions",
+			"Tienes la última versión (", "You have the latest version (",
+			"Hay una versión nueva de StreamDelay: ", "There's a new version of StreamDelay: ",
+			"la última versión publicada no tiene un número válido (", "the latest published version doesn't have a valid number (",
+			"la versión ", "version ",
+			" aún no tiene el ZIP de descarga", " doesn't have the download ZIP yet",
+			"Actualización de StreamDelay", "StreamDelay update",
+			"Hay una versión nueva: ", "There's a new version: ",
+			"Tienes la ", "You have ",
+			". Tu configuración y tus claves se conservan.", ". Your settings and keys are kept.",
+			"Sin notas de la versión.", "No release notes.",
+			"Ver en GitHub →", "See on GitHub →",
+			"Saltar esta", "Skip this",
+			"Más tarde", "Later",
+			"Actualizar ahora", "Update now",
+			"Actualizar", "Update",
+			"Actualización ", "Update ",
+			" saltada (puedes instalarla desde Registro → Actualizaciones).", " skipped (you can install it from Log → Version).",
+			"Estás en directo. Termina la transmisión y vuelve a intentarlo: la actualización reinicia StreamDelay.", "You're live. End the stream and try again: updating restarts StreamDelay.",
+			"Descargando StreamDelay ", "Downloading StreamDelay ",
+			"No se pudo actualizar: ", "Couldn't update: ",
+			"No se pudo actualizar:\n", "Couldn't update:\n",
+			"\n\nTu versión actual sigue funcionando. ¿Abrir la página de descarga para hacerlo a mano?", "\n\nYour current version still works. Open the download page to do it by hand?",
+			"Actualización lista: reiniciando StreamDelay…", "Update ready: restarting StreamDelay…",
+			"no hay permiso para escribir en la carpeta de StreamDelay (", "no permission to write to the StreamDelay folder (",
+			"). Muévela a Documentos o al Escritorio.", "). Move it to Documents or the Desktop.",
+			"la descarga está incompleta (", "the download is incomplete (",
+			"la huella SHA-256 del ZIP no coincide con la de GitHub", "the ZIP's SHA-256 doesn't match GitHub's",
+			"el ZIP no contiene StreamDelay.exe", "the ZIP doesn't contain StreamDelay.exe",
+			"el StreamDelay.exe descargado no es válido", "the downloaded StreamDelay.exe isn't valid",
+		};
+	}
+}

@@ -109,6 +109,50 @@
 <script>
 (function () {
   var q = new URLSearchParams(location.search);
+  // Idioma: lo pone StreamDelay al enviar la página ('es' o 'en').
+  var LANG = ('__SD_LANG__' === 'en' || q.get('lang') === 'en') ? 'en' : 'es';
+  var LOC = LANG === 'en' ? 'en-US' : 'es-ES';
+  var EN_TXT = {
+    'Chat conjunto · StreamDelay': 'Combined chat · StreamDelay',
+    'Esperando mensajes…': 'Waiting for messages…',
+    'Activa el chat en StreamDelay → pestaña Chat.': 'Turn on the chat in StreamDelay → Chat tab.',
+    'Enviar a:': 'Send to:',
+    'Escribe en el chat de todas tus plataformas…': 'Write in the chat of all your platforms…',
+    'Enviar': 'Send',
+    '↓ Nuevos mensajes': '↓ New messages',
+    'Sin conexión con StreamDelay…': 'No connection to StreamDelay…',
+    'no configurado': 'not set up',
+    'pulsa para ': 'click to ',
+    'ver': 'show',
+    'ocultar': 'hide',
+    ' sus espectadores': ' its viewers',
+    'Sin directo': 'Offline',
+    'Espectadores ocultos': 'Viewers hidden',
+    ' espectadores': ' viewers',
+    'Pulsa para ver los espectadores': 'Click to show the viewers',
+    'Pulsa para ocultar los espectadores': 'Click to hide the viewers',
+    ' (* sin contar las plataformas ocultas)': ' (* not counting hidden platforms)',
+    'Pulsa para incluir o quitar ': 'Click to include or remove ',
+    'conecta tus cuentas en StreamDelay → pestaña Título para poder escribir': 'connect your accounts in StreamDelay → Title tab to be able to write',
+    'Enviando…': 'Sending…',
+    'No se pudo contactar con StreamDelay.': "Couldn't reach StreamDelay.",
+    '✗ No se pudo contactar con StreamDelay': "✗ Couldn't reach StreamDelay",
+    '🗑 Borrar': '🗑 Delete',
+    'Hecho': 'Done',
+    '¿Seguro? Banear a ': 'Sure? Ban '
+  };
+  function T(s) { return (LANG === 'en' && EN_TXT[s]) || s; }
+  // Textos fijos de la página.
+  if (LANG === 'en') {
+    document.documentElement.lang = 'en';
+    document.title = T(document.title);
+    (function walk(n) {
+      if (n.nodeType === 3) { var k = n.nodeValue.trim(); if (k && EN_TXT[k]) n.nodeValue = n.nodeValue.replace(k, EN_TXT[k]); return; }
+      if (n.nodeType !== 1 || n.tagName === 'SCRIPT' || n.tagName === 'STYLE') return;
+      ['placeholder', 'title'].forEach(function (a) { var v = n.getAttribute(a); if (v && EN_TXT[v]) n.setAttribute(a, EN_TXT[v]); });
+      for (var c = n.firstChild; c; c = c.nextSibling) walk(c);
+    })(document.body);
+  }
   if (q.get('overlay') === '1') document.body.classList.add('overlay');
   if (q.get('size')) document.documentElement.style.setProperty('--size', parseInt(q.get('size'), 10) + 'px');
   var hide = (q.get('ocultar') || '').toLowerCase().split(',');
@@ -215,7 +259,7 @@
       saveHide();
     };
   });
-  function fmt(n) { return n >= 0 ? n.toLocaleString('es-ES') : n === -2 ? 'offline' : '—'; }
+  function fmt(n) { return n >= 0 ? n.toLocaleString(LOC) : n === -2 ? 'offline' : '—'; }
   function renderHeader() {
     var total = 0, any = false, anyShown = false;
     ['twitch', 'kick', 'youtube'].forEach(function (p) {
@@ -225,17 +269,17 @@
       var dot = chip.querySelector('.dot');
       dot.className = 'dot ' + (st === 'conectado' ? 'ok' : st.indexOf('error') === 0 ? 'err' : st ? 'wait' : '');
       var hidden = hideV.all || hideV[p];
-      chip.title = p.charAt(0).toUpperCase() + p.slice(1) + ': ' + (st || 'no configurado') + ' · pulsa para ' + (hidden ? 'ver' : 'ocultar') + ' sus espectadores';
+      chip.title = p.charAt(0).toUpperCase() + p.slice(1) + ': ' + (st || T('no configurado')) + ' · ' + T('pulsa para ') + (hidden ? T('ver') : T('ocultar')) + T(' sus espectadores');
       var vEl = document.getElementById('v-' + p);
       vEl.textContent = hidden ? '•••' : fmt(v == null ? -1 : v);
       vEl.classList.toggle('hid', !!hidden);
       if (v >= 0) { any = true; if (!hidden) { total += v; anyShown = true; } }
     });
     var tEl = document.getElementById('total'), tBox = document.querySelector('.total');
-    if (!any) { tEl.textContent = 'Sin directo'; tEl.className = ''; }
-    else if (hideV.all || !anyShown) { tEl.textContent = 'Espectadores ocultos'; tEl.className = 'hid'; }
-    else { tEl.textContent = total.toLocaleString('es-ES') + ' espectadores' + (hideV.twitch || hideV.kick || hideV.youtube ? '*' : ''); tEl.className = ''; }
-    tBox.title = hideV.all ? 'Pulsa para ver los espectadores' : 'Pulsa para ocultar los espectadores' + (hideV.twitch || hideV.kick || hideV.youtube ? ' (* sin contar las plataformas ocultas)' : '');
+    if (!any) { tEl.textContent = T('Sin directo'); tEl.className = ''; }
+    else if (hideV.all || !anyShown) { tEl.textContent = T('Espectadores ocultos'); tEl.className = 'hid'; }
+    else { tEl.textContent = total.toLocaleString(LOC) + T(' espectadores') + (hideV.twitch || hideV.kick || hideV.youtube ? '*' : ''); tEl.className = ''; }
+    tBox.title = hideV.all ? T('Pulsa para ver los espectadores') : T('Pulsa para ocultar los espectadores') + (hideV.twitch || hideV.kick || hideV.youtube ? T(' (* sin contar las plataformas ocultas)') : '');
   }
   renderHeader();
 
@@ -266,11 +310,11 @@
       var b = document.createElement('button');
       b.className = 'tgt' + (chosen[p] !== false ? ' on' : '');
       b.innerHTML = ICONS[p] + NAMES[p];
-      b.title = 'Pulsa para incluir o quitar ' + NAMES[p];
+      b.title = T('Pulsa para incluir o quitar ') + NAMES[p];
       b.onclick = function () { chosen[p] = chosen[p] === false; try { localStorage.setItem('sd-enviar-a', JSON.stringify(chosen)); } catch (x) {} renderTargets(); };
       tgts.appendChild(b);
     });
-    if (!any) tgts.innerHTML = '<span>conecta tus cuentas en StreamDelay → pestaña Título para poder escribir</span>';
+    if (!any) tgts.innerHTML = '<span>' + T('conecta tus cuentas en StreamDelay → pestaña Título para poder escribir') + '</span>';
     input.disabled = !any;
     updateCount();
   }
@@ -282,7 +326,7 @@
     var text = input.value.trim(), to = targets();
     if (!text || !to.length || text.length > limit()) return;
     sendBtn.disabled = true; input.disabled = true;
-    result.textContent = 'Enviando…';
+    result.textContent = T('Enviando…');
     fetch('/api/send', { method: 'POST', headers: { 'X-SD-Secret': SECRET, 'Content-Type': 'application/json' }, body: JSON.stringify({ text: text, to: to }) })
       .then(function (r) { return r.json(); })
       .then(function (res) {
@@ -294,7 +338,7 @@
         }).join(' &nbsp; ');
         if (anyOk) input.value = '';
       })
-      .catch(function () { result.innerHTML = '<span class="bad">No se pudo contactar con StreamDelay.</span>'; })
+      .catch(function () { result.innerHTML = '<span class="bad">' + T('No se pudo contactar con StreamDelay.') + '</span>'; })
       .then(function () { input.disabled = false; input.focus(); updateCount(); });
   }
   input.addEventListener('input', updateCount);
@@ -304,7 +348,7 @@
 
   // ---------- Moderar: pulsa un mensaje ----------
   if (q.get('moderar') === '0') document.body.classList.add('nomod');
-  var ACTS = [['del', '🗑 Borrar'], ['t60', '⏱ 1 min'], ['t600', '⏱ 10 min'], ['ban', '⛔ Ban']];
+  var ACTS = [['del', T('🗑 Borrar')], ['t60', '⏱ 1 min'], ['t600', '⏱ 10 min'], ['ban', '⛔ Ban']];
   function closeBars(except) {
     Array.prototype.forEach.call(list.querySelectorAll('.modbar'), function (b) { if (b.parentNode !== except) { b.parentNode.classList.remove('modsel'); b.remove(); } });
   }
@@ -316,10 +360,10 @@
       body: JSON.stringify({ p: m.p, a: a, id: m.id, uid: m.uid, user: m.user, text: m.text }) })
       .then(function (r) { return r.json(); })
       .then(function (r) {
-        if (r.ok) { res.className = 'mres ok'; res.textContent = '✓ ' + (r.msg || 'Hecho'); setTimeout(function () { closeBars(null); }, 1500); }
+        if (r.ok) { res.className = 'mres ok'; res.textContent = '✓ ' + (r.msg || T('Hecho')); setTimeout(function () { closeBars(null); }, 1500); }
         else { res.className = 'mres bad'; res.textContent = '✗ ' + (r.error || 'error'); Array.prototype.forEach.call(bar.querySelectorAll('button'), function (b) { b.disabled = false; }); }
       })
-      .catch(function () { res.className = 'mres bad'; res.textContent = '✗ No se pudo contactar con StreamDelay'; });
+      .catch(function () { res.className = 'mres bad'; res.textContent = T('✗ No se pudo contactar con StreamDelay'); });
   }
   list.addEventListener('click', function (e) {
     if (document.body.classList.contains('overlay') || document.body.classList.contains('nomod')) return;
@@ -339,7 +383,7 @@
       if (x[0] === 'del' && !el._m.id && el._m.p !== 'youtube') b.disabled = true;
       b.onclick = function () {
         if (x[0] === 'ban' && !b.classList.contains('sure')) {
-          b.classList.add('sure'); b.textContent = '¿Seguro? Banear a ' + el._m.user;
+          b.classList.add('sure'); b.textContent = T('¿Seguro? Banear a ') + el._m.user;
           setTimeout(function () { if (b.isConnected) { b.classList.remove('sure'); b.textContent = x[1]; } }, 3500);
           return;
         }

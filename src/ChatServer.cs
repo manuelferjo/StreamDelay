@@ -192,6 +192,11 @@ namespace StreamDelay
 
 		public void Send(ChatItem it)
 		{
+			// Los avisos (subs, raids, donaciones…) en el idioma elegido; los mensajes del chat, tal cual.
+			if (it.t == "ev" && it.text != null)
+			{
+				it.text = I18n.Tr(it.text);
+			}
 			string text = Web.ToJson(it);
 			lock (lk)
 			{
@@ -371,11 +376,11 @@ namespace StreamDelay
 				}
 				case "/delay":
 				case "/overlay-delay":
-					Respond(stream, "200 OK", "text/html; charset=utf-8", delayHtml);
+					Respond(stream, "200 OK", "text/html; charset=utf-8", delayHtml.Replace("__SD_LANG__", I18n.Lang));
 					break;
 				case "/viewers":
 				case "/espectadores":
-					Respond(stream, "200 OK", "text/html; charset=utf-8", viewersHtml);
+					Respond(stream, "200 OK", "text/html; charset=utf-8", viewersHtml.Replace("__SD_LANG__", I18n.Lang));
 					break;
 				case "/viewers.json":
 				{
@@ -408,7 +413,7 @@ namespace StreamDelay
 				case "/":
 				case "/index.html":
 				case "/chat":
-					Respond(stream, "200 OK", "text/html; charset=utf-8", pageHtml.Replace("__SD_SECRET__", secret));
+					Respond(stream, "200 OK", "text/html; charset=utf-8", pageHtml.Replace("__SD_SECRET__", secret).Replace("__SD_LANG__", I18n.Lang));
 					break;
 				default:
 					Respond(stream, "404 Not Found", "text/plain", "");
@@ -453,7 +458,7 @@ namespace StreamDelay
 							Respond(s, "400 Bad Request", "text/plain", "");
 							return;
 						}
-						Respond(s, "200 OK", "application/json; charset=utf-8", Web.ToJson(OnMod(md)));
+						Respond(s, "200 OK", "application/json; charset=utf-8", Web.ToJson(TrValues(OnMod(md))));
 						return;
 					}
 					if (!(p == "/api/send") || !(req.Method == "POST"))
@@ -483,7 +488,24 @@ namespace StreamDelay
 				failure.Add("error", ex.Message);
 				o = failure;
 			}
-			Respond(s, "200 OK", "application/json; charset=utf-8", Web.ToJson(o));
+			Respond(s, "200 OK", "application/json; charset=utf-8", Web.ToJson(TrValues(o)));
+		}
+
+		// Respuestas para la página: los textos (errores, "mensaje borrado"…) en el idioma elegido.
+		private static object TrValues(object o)
+		{
+			Dictionary<string, object> d = o as Dictionary<string, object>;
+			if (d == null)
+			{
+				return o;
+			}
+			Dictionary<string, object> res = new Dictionary<string, object>();
+			foreach (KeyValuePair<string, object> kv in d)
+			{
+				string text = kv.Value as string;
+				res[kv.Key] = (text != null && text != "ok") ? I18n.Tr(text) : kv.Value;
+			}
+			return res;
 		}
 
 		private static Dictionary<string, string> Query(string path)
@@ -546,7 +568,7 @@ namespace StreamDelay
 			}
 			if (p == "/mando")
 			{
-				Respond(s, "200 OK", "text/html; charset=utf-8", mandoHtml);
+				Respond(s, "200 OK", "text/html; charset=utf-8", mandoHtml.Replace("__SD_LANG__", I18n.Lang));
 				return;
 			}
 			string a;

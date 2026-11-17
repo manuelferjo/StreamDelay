@@ -655,7 +655,7 @@ namespace StreamDelay
 				{
 					sb.Append(',');
 				}
-				sb.Append("{\"n\":").Append(Js(PresetLabel(i))).Append(",\"s\":").Append(presetSec[i]).Append(",\"sel\":").Append(PresetActive(i) ? "true" : "false").Append('}');
+				sb.Append("{\"n\":").Append(Js(I18n.Tr(PresetLabel(i)))).Append(",\"s\":").Append(presetSec[i]).Append(",\"sel\":").Append(PresetActive(i) ? "true" : "false").Append('}');
 			}
 			sb.Append("],\"dests\":[");
 			bool first = true;
@@ -677,7 +677,7 @@ namespace StreamDelay
 						sb.Append(',');
 					}
 					first = false;
-					sb.Append("{\"name\":").Append(Js(s.D.Name)).Append(",\"st\":\"").Append(StateId(s.State)).Append("\",\"note\":").Append(Js(s.Note)).Append(",\"q\":").Append(Js(s.Quality)).Append('}');
+					sb.Append("{\"name\":").Append(Js(s.D.Name)).Append(",\"st\":\"").Append(StateId(s.State)).Append("\",\"note\":").Append(Js(I18n.Tr(s.Note))).Append(",\"q\":").Append(Js(s.Quality)).Append('}');
 				}
 			}
 			else
@@ -701,7 +701,7 @@ namespace StreamDelay
 					{
 						sb.Append(',');
 					}
-					sb.Append(Js(problems[j]));
+					sb.Append(Js(I18n.Tr(problems[j])));
 				}
 			}
 			sb.Append("],\"events\":[");
@@ -713,14 +713,14 @@ namespace StreamDelay
 					{
 						sb.Append(',');
 					}
-					sb.Append("{\"t\":").Append(Js(hEvents[k][0])).Append(",\"m\":").Append(Js(hEvents[k][1])).Append(",\"lv\":").Append(Js(hEvents[k][2])).Append('}');
+					sb.Append("{\"t\":").Append(Js(hEvents[k][0])).Append(",\"m\":").Append(Js(I18n.Tr(hEvents[k][1]))).Append(",\"lv\":").Append(Js(hEvents[k][2])).Append('}');
 				}
 			}
 			sb.Append("],\"seq\":").Append(alertSeq);
 			sb.Append(",\"lan\":").Append(remoteLan ? Js(LanUrl()) : "null");
 			if (msg != null)
 			{
-				sb.Append(",\"msg\":").Append(Js(msg));
+				sb.Append(",\"msg\":").Append(Js(I18n.Tr(msg)));
 			}
 			sb.Append('}');
 			return sb.ToString();
@@ -815,6 +815,9 @@ namespace StreamDelay
 					msg = "Transmisión cortada";
 				}
 				break;
+			case "clip":
+				msg = SaveClip("Mando", null) ? ("Guardando clip (últimos " + ClipSeconds + " s)…") : "Se acaba de guardar un clip";
+				break;
 			case "probar_aviso":
 				Alert("Aviso de prueba desde el mando.", "bad");
 				msg = "Aviso de prueba enviado";
@@ -848,7 +851,7 @@ namespace StreamDelay
 			Place(c1, newKey, 280f, 13f, 120f, 24f);
 			newKey.Click += delegate
 			{
-				if (MessageBox.Show(this, "Se crea una clave nueva: las URL que tengas copiadas (móvil, panel de OBS, Stream Deck) dejarán de funcionar y tendrás que copiarlas otra vez. ¿Seguir?", "Nueva clave", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+				if (I18n.Show(this, "Se crea una clave nueva: las URL que tengas copiadas (móvil, panel de OBS, Stream Deck) dejarán de funcionar y tendrás que copiarlas otra vez. ¿Seguir?", "Nueva clave", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
 				{
 					remoteKey = NewRemoteKey();
 					SaveConfig();
@@ -977,7 +980,7 @@ namespace StreamDelay
 			{
 				return;
 			}
-			fldMandoUrl.Box.Text = chatServer.Running ? (remoteLan ? LanUrl() : LocalMandoUrl()) : "(se abre al iniciar StreamDelay)";
+			fldMandoUrl.Box.Text = chatServer.Running ? (remoteLan ? LanUrl() : LocalMandoUrl()) : I18n.Tr("(se abre al iniciar StreamDelay)");
 			if (mandoHint != null)
 			{
 				mandoHint.Invalidate();
@@ -986,8 +989,9 @@ namespace StreamDelay
 
 		private void StreamDeckDialog()
 		{
-			string[][] rows = new string[9][]
+			string[][] rows = new string[10][]
 			{
+				new string[2] { "Guardar clip (últimos 60 s)", "clip" },
 				new string[2] { "Activar / quitar delay", "toggle" },
 				new string[2] { "Activar delay", "on" },
 				new string[2] { "Quitar delay", "off" },

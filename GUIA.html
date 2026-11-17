@@ -59,7 +59,7 @@
     <img src="res/logo.png" alt="">
     <div>
       <h1>Stream <span>Delay</span></h1>
-      <div class="by">by Vortexs · v3.1</div>
+      <div class="by">by Vortexs · v3.2</div>
     </div>
   </header>
   <p class="sub">Delay dinámico y gratuito para tus directos con OBS: cámbialo, actívalo o desactívalo sin cortar el stream. Ahora conserva todas las calidades de la <b>Transmisión mejorada</b> de Twitch.</p>
@@ -139,15 +139,16 @@
 
   <section id="multistream">
     <h2>Multistream: varias plataformas a la vez <span class="tag">NUEVO</span></h2>
-    <p style="margin-top:0">En <b>Ajustes → Destinos</b> activa las plataformas donde quieres emitir (Twitch, Kick, YouTube y un destino “Otro”) y con <b>Editar</b> pon su servidor y su clave. Todas reciben el mismo directo con el mismo delay.</p>
+    <p style="margin-top:0">En <b>Ajustes → Destinos</b> activa las plataformas donde quieres emitir (Twitch, Kick, YouTube, TikTok y un destino “Otro”) y con <b>Editar</b> pon su servidor y su clave. Todas reciben el mismo directo con el mismo delay.</p>
     <ul>
       <li>El botón grande ya te dice dónde vas a emitir: <b>“▶ Iniciar · Twitch + Kick”</b>.</li>
       <li>En la pestaña <b>Directo</b>, el recuadro <b>“Emitiendo en”</b> muestra cada destino con su estado: <b>EN DIRECTO</b> (en rojo), CONECTANDO, REINTENTANDO, CARGANDO DELAY o FALTA CLAVE. Arriba, “EN DIRECTO · 2” indica en cuántas estás en directo.</li>
-      <li><b>Twitch</b> recibe todas las calidades de la Transmisión mejorada. <b>Kick, YouTube y Otro</b> reciben la de <b>más resolución</b> que envíe OBS (lo verás en su píldora, por ejemplo “EN DIRECTO · 1080P60”) y cada plataforma crea las demás.</li>
+      <li><b>Twitch</b> recibe todas las calidades de la Transmisión mejorada. <b>Kick, YouTube, TikTok y Otro</b> reciben la de <b>más resolución</b> que envíe OBS (lo verás en su píldora, por ejemplo “EN DIRECTO · 1080P60”) y cada plataforma crea las demás.</li>
       <li>Cada destino va por su cuenta: si una plataforma se cae o va lenta, se reconecta sola sin cortar las demás.</li>
       <li>Con varias plataformas se sube el mismo vídeo varias veces: tu conexión tiene que aguantar la suma (por ejemplo, Twitch con 3 calidades ≈ 8 Mbps + Kick 6 Mbps ≈ 14 Mbps de subida).</li>
     </ul>
-    <p class="note">La clave de Twitch la puede poner OBS (servicio Twitch + Transmisión mejorada). Las de Kick, YouTube y Otro tienen que estar guardadas en StreamDelay.</p>
+    <p class="note">La clave de Twitch la puede poner OBS (servicio Twitch + Transmisión mejorada). Las de Kick, YouTube, TikTok y Otro tienen que estar guardadas en StreamDelay.</p>
+    <p class="note"><b>TikTok:</b> solo algunas cuentas tienen clave de emisión. Si la tuya la tiene, está en <b>TikTok LIVE Producer</b> (en la web): copia el “Server URL” y la “Stream Key” en Ajustes → Destinos → TikTok → Editar. TikTok suele dar una clave nueva en cada directo, así que revísala antes de empezar.</p>
   </section>
 
   <section>
@@ -169,6 +170,7 @@
       <tr><td>Otro valor</td><td>Barra y después <b>Aplicar</b></td></tr>
       <tr><td>Activar / desactivar</td><td>Interruptor “Activado”, o <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>D</kbd></td></tr>
       <tr><td>Sumar / restar 5 s</td><td><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>↑</kbd> / <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>↓</kbd></td></tr>
+      <tr><td>Guardar un clip</td><td>Botón <b>Clip</b> de Directo, <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>C</kbd>, el Mando o <code>!clip</code> en el chat. Guarda los <b>últimos 60 s que ha visto el público</b> (con el delay ya aplicado) en <b>Vídeos\StreamDelay</b>, en MP4 si tienes ffmpeg y si no en FLV (se abre con VLC). Registro → <b>Clips</b> abre la carpeta.</td></tr>
       <tr><td>Ventana encima del juego</td><td>Ajustes → “Ventana siempre visible”</td></tr>
       <tr><td>Desde el móvil o el Stream Deck</td><td>Pestaña <b>Mando</b> (apartado 11)</td></tr>
     </table>
@@ -302,6 +304,7 @@
 !horario = 📅 Directos de lunes a viernes a las 18:00, {user}</pre>
     <ul>
       <li><code>{delay}</code> se cambia por “El directo va con 30 s de delay.” o “Ahora mismo no hay delay…”; <code>{s}</code> por los segundos; <code>{user}</code> por quien lo pregunta; <code>{plataforma}</code> por Twitch, Kick o YouTube.</li>
+      <li><code>!clip</code> viene incluido: cualquiera puede usarlo, guarda los últimos 60 s y contesta “🎬 Clip guardado”. Entre dos clips tienen que pasar al menos 15 s. Si tienes otro bot con <code>!clip</code> (StreamElements, Nightbot…), quítaselo para que no contesten los dos.</li>
       <li>Cada comando contesta como mucho una vez cada 20 s por plataforma (así no se llena el chat). Los mensajes antiguos que llegan al conectar el chat no se contestan.</li>
       <li>Hace falta el chat activado y la cuenta de esa plataforma conectada en <b>Título</b>. En YouTube cada respuesta gasta cupo de la API (50 de 10.000 diarias).</li>
     </ul>

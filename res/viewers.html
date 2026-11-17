@@ -60,7 +60,7 @@
   applyOpts(null);
   if (q.get('texto')) document.getElementById('l-total').textContent = q.get('texto');
   var last = {};
-  function fmt(n) { return n.toLocaleString('es-ES'); }
+  function fmt(n) { return n.toLocaleString(('__SD_LANG__' === 'en') ? 'en-US' : 'es-ES'); }
   function set(id, show, n) {
     var p = document.getElementById('p-' + id), el = document.getElementById('n-' + id);
     if (!show) { p.classList.remove('show'); setTimeout(function () { if (!p.classList.contains('show')) p.classList.add('gone'); }, 400); return; }

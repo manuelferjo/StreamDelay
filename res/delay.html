@@ -81,7 +81,11 @@
     document.querySelectorAll('.off-only').forEach(function (e) { e.style.display = on ? 'none' : ''; });
   }
   function secs(n) { return n >= 60 && n % 60 === 0 ? (n / 60) + '<small>min</small>' : n + '<small>s</small>'; }
-  var TR = { on: 'Activando delay', up: 'Subiendo delay', down: 'Bajando delay', off: 'Delay quitado' };
+  // Idioma: lo pone StreamDelay al enviar la página (es / en).
+  var EN = (('__SD_LANG__' === 'en') || q.get('lang') === 'en');
+  var TR = EN ? { on: 'Delay going on', up: 'Delay going up', down: 'Delay going down', off: 'Delay removed' }
+             : { on: 'Activando delay', up: 'Subiendo delay', down: 'Bajando delay', off: 'Delay quitado' };
+  var LIVE = EN ? 'Live' : 'En directo', NODELAY = EN ? 'No delay' : 'Sin delay';
   function render(s) {
     if (s) applyOpts(s);
     var t = s && s.tr && TR[s.tr.k] ? s.tr : null;
@@ -93,7 +97,7 @@
       // Mientras cambia el delay: qué está pasando y una barra con lo que falta.
       vis(false);
       lbl.textContent = TR[t.k];
-      val.innerHTML = t.k === 'off' ? 'En directo' : secs(t.to);
+      val.innerHTML = t.k === 'off' ? LIVE : secs(t.to);
       bar.style.width = Math.round(Math.max(0, Math.min(1, t.p)) * 100) + '%';
       box.className = 'show off tr';
       return;
@@ -106,8 +110,8 @@
       box.className = 'show off';
     } else {
       vis(false);
-      lbl.textContent = 'En directo';
-      val.textContent = 'Sin delay';
+      lbl.textContent = LIVE;
+      val.textContent = NODELAY;
       box.className = showOff ? 'show off' : 'off';
     }
   }

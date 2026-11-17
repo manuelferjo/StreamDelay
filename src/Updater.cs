@@ -65,12 +65,12 @@ namespace StreamDelay
                     Version mine = ParseVersion(Version);
                     if (info == null)
                     {
-                        if (manual) MessageBox.Show(this, "No se pudo comprobar si hay versiones nuevas" + (error != null ? ":\n" + error : "."), "Actualizaciones");
+                        if (manual) I18n.Show(this, "No se pudo comprobar si hay versiones nuevas" + (error != null ? ":\n" + error : "."), "Actualizaciones");
                         return;
                     }
                     if (mine != null && info.Ver <= mine)
                     {
-                        if (manual) MessageBox.Show(this, "Tienes la última versión (" + Version + ").", "Actualizaciones", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                        if (manual) I18n.Show(this, "Tienes la última versión (" + Version + ").", "Actualizaciones", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         return;
                     }
                     AppendLog("Hay una versión nueva de StreamDelay: " + info.Tag + ".");
@@ -135,7 +135,7 @@ namespace StreamDelay
             {
                 if (engine.OutputActive)
                 {
-                    MessageBox.Show(f, "Estás en directo. Termina la transmisión y vuelve a intentarlo: la actualización reinicia StreamDelay.", "Actualizar");
+                    I18n.Show(f, "Estás en directo. Termina la transmisión y vuelve a intentarlo: la actualización reinicia StreamDelay.", "Actualizar");
                     return;
                 }
                 f.Close();
@@ -164,7 +164,7 @@ namespace StreamDelay
                         if (err != null)
                         {
                             AppendLog("No se pudo actualizar: " + err);
-                            if (MessageBox.Show(this, "No se pudo actualizar:\n" + err + "\n\nTu versión actual sigue funcionando. ¿Abrir la página de descarga para hacerlo a mano?",
+                            if (I18n.Show(this, "No se pudo actualizar:\n" + err + "\n\nTu versión actual sigue funcionando. ¿Abrir la página de descarga para hacerlo a mano?",
                                 "Actualizar", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation) == DialogResult.Yes) Http.OpenBrowser(info.Page);
                             return;
                         }

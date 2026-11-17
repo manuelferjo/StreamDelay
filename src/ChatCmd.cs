@@ -60,9 +60,9 @@ namespace StreamDelay
 		{
 			if (engine.Enabled && engine.TargetMs > 0)
 			{
-				return "El directo va con " + engine.TargetMs / 1000 + " s de delay.";
+				return I18n.Tr("El directo va con ") + engine.TargetMs / 1000 + I18n.Tr(" s de delay.");
 			}
-			return "Ahora mismo no hay delay: el directo va en tiempo real.";
+			return I18n.Tr("Ahora mismo no hay delay: el directo va en tiempo real.");
 		}
 
 		// Cada mensaje del chat pasa por aquí (hilo del chat).
@@ -84,6 +84,12 @@ namespace StreamDelay
 			}
 			int sp = text.IndexOf(' ');
 			string cmd = ((sp < 0) ? text : text.Substring(0, sp)).ToLowerInvariant();
+			if (cmd == "!clip")
+			{
+				// Comando fijo: guarda los últimos 60 s (con su propia espera entre clips).
+				ChatClip(it, (it.p == "twitch") ? "Twitch" : ((it.p == "kick") ? "Kick" : "YouTube"));
+				return;
+			}
 			string reply;
 			if (!ParseCommands().TryGetValue(cmd, out reply))
 			{

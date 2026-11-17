@@ -54,7 +54,7 @@ namespace StreamDelay
 				AppendLog("Aviso de delay en el chat: no se manda porque no estás en directo.");
 				return;
 			}
-			string text = (on ? annOnMsg : annOffMsg).Replace("{s}", (engine.TargetMs / 1000).ToString());
+			string text = I18n.Tr(on ? annOnMsg : annOffMsg).Replace("{s}", (engine.TargetMs / 1000).ToString());
 			List<string> to = new List<string>();
 			string[] ids = new string[3] { "twitch", "kick", "youtube" };
 			Platform[] plats = new Platform[3] { twitch, kick, youtube };
@@ -305,7 +305,7 @@ namespace StreamDelay
 			Place(c2, fCmd, 20f, 90f, 380f, 98f);
 			Box(c2, 20f, 194f, 380f, 30f, delegate(Graphics g, Rectangle r)
 			{
-				Theme.DrawText(g, "{delay} = si hay delay y cuánto · {s} segundos · {user} quién pregunta. Contesta en la plataforma donde se escribe (como mucho una vez cada 20 s).", Theme.Body(7.25f), Theme.Muted, r, StringAlignment.Near, StringAlignment.Near);
+				Theme.DrawWrapped(g, "{delay} = si hay delay y cuánto · {s} segundos · {user} quién pregunta. Contesta en la plataforma donde se escribe (como mucho una vez cada 20 s). !clip guarda los últimos 60 s (carpeta Vídeos, StreamDelay).", Theme.Body(7.25f), Theme.Muted, r);
 			});
 
 			VButton test = new VButton { Kind = ButtonKind.Ghost, Text = "Probar aviso ahora", FontSize = 9.5f };
@@ -325,7 +325,7 @@ namespace StreamDelay
 			test.Click += delegate
 			{
 				save();
-				if (MessageBox.Show(f, "Se enviará ahora a los chats elegidos el mensaje del estado actual (" + ((engine.Enabled && engine.TargetMs > 0) ? "delay activado" : "delay desactivado") + "). ¿Enviar?", "Probar aviso", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
+				if (I18n.Show(f, "Se enviará ahora a los chats elegidos el mensaje del estado actual (" + ((engine.Enabled && engine.TargetMs > 0) ? "delay activado" : "delay desactivado") + "). ¿Enviar?", "Probar aviso", MessageBoxButtons.YesNo, MessageBoxIcon.Question) == DialogResult.Yes)
 				{
 					AnnounceNow(true);
 				}

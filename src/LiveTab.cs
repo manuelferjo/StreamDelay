@@ -125,10 +125,41 @@ namespace StreamDelay
 				Kind = ButtonKind.Primary,
 				FontSize = 11f
 			};
-			Place(this, btnStart, 20f, buttonsTop, 296f, 46f, PageLive);
+			Place(this, btnStart, 20f, buttonsTop, 232f, 46f, PageLive);
 			btnStart.Click += delegate
 			{
 				ToggleService();
+			};
+			// Clip: guarda los últimos 60 s que ha visto el público (también con !clip y Ctrl+Alt+C).
+			VButton clip = new VButton
+			{
+				Kind = ButtonKind.Ghost,
+				Text = "Clip",
+				FontSize = 10f
+			};
+			Place(this, clip, 260f, buttonsTop, 62f, 46f, PageLive);
+			clip.Click += delegate
+			{
+				if (SaveClip("botón Clip", null))
+				{
+					clip.Text = "…";
+					clip.Invalidate();
+					System.Windows.Forms.Timer back = new System.Windows.Forms.Timer
+					{
+						Interval = 1500
+					};
+					back.Tick += delegate
+					{
+						back.Dispose();
+						clip.Text = "Clip";
+						clip.Invalidate();
+					};
+					back.Start();
+				}
+				else
+				{
+					AppendLog("Se acaba de guardar un clip: espera unos segundos.");
+				}
 			};
 			btnCut = new VButton
 			{
@@ -136,10 +167,10 @@ namespace StreamDelay
 				Text = "Cortar ya",
 				FontSize = 10f
 			};
-			Place(this, btnCut, 328f, buttonsTop, 112f, 46f, PageLive);
+			Place(this, btnCut, 330f, buttonsTop, 110f, 46f, PageLive);
 			btnCut.Click += delegate
 			{
-				if (MessageBox.Show(this, "Esto vacía el búfer y corta la transmisión en la plataforma ahora mismo. ¿Seguir?", "Cortar ya", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation) == DialogResult.Yes)
+				if (I18n.Show(this, "Esto vacía el búfer y corta la transmisión en la plataforma ahora mismo. ¿Seguir?", "Cortar ya", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation) == DialogResult.Yes)
 				{
 					engine.CutNow();
 				}
@@ -352,7 +383,7 @@ namespace StreamDelay
 		{
 			if (engine.Running)
 			{
-				if (!engine.OutputActive || MessageBox.Show(this, "Se está transmitiendo. Detener corta la transmisión. ¿Seguir?", "Detener", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation) == DialogResult.Yes)
+				if (!engine.OutputActive || I18n.Show(this, "Se está transmitiendo. Detener corta la transmisión. ¿Seguir?", "Detener", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation) == DialogResult.Yes)
 				{
 					engine.Stop();
 					AppendLog("Servicio detenido.");
@@ -415,7 +446,7 @@ namespace StreamDelay
 			}
 			catch (Exception ex)
 			{
-				MessageBox.Show(this, ex.Message + "\n\nPuede que otro programa use ese puerto (otro servidor RTMP u otra copia de StreamDelay).\nCambia el puerto en Ajustes → OBS (por ejemplo a 1936) y copia de nuevo el servidor en OBS.", "No se puede iniciar", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+				I18n.Show(this, ex.Message + "\n\nPuede que otro programa use ese puerto (otro servidor RTMP u otra copia de StreamDelay).\nCambia el puerto en Ajustes → OBS (por ejemplo a 1936) y copia de nuevo el servidor en OBS.", "No se puede iniciar", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 				return;
 			}
 			SaveConfig();
@@ -434,7 +465,7 @@ namespace StreamDelay
 		// Ofrece instalar ffmpeg con winget (solo hace falta en el modo clásico).
 		private void OfferFfmpegInstall(string reason)
 		{
-			DialogResult answer = MessageBox.Show(this, reason + "\n\n¿Quieres instalar ffmpeg ahora con winget? Se abrirá una ventana; acepta lo que pida y, cuando termine, vuelve a pulsar \"Iniciar servicio\".\n\n(También puedes desactivar el modo clásico: StreamDelay ya no necesita ffmpeg.)", "Falta ffmpeg", MessageBoxButtons.YesNo, MessageBoxIcon.Asterisk);
+			DialogResult answer = I18n.Show(this, reason + "\n\n¿Quieres instalar ffmpeg ahora con winget? Se abrirá una ventana; acepta lo que pida y, cuando termine, vuelve a pulsar \"Iniciar servicio\".\n\n(También puedes desactivar el modo clásico: StreamDelay ya no necesita ffmpeg.)", "Falta ffmpeg", MessageBoxButtons.YesNo, MessageBoxIcon.Asterisk);
 			if (answer != DialogResult.Yes)
 			{
 				return;
@@ -448,7 +479,7 @@ namespace StreamDelay
 			}
 			catch (Exception ex)
 			{
-				MessageBox.Show(this, "No se pudo abrir winget (" + ex.Message + ").\n\nDescarga ffmpeg de gyan.dev/ffmpeg/builds y copia ffmpeg.exe junto a StreamDelay.exe.", "Falta ffmpeg");
+				I18n.Show(this, "No se pudo abrir winget (" + ex.Message + ").\n\nDescarga ffmpeg de gyan.dev/ffmpeg/builds y copia ffmpeg.exe junto a StreamDelay.exe.", "Falta ffmpeg");
 			}
 		}
 
@@ -514,7 +545,7 @@ namespace StreamDelay
 				engine.LowQualityAlert = false;
 				tabs.Selected = 0;
 				timer.Stop();
-				MessageBox.Show(this, "OBS está enviando como máximo " + engine.TopHeight + "p: tu público no tendrá 1080p.\n\nAún no ha salido nada en directo (está en el delay). Para arreglarlo:\n1. Detén la transmisión en OBS.\n2. OBS → Ajustes → Vídeo → Resolución de salida (escalada): 1920x1080.\n3. Si usas Transmisión mejorada: Ajustes → Emisión → Ancho de banda máximo: Auto.\n4. Vuelve a iniciar la transmisión.", "Sin calidad 1080p", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+				I18n.Show(this, "OBS está enviando como máximo " + engine.TopHeight + "p: tu público no tendrá 1080p.\n\nAún no ha salido nada en directo (está en el delay). Para arreglarlo:\n1. Detén la transmisión en OBS.\n2. OBS → Ajustes → Vídeo → Resolución de salida (escalada): 1920x1080.\n3. Si usas Transmisión mejorada: Ajustes → Emisión → Ancho de banda máximo: Auto.\n4. Vuelve a iniciar la transmisión.", "Sin calidad 1080p", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 				timer.Start();
 			}
 			if (tgDelay.Checked != engine.Enabled)
@@ -527,7 +558,7 @@ namespace StreamDelay
 			UpdateApply();
 			bool running = engine.Running;
 			int count = EnabledDestinations().Count;
-			btnStart.Text = (running ? "■  Detener servicio" : ((count == 0) ? "▶  Iniciar servicio" : ((count <= 2) ? ("▶  Iniciar · " + DestSummary()) : ("▶  Iniciar en " + count + " destinos"))));
+			btnStart.Text = (running ? "■  Detener servicio" : ((count == 0) ? "▶  Iniciar servicio" : ((count == 1) ? ("▶  Iniciar · " + DestSummary()) : ("▶  Iniciar en " + count + " destinos"))));
 			btnStart.Kind = (running ? ButtonKind.Ghost : ButtonKind.Primary);
 			btnStart.Invalidate();
 			btnCut.Enabled = running;

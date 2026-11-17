@@ -248,7 +248,7 @@ namespace StreamDelay
 		// Respuesta HTML sencilla para el navegador.
 		private static void Reply(Stream s, int code, string msg)
 		{
-			string html = "<!doctype html><meta charset=utf-8><title>StreamDelay</title><body style=\"background:#09090C;color:#F4F4F5;font:18px 'Segoe UI',sans-serif;display:grid;place-items:center;height:90vh\"><div style=\"max-width:520px;text-align:center\"><div style=\"font-size:28px;font-weight:700;color:#C09AFD;margin-bottom:12px\">Stream Delay</div>" + WebUtility.HtmlEncode(msg) + "</div>";
+			string html = "<!doctype html><meta charset=utf-8><title>StreamDelay</title><body style=\"background:#09090C;color:#F4F4F5;font:18px 'Segoe UI',sans-serif;display:grid;place-items:center;height:90vh\"><div style=\"max-width:520px;text-align:center\"><div style=\"font-size:28px;font-weight:700;color:#C09AFD;margin-bottom:12px\">Stream Delay</div>" + WebUtility.HtmlEncode(I18n.Tr(msg)) + "</div>";
 			byte[] body = Encoding.UTF8.GetBytes(html);
 			string head = "HTTP/1.1 " + code + " OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: " + body.Length + "\r\nConnection: close\r\n\r\n";
 			byte[] headBytes = Encoding.ASCII.GetBytes(head);

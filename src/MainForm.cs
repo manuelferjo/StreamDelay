@@ -127,7 +127,7 @@ namespace StreamDelay
 
 		// ---------- Constantes ----------
 
-		private const string Version = "3.1";
+		private const string Version = "3.2";
 
 		private const string TikTokName = "TikTok";
 
@@ -219,13 +219,16 @@ namespace StreamDelay
 			Server = "rtmp://a.rtmp.youtube.com/live2"
 		};
 
+		// TikTok da un servidor y una clave distintos a cada cuenta (y a veces en cada directo): no hay servidor por defecto.
+		private readonly Destination dTikTok = new Destination("tiktok", "TikTok", false);
+
 		private readonly Destination dCustom = new Destination("custom", "Otro", false);
 
 		private Destination[] dests;
 
-		private readonly Toggle[] tgDest = new Toggle[4];
+		private readonly Toggle[] tgDest = new Toggle[5];
 
-		private readonly VButton[] btnEditDest = new VButton[4];
+		private readonly VButton[] btnEditDest = new VButton[5];
 
 		private PaintBox destStrip;
 
@@ -398,6 +401,23 @@ namespace StreamDelay
 				}
 			};
 			LoadConfig();
+			// Idioma: botón pequeño en la cabecera (English / Español).
+			VButton langBtn = new VButton
+			{
+				Kind = ButtonKind.Link,
+				Text = I18n.English ? "Español" : "English",
+				FontSize = 8f
+			};
+			Place(header, langBtn, 206f, 25f, 90f, 22f);
+			langBtn.Click += delegate
+			{
+				I18n.English = !I18n.English;
+				langBtn.Text = I18n.English ? "Español" : "English";
+				SaveConfig();
+				// Todo se vuelve a dibujar en el otro idioma (el registro ya escrito se queda como está).
+				Invalidate(true);
+				AppendLog(I18n.English ? "Language: English. The chat, remote and overlay pages switch when they reload." : "Idioma: español. Las páginas del chat, el Mando y los overlays cambian al recargarlas.");
+			};
 			// Overlays y Mando se construyen después de cargar la configuración porque la necesitan.
 			BuildOverlays(pageTop);
 			BuildMando(pageTop);
@@ -416,7 +436,7 @@ namespace StreamDelay
 			};
 			timer.Start();
 			RefreshStatus();
-			AppendLog("Stream Delay " + Version + ". Atajos: Ctrl+Alt+D activar/desactivar · Ctrl+Alt+↑/↓ ±5 s");
+			AppendLog("Stream Delay " + Version + ". Atajos: Ctrl+Alt+D activar/desactivar · Ctrl+Alt+↑/↓ ±5 s · Ctrl+Alt+C guardar clip");
 			AppendLog("Para varias calidades: en OBS usa el servicio Twitch con servidor personalizado " + ObsServer + " y activa Transmisión mejorada.");
 		}
 
@@ -504,7 +524,7 @@ namespace StreamDelay
 		{
 			Form f = new Form
 			{
-				Text = title,
+				Text = I18n.Tr(title),
 				FormBorderStyle = FormBorderStyle.FixedDialog,
 				MaximizeBox = false,
 				MinimizeBox = false,
@@ -599,7 +619,7 @@ namespace StreamDelay
 			}
 			catch
 			{
-				MessageBox.Show(this, "No encuentro GUIA.html junto a StreamDelay.exe.", "Guía");
+				I18n.Show(this, "No encuentro GUIA.html junto a StreamDelay.exe.", "Guía");
 			}
 		}
 
@@ -815,32 +835,44 @@ namespace StreamDelay
 			VButton copy = new VButton
 			{
 				Kind = ButtonKind.Ghost,
-				Text = "Copiar registro",
+				Text = "Copiar",
 				FontSize = 9.5f
 			};
-			Place(this, copy, 20f, y0 + 452, 136f, 40f, PageLog);
+			// Cuatro botones: copiar, guía, carpeta de clips y buscar actualizaciones.
+			Place(this, copy, 20f, y0 + 452, 99f, 40f, PageLog);
 			copy.Click += delegate
 			{
-				CopyText((tbLog.Text.Length > 0) ? tbLog.Text : " ", copy, "Copiar registro");
+				CopyText((tbLog.Text.Length > 0) ? tbLog.Text : " ", copy, "Copiar");
 			};
 			VButton guide = new VButton
 			{
 				Kind = ButtonKind.Ghost,
-				Text = "Abrir guía",
+				Text = "Guía",
 				FontSize = 9.5f
 			};
-			Place(this, guide, 162f, y0 + 452, 136f, 40f, PageLog);
+			Place(this, guide, 127f, y0 + 452, 99f, 40f, PageLog);
 			guide.Click += delegate
 			{
 				OpenGuide();
 			};
+			VButton clips = new VButton
+			{
+				Kind = ButtonKind.Ghost,
+				Text = "Clips",
+				FontSize = 9.5f
+			};
+			Place(this, clips, 234f, y0 + 452, 99f, 40f, PageLog);
+			clips.Click += delegate
+			{
+				OpenClipFolder();
+			};
 			VButton upd = new VButton
 			{
 				Kind = ButtonKind.Ghost,
-				Text = "Actualizaciones",
+				Text = "Versión",
 				FontSize = 9.5f
 			};
-			Place(this, upd, 304f, y0 + 452, 136f, 40f, PageLog);
+			Place(this, upd, 341f, y0 + 452, 99f, 40f, PageLog);
 			upd.Click += delegate
 			{
 				upd.Enabled = false;
@@ -856,6 +888,7 @@ namespace StreamDelay
 		// Guarda como mucho unos 40.000 caracteres.
 		private void AppendLog(string s)
 		{
+			s = I18n.Tr(s);
 			if (tbLog.TextLength > 40000)
 			{
 				tbLog.Text = tbLog.Text.Substring(20000);
@@ -877,7 +910,7 @@ namespace StreamDelay
 			}
 		}
 
-		// ---------- Atajos de teclado (Ctrl+Alt+D, Ctrl+Alt+↑, Ctrl+Alt+↓) ----------
+		// ---------- Atajos de teclado (Ctrl+Alt+D, Ctrl+Alt+↑, Ctrl+Alt+↓, Ctrl+Alt+C) ----------
 
 		[DllImport("user32.dll")]
 		private static extern bool RegisterHotKey(IntPtr hWnd, int id, uint mods, uint vk);
@@ -904,6 +937,10 @@ namespace StreamDelay
 				{
 					pendingLog.Enqueue("Aviso: Ctrl+Alt+↓ ya lo usa otro programa.");
 				}
+				if (!RegisterHotKey(base.Handle, 4, mods, (uint)Keys.C))
+				{
+					pendingLog.Enqueue("Aviso: Ctrl+Alt+C ya lo usa otro programa.");
+				}
 			}
 		}
 
@@ -923,6 +960,9 @@ namespace StreamDelay
 				case 3:
 					ApplyDelay(engine.TargetMs / 1000 - 5);
 					break;
+				case 4:
+					SaveClip("Ctrl+Alt+C", null);
+					break;
 				}
 			}
 			base.WndProc(ref msg);
@@ -932,12 +972,12 @@ namespace StreamDelay
 
 		protected override void OnFormClosing(FormClosingEventArgs e)
 		{
-			if (engine.OutputActive && MessageBox.Show(this, "Se está transmitiendo. Cerrar corta la transmisión. ¿Seguir?", "Cerrar", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation) != DialogResult.Yes)
+			if (engine.OutputActive && I18n.Show(this, "Se está transmitiendo. Cerrar corta la transmisión. ¿Seguir?", "Cerrar", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation) != DialogResult.Yes)
 			{
 				e.Cancel = true;
 				return;
 			}
-			for (int i = 1; i <= 3; i++)
+			for (int i = 1; i <= 4; i++)
 			{
 				UnregisterHotKey(base.Handle, i);
 			}
@@ -954,6 +994,7 @@ namespace StreamDelay
 		private void LoadConfig()
 		{
 			loading = true;
+			I18n.English = I18n.DefaultEnglish;
 			slider.Value = 30;
 			engine.TargetMs = 30000;
 			tgDelay.Checked = true;
@@ -1001,6 +1042,9 @@ namespace StreamDelay
 						case "ffmpeg":
 							tgFfmpeg.Checked = value == "1";
 							break;
+						case "lang":
+							I18n.English = value == "en";
+							break;
 						}
 					}
 					catch
@@ -1028,7 +1072,8 @@ namespace StreamDelay
 					"replay=" + (tgReplay.Checked ? "1" : "0"),
 					"port=" + port,
 					"lan=" + (tgLan.Checked ? "1" : "0"),
-					"ffmpeg=" + (tgFfmpeg.Checked ? "1" : "0")
+					"ffmpeg=" + (tgFfmpeg.Checked ? "1" : "0"),
+					"lang=" + I18n.Lang
 				};
 				SaveDestinations(lines);
 				SaveTitleConfig(lines);

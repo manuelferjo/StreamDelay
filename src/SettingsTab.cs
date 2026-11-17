@@ -30,7 +30,7 @@ namespace StreamDelay
 			{
 				Title = "OBS"
 			};
-			Place(this, obsCard, 20f, y0 + 218, 420f, 166f, PageSettings);
+			Place(this, obsCard, 20f, y0 + 238, 420f, 166f, PageSettings);
 			VButton howTo = new VButton
 			{
 				Kind = ButtonKind.Link,
@@ -92,7 +92,7 @@ namespace StreamDelay
 
 			// Recuadro de opciones.
 			Card optionsCard = new Card();
-			Place(this, optionsCard, 20f, y0 + 394, 420f, 124f, PageSettings);
+			Place(this, optionsCard, 20f, y0 + 414, 420f, 104f, PageSettings);
 			tgReplay = new Toggle
 			{
 				Text = "Al subir el delay, repetir lo último (si no, se congela)"
@@ -132,10 +132,6 @@ namespace StreamDelay
 					SaveConfig();
 				}
 			};
-			Box(optionsCard, 20f, 100f, 380f, 18f, delegate(Graphics g, Rectangle r)
-			{
-				Theme.DrawText(g, "CTRL+ALT+D ACTIVAR · CTRL+ALT+↑/↓ ±5 S", Theme.Mono(7f), Theme.Dim, r, StringAlignment.Near, StringAlignment.Center);
-			});
 		}
 
 		// Aplica el puerto escrito (1024–65535; si no es válido, vuelve al anterior).
@@ -178,7 +174,7 @@ namespace StreamDelay
 		{
 			if (dests == null)
 			{
-				dests = new Destination[4] { dTwitch, dKick, dYouTube, dCustom };
+				dests = new Destination[5] { dTwitch, dKick, dYouTube, dTikTok, dCustom };
 			}
 		}
 
@@ -190,7 +186,7 @@ namespace StreamDelay
 			{
 				Title = "Destinos"
 			};
-			Place(this, card, 20f, y0, 420f, 208f, PageSettings);
+			Place(this, card, 20f, y0, 420f, 228f, PageSettings);
 			Box(card, 160f, 14f, 240f, 24f, delegate(Graphics g, Rectangle r)
 			{
 				Theme.DrawText(g, "Se emite a la vez en los activados", Theme.Body(7.75f), Theme.Muted, r, StringAlignment.Far, StringAlignment.Center);
@@ -203,7 +199,7 @@ namespace StreamDelay
 					Text = dests[i].Name,
 					Hint = ""
 				};
-				Place(card, tgDest[i], 18f, 42 + i * 40, 276f, 38f);
+				Place(card, tgDest[i], 18f, 42 + i * 36, 276f, 36f);
 				tgDest[i].CheckedChanged += delegate
 				{
 					dests[idx].Enabled = tgDest[idx].Checked;
@@ -219,7 +215,7 @@ namespace StreamDelay
 					Text = "Editar",
 					FontSize = 8.5f
 				};
-				Place(card, btnEditDest[i], 300f, 45 + i * 40, 100f, 30f);
+				Place(card, btnEditDest[i], 300f, 44 + i * 36, 100f, 28f);
 				btnEditDest[i].Click += delegate
 				{
 					EditDestination(dests[idx]);
@@ -314,7 +310,7 @@ namespace StreamDelay
 			if (enabled.Count == 0)
 			{
 				GoPage(PageSettings);
-				MessageBox.Show(this, "Activa al menos un destino en Ajustes → Destinos.", "Sin destinos");
+				I18n.Show(this, "Activa al menos un destino en Ajustes → Destinos.", "Sin destinos");
 				return false;
 			}
 			List<string> withoutKey = new List<string>();
@@ -324,13 +320,13 @@ namespace StreamDelay
 				if (server.Length == 0 || (!server.StartsWith("rtmp://", StringComparison.OrdinalIgnoreCase) && !server.StartsWith("rtmps://", StringComparison.OrdinalIgnoreCase)))
 				{
 					GoPage(PageSettings);
-					MessageBox.Show(this, d.Name + ": el servidor debe empezar por rtmp:// o rtmps://", "Servidor no válido");
+					I18n.Show(this, d.Name + ": el servidor debe empezar por rtmp:// o rtmps://", "Servidor no válido");
 					return false;
 				}
 				if (server.Contains("127.0.0.1") || server.ToLowerInvariant().Contains("localhost"))
 				{
 					GoPage(PageSettings);
-					MessageBox.Show(this, d.Name + ": en Destinos va el servidor de la plataforma, no la dirección local.\n\nLa dirección local (127.0.0.1) es la que se pone en OBS.", "Servidor no válido");
+					I18n.Show(this, d.Name + ": en Destinos va el servidor de la plataforma, no la dirección local.\n\nLa dirección local (127.0.0.1) es la que se pone en OBS.", "Servidor no válido");
 					return false;
 				}
 				if (!d.IsTwitch && d.Key.Trim().Length == 0)
@@ -338,7 +334,7 @@ namespace StreamDelay
 					withoutKey.Add(d.Name);
 				}
 			}
-			if (withoutKey.Count > 0 && MessageBox.Show(this, string.Join(", ", withoutKey.ToArray()) + ((withoutKey.Count == 1) ? " no tiene" : " no tienen") + " clave guardada, así que no se emitirá ahí (salvo que OBS mande su clave).\n\n¿Iniciar igualmente?", "Falta la clave", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation) != DialogResult.Yes)
+			if (withoutKey.Count > 0 && I18n.Show(this, string.Join(", ", withoutKey.ToArray()) + ((withoutKey.Count == 1) ? " no tiene" : " no tienen") + " clave guardada, así que no se emitirá ahí (salvo que OBS mande su clave).\n\n¿Iniciar igualmente?", "Falta la clave", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation) != DialogResult.Yes)
 			{
 				GoPage(PageSettings);
 				return false;
@@ -350,7 +346,7 @@ namespace StreamDelay
 		private void EditDestination(Destination d)
 		{
 			Form f = DarkForm("Destino: " + d.Name, 440, 392);
-			string note = (d.IsTwitch ? "Con la Transmisión mejorada de OBS (servicio Twitch con servidor personalizado) la clave la pone OBS y puedes dejarla vacía." : ((d.Id == "kick") ? "Copia el \"Stream URL\" y la \"Stream Key\" de tu panel de Kick (Settings → Stream URL & Key)." : ((d.Id == "youtube") ? "Copia la clave de YouTube Studio → Emitir en directo → Configuración de la emisión." : "Cualquier plataforma que admita RTMP: copia su URL de servidor y su clave.")));
+			string note = (d.IsTwitch ? "Con la Transmisión mejorada de OBS (servicio Twitch con servidor personalizado) la clave la pone OBS y puedes dejarla vacía." : ((d.Id == "kick") ? "Copia el \"Stream URL\" y la \"Stream Key\" de tu panel de Kick (Settings → Stream URL & Key)." : ((d.Id == "youtube") ? "Copia la clave de YouTube Studio → Emitir en directo → Configuración de la emisión." : ((d.Id == "tiktok") ? "Si tu cuenta de TikTok tiene clave de emisión, está en TikTok LIVE Producer (en la web): copia el \"Server URL\" y la \"Stream Key\". TikTok suele dar una clave nueva en cada directo." : "Cualquier plataforma que admita RTMP: copia su URL de servidor y su clave."))));
 			Card card = new Card
 			{
 				Title = d.Name,
@@ -419,7 +415,7 @@ namespace StreamDelay
 				string server = srv.Box.Text.Trim().TrimEnd('/');
 				if (server.Length > 0 && !server.StartsWith("rtmp://", StringComparison.OrdinalIgnoreCase) && !server.StartsWith("rtmps://", StringComparison.OrdinalIgnoreCase))
 				{
-					MessageBox.Show(f, "El servidor debe empezar por rtmp:// o rtmps://", "Servidor no válido");
+					I18n.Show(f, "El servidor debe empezar por rtmp:// o rtmps://", "Servidor no válido");
 				}
 				else
 				{
@@ -587,7 +583,7 @@ namespace StreamDelay
 				if (!string.IsNullOrEmpty(oldServer))
 				{
 					string lower = oldServer.ToLowerInvariant();
-					Destination target = ((lower.Contains("fa723fc1b171") || lower.Contains("kick")) ? dKick : (lower.Contains("youtube") ? dYouTube : ((lower.Contains("twitch") || lower.Contains("contribute.live-video.net")) ? dTwitch : dCustom)));
+					Destination target = lower.Contains("tiktok") ? dTikTok : ((lower.Contains("fa723fc1b171") || lower.Contains("kick")) ? dKick : (lower.Contains("youtube") ? dYouTube : ((lower.Contains("twitch") || lower.Contains("contribute.live-video.net")) ? dTwitch : dCustom)));
 					foreach (Destination d in dests)
 					{
 						d.Enabled = false;
