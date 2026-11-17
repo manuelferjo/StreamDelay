@@ -1,7 +1,14 @@
-STREAM DELAY 3.2.1 - delay dinámico gratuito para OBS (by Vortexs)
+STREAM DELAY 3.3 - delay dinámico gratuito para OBS (by Vortexs)
 ================================================================
 
 Abre GUIA.html (doble clic) para ver la guía completa.
+
+Novedades de la 3.3
+- Overlays personalizables: pestaña Overlays -> "Personalizar ->".
+  Estilos listos (Directo, StreamDelay, Neón, Fuego, Hielo, Minimal,
+  Retro, Claro), colores, fondo, borde, brillo, forma (redondeada,
+  píldora, recta o círculo), 12 fuentes, el texto del overlay de delay
+  y fondo en los mensajes del chat en pantalla. Se ve al momento en OBS.
 
 Novedades de la 3.2.1
 - El comando del chat para guardar clips ahora es !guardar y solo lo

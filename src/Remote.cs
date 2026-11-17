@@ -512,6 +512,7 @@ namespace StreamDelay
 			chatServer.OnSend = ChatSendAll;
 			chatServer.OnDelayState = DelayStateJson;
 			chatServer.OnViewersState = ViewersStateJson;
+			chatServer.OnStyleState = delegate { return ovStyle.ToJson(); };
 			chatServer.OnRemote = RemoteCall;
 			chatServer.RemoteKey = () => remoteKey;
 			chatServer.OnMod = ModAction;

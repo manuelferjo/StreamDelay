@@ -18,6 +18,10 @@
   body.overlay { background: transparent; }
   body.overlay header { display: none; }
   body.overlay .msg { text-shadow: 0 1px 2px #000, 0 0 3px #000; }
+  /* Chat en pantalla con estilo (overlay-style.js): fuente propia y, si se elige, fondo en cada mensaje. */
+  body.overlay.sd-font { font-family: var(--font); }
+  body.overlay.sd-bubbles .msg, body.overlay.sd-bubbles .ev { background: var(--bg2); color: var(--tx); text-shadow: none; border-radius: var(--cr); padding: 6px 10px; margin: 4px 0; border: 0; border-left: max(var(--bw), 3px) solid var(--a1); }
+  body.overlay.sd-bubbles .ev .body { color: var(--lbl); }
 
   header { flex: none; padding: 10px 12px; border-bottom: 1px solid var(--border); background: var(--surface); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   .total { font-weight: 700; font-size: 1.05em; margin-right: 4px; display: flex; align-items: center; gap: 6px; }
@@ -106,7 +110,10 @@
 <button id="more">↓ Nuevos mensajes</button>
 <div id="conn">Sin conexión con StreamDelay…</div>
 
+<script src="/overlay-style.js"></script>
 <script>
+// Fuente del estilo solo si no es la de siempre (el chat usa la de Windows por defecto).
+window.onStyle = function (st) { document.body.classList.toggle('sd-font', st.font !== 'Outfit'); };
 (function () {
   var q = new URLSearchParams(location.search);
   // Idioma: lo pone StreamDelay al enviar la página ('es' o 'en').

@@ -10,34 +10,45 @@
   /* Pensado para una fuente Navegador de 1920x1080 en OBS: se coloca sola arriba a la derecha. */
   :root { --violet:#C09AFD; --pale:#E3D5FF; --yellow:#EDE103; --red:#FF4655; --ink:#09090C; --k:1; }
   html, body { margin:0; background:transparent; overflow:hidden; }
-  body { width:1920px; height:1080px; position:relative; font-family:Outfit, "Segoe UI", sans-serif; }
+  /* Colores, forma y fuente: variables que pone overlay-style.js (pestaña Overlays → Personalizar).
+     Si no llegan, se usan los valores de siempre. */
+  body { width:1920px; height:1080px; position:relative; font-family:var(--font, Outfit, "Segoe UI", sans-serif); }
   #box { position:absolute; top:calc(36px * var(--k)); right:calc(40px * var(--k)); transform-origin:top right; transform:scale(var(--k));
     opacity:0; translate:0 -12px; transition:opacity .45s ease, translate .45s ease; }
   #box.show { opacity:1; translate:0 0; }
-  .pill { display:flex; align-items:center; gap:16px; height:72px; padding:0 26px 0 18px; border-radius:22px; position:relative;
-    background:linear-gradient(180deg, rgba(23,23,32,.92), rgba(9,9,12,.92)); box-shadow:0 10px 34px rgba(0,0,0,.55), 0 0 40px rgba(192,154,253,.18); }
-  .pill::before { content:""; position:absolute; inset:0; border-radius:22px; padding:2px; pointer-events:none;
-    background:linear-gradient(120deg, var(--violet), var(--pale) 45%, var(--yellow));
+  .pill { display:flex; align-items:center; gap:16px; height:72px; padding:0 26px 0 18px; border-radius:var(--r, 22px); position:relative;
+    background:var(--bg, linear-gradient(180deg, rgba(23,23,32,.92), rgba(9,9,12,.92))); box-shadow:0 10px 34px rgba(0,0,0,.55), 0 0 40px var(--glow, rgba(192,154,253,.18)); }
+  .pill::before { content:""; position:absolute; inset:0; border-radius:inherit; padding:var(--bw, 2px); pointer-events:none;
+    background:linear-gradient(120deg, var(--a1, var(--violet)), var(--mid, var(--pale)) 45%, var(--a2, var(--yellow)));
     -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude; }
   .icon { width:44px; height:44px; flex:none; }
   .txt { display:flex; flex-direction:column; line-height:1; }
-  .lbl { font:700 14px "JetBrains Mono", Consolas, monospace; letter-spacing:.16em; color:#A1A1AA; text-transform:uppercase; }
+  .lbl { font:700 14px var(--lfont, "JetBrains Mono", Consolas, monospace); letter-spacing:.16em; color:var(--lbl, #A1A1AA); text-transform:uppercase; }
   .val { font-weight:800; font-size:40px; letter-spacing:-.02em; margin-top:4px;
-    background:linear-gradient(120deg, var(--violet), var(--pale) 45%, var(--yellow)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+    background:linear-gradient(120deg, var(--a1, var(--violet)), var(--mid, var(--pale)) 45%, var(--a2, var(--yellow))); -webkit-background-clip:text; background-clip:text; color:transparent; }
   .val small { font-size:22px; margin-left:3px; font-weight:700; }
   /* Sin delay: en directo */
-  .off .pill { box-shadow:0 10px 34px rgba(0,0,0,.55), 0 0 40px rgba(255,70,85,.25); }
-  .off .pill::before { background:linear-gradient(120deg, var(--red), #ff8a94); }
-  .off .val { background:none; color:#F4F4F5; font-size:34px; }
-  .dot { width:20px; height:20px; border-radius:50%; background:var(--red); flex:none; margin:0 8px 0 10px; box-shadow:0 0 0 0 rgba(255,70,85,.6); animation:pulse 1.6s infinite; }
-  @keyframes pulse { 0% { box-shadow:0 0 0 0 rgba(255,70,85,.6); } 70% { box-shadow:0 0 0 14px rgba(255,70,85,0); } 100% { box-shadow:0 0 0 0 rgba(255,70,85,0); } }
+  .off .pill { box-shadow:0 10px 34px rgba(0,0,0,.55), 0 0 40px var(--glow, rgba(255,70,85,.25)); }
+  .off .pill::before { background:linear-gradient(120deg, var(--a1, var(--red)), var(--mid, #ff8a94) 50%, var(--a2, #ff8a94)); }
+  .off .val { background:none; color:var(--tx, #F4F4F5); font-size:34px; }
+  .dot { width:20px; height:20px; border-radius:50%; background:var(--a1, var(--red)); flex:none; margin:0 8px 0 10px; box-shadow:0 0 0 0 var(--pulse, rgba(255,70,85,.6)); animation:pulse 1.6s infinite; }
+  @keyframes pulse { 0% { box-shadow:0 0 0 0 var(--pulse, rgba(255,70,85,.6)); } 70% { box-shadow:0 0 0 14px var(--pulse0, rgba(255,70,85,0)); } 100% { box-shadow:0 0 0 0 var(--pulse0, rgba(255,70,85,0)); } }
   /* Transición: al activar o subir el delay se ve una barra que se llena */
   .bar { position:absolute; left:20px; right:20px; bottom:9px; height:5px; border-radius:3px; background:rgba(255,255,255,.12); overflow:hidden; display:none; }
-  .bar i { display:block; height:100%; width:0; border-radius:3px; background:linear-gradient(90deg, var(--red), #ff8a94); transition:width .55s linear; }
+  .bar i { display:block; height:100%; width:0; border-radius:3px; background:linear-gradient(90deg, var(--a1, var(--red)), var(--a2, #ff8a94)); transition:width .55s linear; }
   #box.tr .bar { display:block; }
   #box.tr .val { font-size:32px; }
   #box.tr .pill { padding-bottom:6px; }
   .hour { transform-origin:50% 50%; animation:flip 6s ease-in-out infinite; }
+  /* Estilo: sin borde, sin icono y forma de círculo */
+  body.sd-noborder .pill::before { display:none; }
+  body.sd-noicon .dot { display:none !important; }
+  body.sd-circle .pill { flex-direction:column; justify-content:center; width:172px; height:172px; padding:0; gap:6px; }
+  body.sd-circle .txt { align-items:center; text-align:center; }
+  body.sd-circle .icon { width:34px; height:34px; }
+  body.sd-circle .dot { margin:0; }
+  body.sd-circle .off .val, body.sd-circle .val { font-size:30px; }
+  body.sd-circle .bar { left:36px; right:36px; bottom:24px; }
   @keyframes flip { 0%, 80% { transform:rotate(0); } 90%, 100% { transform:rotate(180deg); } }
 </style>
 </head>
@@ -45,7 +56,7 @@
 <div id="box">
   <div class="pill">
     <svg class="icon on-only" viewBox="0 0 48 48" aria-hidden="true">
-      <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#C09AFD"/><stop offset=".45" stop-color="#E3D5FF"/><stop offset="1" stop-color="#EDE103"/></linearGradient></defs>
+      <defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop id="g1" offset="0" stop-color="#C09AFD"/><stop id="g2" offset=".45" stop-color="#E3D5FF"/><stop id="g3" offset="1" stop-color="#EDE103"/></linearGradient></defs>
       <g class="hour" fill="none" stroke="url(#g)" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M13 6h22M13 42h22"/>
         <path d="M15 6c0 9 9 12 9 18s-9 9-9 18M33 6c0 9-9 12-9 18s9 9 9 18"/>
@@ -60,6 +71,7 @@
     <div class="bar"><i id="bar"></i></div>
   </div>
 </div>
+<script src="/overlay-style.js"></script>
 <script>
   // Las opciones se eligen en StreamDelay (pestaña Overlays) y cambian al momento.
   // La URL puede forzarlas: ?escala=1.2 · ?sin_delay=0 (ocultar cuando no hay delay) · ?texto=Retraso
@@ -73,6 +85,21 @@
   }
   applyOpts(null);
   var label = q.get('texto') || 'Delay';
+  // Estilo nuevo: colores del reloj y texto pequeño (si no se fuerza con ?texto=).
+  window.onStyle = function (st) {
+    var cs = getComputedStyle(document.documentElement);
+    document.getElementById('g1').setAttribute('stop-color', cs.getPropertyValue('--a1').trim());
+    document.getElementById('g2').setAttribute('stop-color', cs.getPropertyValue('--mid').trim());
+    document.getElementById('g3').setAttribute('stop-color', cs.getPropertyValue('--a2').trim());
+    var c = getComputedStyle(document.documentElement).getPropertyValue('--a1').trim();
+    var n = parseInt(c.slice(1), 16) || 0, rgb = (n >> 16 & 255) + ',' + (n >> 8 & 255) + ',' + (n & 255);
+    document.documentElement.style.setProperty('--pulse', 'rgba(' + rgb + ',.6)');
+    document.documentElement.style.setProperty('--pulse0', 'rgba(' + rgb + ',0)');
+    label = q.get('texto') || st.label || 'Delay';
+    last = '';
+    if (lastS !== undefined) render(lastS);
+  };
+  var lastS;
   var bar = document.getElementById('bar');
   var box = document.getElementById('box'), lbl = document.getElementById('lbl'), val = document.getElementById('val');
   var last = '';
@@ -87,6 +114,7 @@
              : { on: 'Activando delay', up: 'Subiendo delay', down: 'Bajando delay', off: 'Delay quitado' };
   var LIVE = EN ? 'Live' : 'En directo', NODELAY = EN ? 'No delay' : 'Sin delay';
   function render(s) {
+    lastS = s;
     if (s) applyOpts(s);
     var t = s && s.tr && TR[s.tr.k] ? s.tr : null;
     var key = s ? (t ? 'tr' + t.k + t.to + ':' + Math.round(t.p * 50) : s.on && s.s > 0 ? 'on' + s.s : 'off' + showOff) : 'none';

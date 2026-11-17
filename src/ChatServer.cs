@@ -49,6 +49,9 @@ namespace StreamDelay
 
 		private string mandoHtml;
 
+		// Código común de los overlays para aplicar el estilo (res\overlay-style.js).
+		private string styleJs;
+
 		// Mando a distancia (móvil, Stream Deck, panel de OBS): acción + parámetros -> JSON de estado.
 		// Exige la clave del mando (?k=...) en cada petición.
 		public Func<string, Dictionary<string, string>, string> OnRemote = (string a, Dictionary<string, string> q) => "{}";
@@ -66,6 +69,9 @@ namespace StreamDelay
 
 		// Estado del delay para el overlay de OBS (lo rellena la ventana principal).
 		public Func<string> OnDelayState = () => "{}";
+
+		// Estilo de los overlays (colores, forma, fuente…), lo leen las tres páginas.
+		public Func<string> OnStyleState = () => "{}";
 
 		private readonly string secret = Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N");
 
@@ -145,6 +151,17 @@ namespace StreamDelay
 						stream4.CopyTo(memoryStream4);
 					}
 					mandoHtml = Encoding.UTF8.GetString(memoryStream4.ToArray());
+				}
+			}
+			using (Stream stream5 = typeof(ChatServer).Assembly.GetManifestResourceStream("StreamDelay.overlay-style.js"))
+			{
+				using (MemoryStream memoryStream5 = new MemoryStream())
+				{
+					if (stream5 != null)
+					{
+						stream5.CopyTo(memoryStream5);
+					}
+					styleJs = Encoding.UTF8.GetString(memoryStream5.ToArray());
 				}
 			}
 			listener = new TcpListener(Lan ? IPAddress.Any : IPAddress.Loopback, port);
@@ -394,6 +411,23 @@ namespace StreamDelay
 						vs = "{}";
 					}
 					Respond(stream, "200 OK", "application/json; charset=utf-8", vs);
+					break;
+				}
+				case "/overlay-style.js":
+					Respond(stream, "200 OK", "application/javascript; charset=utf-8", styleJs ?? "");
+					break;
+				case "/style.json":
+				{
+					string style;
+					try
+					{
+						style = OnStyleState();
+					}
+					catch
+					{
+						style = "{}";
+					}
+					Respond(stream, "200 OK", "application/json; charset=utf-8", style);
 					break;
 				}
 				case "/delay.json":

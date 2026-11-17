@@ -128,6 +128,8 @@ namespace StreamDelay
 
 		// ---------- Pestaña Overlays ----------
 
+		// Estilo de los tres overlays (colores, forma, fuente…): ventana "Personalizar".
+		private OverlayStyle ovStyle = new OverlayStyle();
 		private bool ovDelayHideOff;
 		private float ovDelayScale = 1f;
 		private string vwPos = "tr";
@@ -160,6 +162,14 @@ namespace StreamDelay
 				};
 			}
 			return b;
+		}
+
+		// Enlace "Personalizar →" arriba a la derecha de cada recuadro: abre la ventana del estilo.
+		private void StyleLink(Card card)
+		{
+			VButton link = new VButton { Kind = ButtonKind.Link, Text = "Personalizar →", FontSize = 8.5f };
+			Place(card, link, 230f, 13f, 170f, 24f);
+			link.Click += delegate { OverlayStyleDialog(); };
 		}
 
 		private void UrlButtons(Card card, string path, string what, float y)
@@ -203,6 +213,7 @@ namespace StreamDelay
 			Place(c1, tHide, 270f, 70f, 140f, 30f);
 			tHide.CheckedChanged += delegate { ovDelayHideOff = tHide.Checked; SaveConfig(); };
 			UrlButtons(c1, "delay", "delay", 102f);
+			StyleLink(c1);
 
 			// --- Espectadores ---
 			int y2 = y0 + 154;
@@ -233,6 +244,7 @@ namespace StreamDelay
 			tVert.CheckedChanged += delegate { vwVertical = tVert.Checked; SaveConfig(); };
 			Choice(c2, new string[2] { "Normal", "Grande" }, (vwScale > 1.1f) ? 1 : 0, 212f, 152f, 90f, delegate(int i) { vwScale = (i == 1) ? 1.3f : 1f; });
 			UrlButtons(c2, "viewers", "espectadores", 178f);
+			StyleLink(c2);
 
 			// --- Chat en pantalla ---
 			int y3 = y2 + 230;
@@ -241,6 +253,7 @@ namespace StreamDelay
 			c3.Subtitle = "Twitch, Kick y YouTube juntos; cada mensaje dura 30 s.";
 			Place(this, c3, 20f, y3, 420f, 100f, 5);
 			UrlButtons(c3, "?overlay=1&desvanecer=30", "chat", 56f);
+			StyleLink(c3);
 
 			Box(this, 22f, y3 + 104, 416f, 18f, delegate(Graphics g, Rectangle r)
 			{
@@ -354,6 +367,7 @@ namespace StreamDelay
 			if (raw.TryGetValue("ann_msg_off", out v) && v.Length > 0) annOffMsg = Unb64(v, annOffMsg);
 			if (raw.TryGetValue("vw_show", out v) && v.Length == 4) for (int i = 0; i < 4; i++) vwShow[i] = v[i] == '1';
 			if (raw.TryGetValue("ov_delay_hide", out v)) ovDelayHideOff = v == "1";
+			if (raw.TryGetValue("ov_style", out v) && v.Length > 0) ovStyle = OverlayStyle.Load(v);
 			float f;
 			if (raw.TryGetValue("ov_delay_k", out v) && float.TryParse(v, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out f)) ovDelayScale = f;
 			if (raw.TryGetValue("vw_pos", out v) && v.Length == 2) vwPos = v;
@@ -370,6 +384,7 @@ namespace StreamDelay
 			lines.Add("ann_msg_off=" + Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(annOffMsg)));
 			lines.Add("vw_show=" + (vwShow[0] ? "1" : "0") + (vwShow[1] ? "1" : "0") + (vwShow[2] ? "1" : "0") + (vwShow[3] ? "1" : "0"));
 			lines.Add("ov_delay_hide=" + (ovDelayHideOff ? "1" : "0"));
+			lines.Add("ov_style=" + ovStyle.Save());
 			lines.Add("ov_delay_k=" + ovDelayScale.ToString(System.Globalization.CultureInfo.InvariantCulture));
 			lines.Add("vw_pos=" + vwPos);
 			lines.Add("vw_vert=" + (vwVertical ? "1" : "0"));

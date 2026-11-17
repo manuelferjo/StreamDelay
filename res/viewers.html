@@ -10,7 +10,8 @@
   /* Fuente Navegador de 1920x1080 en OBS. Por defecto arriba a la derecha, justo debajo del overlay de delay. */
   :root { --red:#FF4655; --k:1; }
   html, body { margin:0; background:transparent; overflow:hidden; }
-  body { width:1920px; height:1080px; position:relative; font-family:Outfit, "Segoe UI", sans-serif; }
+  /* Colores, forma y fuente: variables que pone overlay-style.js (pestaña Overlays → Personalizar). */
+  body { width:1920px; height:1080px; position:relative; font-family:var(--font, Outfit, "Segoe UI", sans-serif); }
   #box { position:absolute; display:flex; gap:12px; transform:scale(var(--k)); }
   #box.tr { right:40px; transform-origin:top right; justify-content:flex-end; }
   #box.tl { top:36px; left:40px; transform-origin:top left; }
@@ -18,19 +19,20 @@
   #box.bl { bottom:36px; left:40px; transform-origin:bottom left; }
   #box.col { flex-direction:column; align-items:flex-end; }
   #box.col.tl, #box.col.bl { align-items:flex-start; }
-  .pill { display:flex; align-items:center; gap:12px; height:56px; padding:0 20px 0 14px; border-radius:18px; position:relative;
-    background:linear-gradient(180deg, rgba(23,23,32,.92), rgba(9,9,12,.92)); box-shadow:0 10px 30px rgba(0,0,0,.5), 0 0 30px rgba(255,70,85,.18);
+  .pill { display:flex; align-items:center; gap:12px; height:56px; padding:0 20px 0 14px; border-radius:var(--vr, 18px); position:relative;
+    background:var(--bg, linear-gradient(180deg, rgba(23,23,32,.92), rgba(9,9,12,.92))); box-shadow:0 10px 30px rgba(0,0,0,.5), 0 0 30px var(--vglow, rgba(255,70,85,.18));
     opacity:0; translate:0 -8px; transition:opacity .4s ease, translate .4s ease; }
   .pill.show { opacity:1; translate:0 0; }
   .pill.gone { display:none; }
-  .pill::before { content:""; position:absolute; inset:0; border-radius:18px; padding:2px; pointer-events:none;
-    background:linear-gradient(120deg, var(--red), #ff8a94);
+  .pill::before { content:""; position:absolute; inset:0; border-radius:inherit; padding:var(--bw, 2px); pointer-events:none;
+    background:linear-gradient(120deg, var(--vb1, var(--red)), var(--vb2, #ff8a94));
     -webkit-mask:linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite:xor; mask-composite:exclude; }
   .pill svg { width:30px; height:30px; flex:none; }
-  .num { font-weight:800; font-size:32px; color:#F4F4F5; letter-spacing:-.01em; font-variant-numeric:tabular-nums; }
-  .lbl { font:700 12px "JetBrains Mono", Consolas, monospace; letter-spacing:.14em; color:#A1A1AA; text-transform:uppercase; margin-right:-4px; }
+  .num { font-weight:800; font-size:32px; color:var(--tx, #F4F4F5); letter-spacing:-.01em; font-variant-numeric:tabular-nums; }
+  .lbl { font:700 12px var(--lfont, "JetBrains Mono", Consolas, monospace); letter-spacing:.14em; color:var(--lbl, #A1A1AA); text-transform:uppercase; margin-right:-4px; }
   .bump { animation:bump .5s ease; }
   @keyframes bump { 40% { transform:scale(1.12); } }
+  body.sd-noborder .pill::before { display:none; }
 </style>
 </head>
 <body>
@@ -40,6 +42,7 @@
   <div class="pill gone" id="p-kick"><svg viewBox="0 0 24 24"><rect width="24" height="24" rx="5" fill="#53fc18"/><path fill="#000" d="M6 5h4v4h2V7h2V5h4v5h-2v2h-2v0h2v2h2v5h-4v-2h-2v-2h-2v4H6z"/></svg><span class="num" id="n-kick">0</span></div>
   <div class="pill gone" id="p-youtube"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="5" fill="#ff3b3b"/><path fill="#fff" d="m10 8.5 6 3.5-6 3.5z"/></svg><span class="num" id="n-youtube">0</span></div>
 </div>
+<script src="/overlay-style.js"></script>
 <script>
   // Qué se muestra se elige en StreamDelay (pestaña Chat → Avisos y overlays) y cambia al momento.
   // Opciones de la URL: ?pos=tr|tl|br|bl (esquina) · ?vertical=1 · ?escala=1.2 · ?texto=Viewers
@@ -58,6 +61,13 @@
     box.style.top = pos === 'tr' ? Math.round(108 * dk + 20) + 'px' : '';
   }
   applyOpts(null);
+  // Estilo: el borde y el brillo usan los colores elegidos.
+  window.onStyle = function (st) {
+    var r = document.documentElement.style;
+    r.setProperty('--vb1', 'var(--a1)');
+    r.setProperty('--vb2', 'var(--a2)');
+    r.setProperty('--vglow', 'var(--glow)');
+  };
   if (q.get('texto')) document.getElementById('l-total').textContent = q.get('texto');
   var last = {};
   function fmt(n) { return n.toLocaleString(('__SD_LANG__' === 'en') ? 'en-US' : 'es-ES'); }
