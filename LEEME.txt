@@ -1,7 +1,16 @@
-STREAM DELAY 3.0 - delay dinámico gratuito para OBS (by Vortexs)
+STREAM DELAY 3.1 - delay dinámico gratuito para OBS (by Vortexs)
 ================================================================
 
 Abre GUIA.html (doble clic) para ver la guía completa.
+
+Novedades de la 3.1
+- Actualización automática: al abrirse, StreamDelay mira si hay una
+  versión nueva y te la ofrece. Con "Actualizar ahora" la descarga,
+  sustituye el programa en la misma carpeta y se vuelve a abrir. Tus
+  claves y ajustes (StreamDelay.ini) se conservan. Nunca actualiza en
+  pleno directo. También desde Registro -> "Actualizaciones".
+- El QR del Mando se genera dentro del programa: funciona sin internet.
+- El título de la ventana muestra la versión correcta.
 
 Novedades de la 3.0
 - Pestaña "Mando": controla el delay desde el móvil (misma wifi, con

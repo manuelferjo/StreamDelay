@@ -150,7 +150,7 @@ namespace StreamDelay
 
 		private const int ChatPort = 8935;
 
-		private const string Version = "3.0";
+		private const string Version = "3.1";
 
 		private const int MaxDelay = 600;
 
@@ -1888,6 +1888,7 @@ namespace StreamDelay
 				{
 					StartChat(false);
 				}
+				StartUpdateCheck();
 			};
 			base.FormClosed += delegate
 			{
@@ -2297,6 +2298,7 @@ namespace StreamDelay
 			LoadExtrasConfig(raw);
 			LoadCmdConfig(raw);
 			LoadRemoteConfig(raw);
+			LoadUpdateConfig(raw);
 		}
 
 		private void SaveChatConfig(List<string> lines)
@@ -2312,6 +2314,7 @@ namespace StreamDelay
 				SaveExtrasConfig(lines);
 				SaveCmdConfig(lines);
 				SaveRemoteConfig(lines);
+				SaveUpdateConfig(lines);
 			}
 		}
 
@@ -2827,7 +2830,7 @@ namespace StreamDelay
 				Text = "Copiar registro",
 				FontSize = 9.5f
 			};
-			Place(this, copy, 20f, y0 + 452, 204f, 40f, 3);
+			Place(this, copy, 20f, y0 + 452, 136f, 40f, 3);
 			copy.Click += delegate
 			{
 				CopyText((tbLog.Text.Length > 0) ? tbLog.Text : " ", copy, "Copiar registro");
@@ -2837,10 +2840,26 @@ namespace StreamDelay
 			vButton.Text = "Abrir guía";
 			vButton.FontSize = 9.5f;
 			VButton vButton2 = vButton;
-			Place(this, vButton2, 236f, y0 + 452, 204f, 40f, 3);
+			Place(this, vButton2, 162f, y0 + 452, 136f, 40f, 3);
 			vButton2.Click += delegate
 			{
 				OpenGuide();
+			};
+			VButton upd = new VButton
+			{
+				Kind = ButtonKind.Ghost,
+				Text = "Actualizaciones",
+				FontSize = 9.5f
+			};
+			Place(this, upd, 304f, y0 + 452, 136f, 40f, 3);
+			upd.Click += delegate
+			{
+				upd.Enabled = false;
+				ThreadPool.QueueUserWorkItem(delegate
+				{
+					CheckForUpdate(true);
+					try { BeginInvoke((Action)delegate { upd.Enabled = true; }); } catch { }
+				});
 			};
 		}
 
@@ -2963,7 +2982,7 @@ namespace StreamDelay
 			{
 				g.DrawString("Delay", font, brush2, num2 + num3, S(10f), StringFormat.GenericTypographic);
 			}
-			Theme.DrawText(g, "BY VORTEXS · V2.6", Theme.Mono(7f), Theme.Muted, new RectangleF(num2 + 1f, S(39f), S(200f), S(16f)), StringAlignment.Near, StringAlignment.Center);
+			Theme.DrawText(g, "BY VORTEXS · V" + Version, Theme.Mono(7f), Theme.Muted, new RectangleF(num2 + 1f, S(39f), S(200f), S(16f)), StringAlignment.Near, StringAlignment.Center);
 			bool flag = true;
 			string s;
 			Color color;
