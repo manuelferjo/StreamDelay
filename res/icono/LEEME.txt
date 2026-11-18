@@ -1,0 +1,6 @@
+Icono de Vortexs Live
+
+vortexs-live.svg / -1024.png: el icono completo (play con dos ecos). Para 64 px o más.
+vortexs-live-pequeno.svg / -1024.png: solo el play, centrado. Para 48 px o menos.
+../app.ico lleva los dos: 16-48 px el pequeño, 64-256 px el completo.
+../logo.png (cabecera de la ventana y web) es el pequeño, porque se ve a menos de 48 px.
