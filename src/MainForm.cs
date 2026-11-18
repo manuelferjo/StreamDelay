@@ -127,7 +127,7 @@ namespace StreamDelay
 
 		// ---------- Constantes ----------
 
-		private const string Version = "3.5";
+		private const string Version = "3.6";
 
 		private const string TikTokName = "TikTok";
 
@@ -989,6 +989,7 @@ namespace StreamDelay
 			SaveConfig();
 			engine.Stop();
 			StopVertical();
+			tunnel.Stop();
 			base.OnFormClosing(e);
 		}
 

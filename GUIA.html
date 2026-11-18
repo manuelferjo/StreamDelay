@@ -59,7 +59,7 @@
     <img src="res/logo.png" alt="">
     <div>
       <h1>Stream <span>Delay</span></h1>
-      <div class="by">by Vortexs · v3.5</div>
+      <div class="by">by Vortexs · v3.6</div>
     </div>
   </header>
   <p class="sub">Delay dinámico y gratuito para tus directos con OBS: cámbialo, actívalo o desactívalo sin cortar el stream. Ahora conserva todas las calidades de la <b>Transmisión mejorada</b> de Twitch.</p>
@@ -437,6 +437,38 @@
     </ul>
   </section>
 
+  <section id="mods">
+    <h2><span class="n">12</span>Chat para tus mods (por internet) <span class="tag">NUEVO</span></h2>
+    <p style="margin-top:0">Cada mod tiene <b>su propio enlace</b> a un chat conjunto para moderar desde su casa, con todo lo de “Moderar desde el chat conjunto” (apartado 8): borrar, expulsar, banear, deshacer, ocultar, modo lento, borrar el chat… en Twitch, Kick y YouTube a la vez. Además pueden <b>escribir con sus propias cuentas</b>.</p>
+    <h3 style="margin:0 0 8px">Ponerlo en marcha (una vez)</h3>
+    <ol>
+      <li>Crea una cuenta gratis en <a href="https://ngrok.com">ngrok.com</a>. ngrok es lo que lleva el enlace desde internet hasta tu PC sin tocar el router. El plan gratis te da un dominio fijo, así que <b>los enlaces no cambian nunca</b>.</li>
+      <li>En su panel, copia tu <b>Authtoken</b> (StreamDelay tiene un botón <b>Conseguir la clave →</b> que te lleva ahí).</li>
+      <li>En StreamDelay: pestaña <b>Chat</b> → <b>Moderación</b> → <b>Enlaces para mods →</b>. Pega la clave y marca <b>Activado</b>. La primera vez StreamDelay descarga ngrok él solo (unos 10 MB) y arriba pondrá <b>● Conectado</b> con tu dirección.</li>
+      <li>Escribe el nombre de un mod, pulsa <b>Añadir</b> y luego <b>Copiar enlace</b>. Mándaselo por privado (por ejemplo, por Discord). Hasta 6 mods.</li>
+    </ol>
+    <h3 style="margin:18px 0 8px">Lo que ve y hace cada mod</h3>
+    <ul>
+      <li>Abre su enlace en el navegador (o lo pone como panel en su OBS). La primera vez ngrok enseña un aviso (“You are about to visit…”): pulsa <b>Visit Site</b>. No vuelve a salir en una semana.</li>
+      <li><b>Moderar:</b> pulsa un mensaje o <b>🛡 Moderar</b>, igual que tú. Se hace con <b>tus cuentas</b> (las de la pestaña Título), así que los mods no tienen que conectar nada para moderar. En tu Registro queda apuntado qué mod hizo cada cosa (por ejemplo, “… expulsado 10 min (mod Laura)”).</li>
+      <li><b>Escribir con su cuenta:</b> arriba, el botón con su nombre abre <b>Mis cuentas</b>. Ahí conecta las suyas:
+        <ul>
+          <li><b>Twitch y YouTube:</b> pulsa <b>Conectar</b>, abre la web que sale, inicia sesión con <b>su</b> cuenta y escribe el código. Se conecta solo.</li>
+          <li><b>Kick:</b> pulsa <b>Conectar</b> → <b>Abrir Kick</b> y acepta. Kick le lleva a una página que no carga (empieza por <code>http://localhost:17563</code>): es normal. Copia la dirección entera de esa página, pégala en el recuadro y pulsa <b>Listo</b>.</li>
+        </ul>
+        Luego escribe abajo y elige a qué chats mandarlo, como en tu chat. Sus cuentas se guardan cifradas en tu PC y siguen conectadas en los siguientes directos.</li>
+      <li>Un mod no puede tocar nada más de StreamDelay: ni el delay, ni el Mando, ni tus cuentas, ni los overlays. Por el enlace solo se abre su chat.</li>
+    </ul>
+    <h3 style="margin:18px 0 8px">Ten en cuenta</h3>
+    <ul>
+      <li><b>Solo funciona con StreamDelay abierto</b> en tu PC (en tus directos, sin problema).</li>
+      <li>El enlace es como una contraseña: si un mod deja de serlo o se filtra, pulsa <b>Quitar</b>. Se le corta al momento, aunque tenga el chat abierto.</li>
+      <li>Para que un mod pueda conectar su cuenta, tú tienes que tener esa plataforma configurada en la pestaña <b>Título</b> (se usa tu app).</li>
+      <li><b>YouTube:</b> si tu app de Google está en modo “Prueba” (lo normal), Google solo deja conectar a las cuentas que añadas como <b>usuarios de prueba</b>: en Google Cloud → <b>Pantalla de consentimiento de OAuth</b> → <b>Usuarios de prueba</b> → añade el Gmail de cada mod. Además, cada mensaje de un mod gasta 50 unidades de <b>tu</b> cupo diario de la API (10.000).</li>
+      <li>ngrok gratis permite 1 GB y 20.000 peticiones al mes, de sobra para el chat de unos pocos mods (los emotes no pasan por ngrok).</li>
+    </ul>
+  </section>
+
   <section>
     <h2>Si algo falla</h2>
     <table>
@@ -460,6 +492,8 @@
           <tr><td>El chat de TikTok no sale</td><td>Mira la pestaña Chat, columna TIKTOK: “Sin directo” = aún no estás en directo en TikTok (se vuelve a mirar cada 2 min). “Falta la clave” o “la clave no es válida” = pega de nuevo tu API Key de eulerstream.com en <b>Clave Euler Stream</b>. Escribe el @usuario sin espacios.</td></tr>
       <tr><td>Los modos del chat dicen “vuelve a conectar Twitch”</td><td>Es un permiso nuevo de la 3.5: pestaña Título → desconecta Twitch y vuelve a conectarlo.</td></tr>
       <tr><td>Un mensaje no sale en el chat</td><td>Puede que lo haya filtrado la moderación automática o que esa persona esté en “No salen en el chat”: mira el Registro y Chat → Moderación.</td></tr>
+      <tr><td>El enlace de los mods no conecta</td><td>Chat → Moderación → Enlaces para mods: mira el estado. “La clave de ngrok no es válida”: cópiala otra vez de tu panel de ngrok. “Ya tiene un túnel abierto”: cierra ngrok en otro PC o programa. Si tu antivirus bloquea <code>ngrok.exe</code> (algunos lo marcan porque sirve para abrir túneles), permítelo en la carpeta <code>%LOCALAPPDATA%\StreamDelay\ngrok</code>.</td></tr>
+      <tr><td>Un mod no puede conectar su YouTube</td><td>Añade su Gmail como usuario de prueba en tu app de Google Cloud (Pantalla de consentimiento de OAuth → Usuarios de prueba).</td></tr>
 </table>
     <p>La pestaña <b>Registro</b> muestra lo que va pasando. <b>Si pides ayuda, copia ese texto</b>: no contiene tu clave.</p>
     <p class="note ok">Antes del primer directo de verdad, haz una prueba corta: en OBS añade <code>?bandwidthtest=true</code> al final de tu clave de Twitch y la prueba no se emitirá en público.</p>

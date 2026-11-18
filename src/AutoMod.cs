@@ -197,10 +197,16 @@ namespace StreamDelay
 			{
 				Theme.DrawWrapped(g, "Tú y tus moderadores nunca se moderan. Borrar, expulsar y banear usan tu cuenta conectada en la pestaña Título.", Theme.Body(7.75f), Theme.Muted, r);
 			});
+			VButton modsBtn = new VButton { Kind = ButtonKind.Ghost, Text = "Enlaces para mods →", FontSize = 9f };
 			VButton cancel = new VButton { Kind = ButtonKind.Ghost, Text = "Cancelar", FontSize = 10f };
 			VButton save = new VButton { Kind = ButtonKind.Primary, Text = "Guardar", FontSize = 10f };
-			Place(f, cancel, 20f, 574f, 130f, 42f);
-			Place(f, save, 160f, 574f, 280f, 42f);
+			Place(f, modsBtn, 20f, 574f, 160f, 42f);
+			Place(f, cancel, 188f, 574f, 100f, 42f);
+			Place(f, save, 296f, 574f, 144f, 42f);
+			modsBtn.Click += delegate
+			{
+				ModsDialog();
+			};
 			cancel.Click += delegate
 			{
 				f.Close();
