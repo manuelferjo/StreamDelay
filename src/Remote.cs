@@ -517,6 +517,7 @@ namespace StreamDelay
 			chatServer.OnRemote = RemoteCall;
 			chatServer.RemoteKey = () => remoteKey;
 			chatServer.OnMod = ModAction;
+			chatServer.OnLicense = LicenseFromWeb;
 		}
 
 		// Vuelve a abrir el servidor (al permitir o quitar el acceso desde el móvil).

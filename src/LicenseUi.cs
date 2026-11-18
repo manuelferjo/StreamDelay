@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Globalization;
 using System.Windows.Forms;
+using System.Net;
 using Microsoft.Win32;
 
 namespace StreamDelay
@@ -841,6 +842,129 @@ namespace StreamDelay
 			f.Dispose();
 		}
 
+		// ---------- Activar desde la página de compra ----------
+		// Al pagar, Polar lleva al navegador a vortexs.es/vortexs-live/activar, que enseña la clave y un
+		// botón "Activar en Vortexs Live": abre http://127.0.0.1:8935/licencia?key=… y aquí se activa
+		// sola, sin copiar nada. Lo llama el servidor web (otro hilo).
+		private string LicenseFromWeb(string key)
+		{
+			if (key.Length < 8 || key.Length > 400)
+			{
+				return LicensePage(false, "No ha llegado ninguna clave. Vuelve a la página de la compra y pulsa otra vez «Activar en Vortexs Live».");
+			}
+			string problem = null;
+			Plan got = Plan.None;
+			System.Threading.ManualResetEvent ready = new System.Threading.ManualResetEvent(false);
+			try
+			{
+				BeginInvoke((Action)delegate
+				{
+					if (License.IsSigned(key))
+					{
+						LicenseInfo info = License.CheckSigned(key, DateTime.UtcNow);
+						if (info.Plan == Plan.None)
+						{
+							problem = info.Error;
+						}
+						else
+						{
+							SetLicenseKey(key);
+							got = plan;
+						}
+						ready.Set();
+						return;
+					}
+					if (!License.PolarReady)
+					{
+						problem = "esa clave no es de Vortexs Live";
+						ready.Set();
+						return;
+					}
+					string oldKey = licKey;
+					string oldAct = licActivation;
+					string oldCache = licCache;
+					// Si ya hay una licencia de pago, se pregunta antes de cambiarla (así una página
+					// cualquiera no puede cambiarla sin que lo sepas).
+					if (key != licKey && licKey.Length > 0 && plan != Plan.None && planInfo.Source != "prueba")
+					{
+						if (I18n.Show(this, "La página de compra quiere activar otra licencia en este PC en lugar de la que tienes ahora. ¿Cambiarla?", "Licencia", MessageBoxButtons.YesNo, MessageBoxIcon.Question) != DialogResult.Yes)
+						{
+							problem = "has decidido mantener la licencia que ya tenías";
+							ready.Set();
+							return;
+						}
+					}
+					// La misma clave que ya está aquí: se comprueba sin volver a activarla.
+					if (key != licKey)
+					{
+						licKey = key;
+						licActivation = "";
+						licCache = "";
+						SaveConfig();
+					}
+					CheckPolar(delegate(string p)
+					{
+						if (p != null && key != oldKey)
+						{
+							licKey = oldKey;
+							licActivation = oldAct;
+							licCache = oldCache;
+							SaveConfig();
+							ComputePlan(true);
+						}
+						else if (p == null && key != oldKey && oldKey.Length > 0 && !License.IsSigned(oldKey))
+						{
+							// La nueva vale: se libera este PC en la licencia anterior.
+							PolarDeactivate(oldKey, oldAct);
+						}
+						problem = p;
+						got = plan;
+						ready.Set();
+					});
+				});
+			}
+			catch
+			{
+				return LicensePage(false, "Vortexs Live se está cerrando. Ábrelo y vuelve a pulsar «Activar».");
+			}
+			if (!ready.WaitOne(40000))
+			{
+				return LicensePage(false, "No se ha podido comprobar la clave a tiempo (¿hay internet?). Vuelve a pulsar «Activar».");
+			}
+			if (problem != null)
+			{
+				LogLater("Licencia: no se ha podido activar desde la web: " + problem + ".");
+				return LicensePage(false, "No se ha podido activar: " + problem + ".");
+			}
+			try
+			{
+				BeginInvoke((Action)delegate
+				{
+					if (base.WindowState == FormWindowState.Minimized)
+					{
+						base.WindowState = FormWindowState.Normal;
+					}
+					Activate();
+					AppendLog("Licencia: plan " + License.PlanName(got) + " activado desde la página de compra.");
+				});
+			}
+			catch
+			{
+			}
+			return LicensePage(true, "Plan " + License.PlanName(got) + " activado en este PC. Ya puedes cerrar esta pestaña y volver a Vortexs Live.");
+		}
+
+		private static string LicensePage(bool ok, string msg)
+		{
+			string title = ok ? "¡Listo!" : "No se ha podido activar";
+			string color = ok ? "#34D399" : "#FFB3BA";
+			return "<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width,initial-scale=1'><title>Vortexs Live</title>" +
+				"<body style=\"margin:0;min-height:100vh;display:grid;place-items:center;background:#09090C;color:#F4F4F5;font:17px/1.55 'Segoe UI',system-ui,sans-serif\">" +
+				"<div style=\"max-width:520px;padding:32px;text-align:center\"><div style=\"font-size:30px;font-weight:800;margin-bottom:6px\">Vortexs <span style=\"color:#C09AFD\">Live</span></div>" +
+				"<div style=\"font-size:22px;font-weight:700;color:" + color + ";margin:18px 0 10px\">" + WebUtility.HtmlEncode(I18n.Tr(title)) + "</div>" +
+				"<div style=\"color:#A1A1AA\">" + WebUtility.HtmlEncode(I18n.Tr(msg)) + "</div></div>";
+		}
+
 		private void SetLicenseKey(string key)
 		{
 			if (key != licKey && !License.IsSigned(licKey))
@@ -899,6 +1023,10 @@ namespace StreamDelay
 			buy.Click += delegate
 			{
 				Http.OpenBrowser((url.Length > 0) ? url : License.PricesUrl);
+				if (url.Length > 0)
+				{
+					AppendLog("Licencia: al terminar de pagar, pulsa «Activar en Vortexs Live» en la página que se abre y se activa sola (deja Vortexs Live abierto).");
+				}
 			};
 		}
 	}
