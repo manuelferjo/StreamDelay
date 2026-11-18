@@ -47,6 +47,11 @@ namespace StreamDelay
 
 		private DateTime licNextTick = DateTime.MinValue;
 
+		// Avisos ya enseñados: "h" bienvenida, "a" queda menos de 1 día, "f" la prueba ha terminado.
+		private string licSeen = "";
+
+		private bool licNoticeOpen;
+
 		private VButton btnPlan;
 
 		private PaintBox lockBox;
@@ -62,6 +67,7 @@ namespace StreamDelay
 			licKey = raw.TryGetValue("lic", out v) ? Secret.Unprotect(v) : "";
 			licActivation = raw.TryGetValue("lic_act", out v) ? v.Trim() : "";
 			licCache = raw.TryGetValue("lic_ok", out v) ? Secret.Unprotect(v) : "";
+			licSeen = raw.TryGetValue("lic_avisos", out v) ? v.Trim() : "";
 			// Inicio de la prueba: el más antiguo entre el .ini y el registro de Windows.
 			DateTime now = DateTime.UtcNow;
 			DateTime start = now;
@@ -101,6 +107,7 @@ namespace StreamDelay
 			lines.Add("lic_act=" + licActivation);
 			lines.Add("lic_ok=" + Secret.Protect(licCache));
 			lines.Add("t0=" + Secret.Protect(trialStart.Ticks.ToString(CultureInfo.InvariantCulture)));
+			lines.Add("lic_avisos=" + licSeen);
 		}
 
 		private static bool TryTicks(string s, out DateTime t)
@@ -244,6 +251,102 @@ namespace StreamDelay
 			{
 				CheckPolar(null);
 			}
+			LicenseNotices();
+		}
+
+		// ---------- Avisos de la prueba ----------
+		// Cada uno sale una sola vez, nunca en pleno directo, ni encima de otra ventana o aviso, ni si
+		// StreamDelay no es la ventana activa: si no se puede, espera al minuto siguiente.
+
+		private void LicenseNotices()
+		{
+			if (licNoticeOpen || !base.Visible || Form.ActiveForm != this || engine.OutputActive || base.OwnedForms.Length > 0 || planInfo.Source != "prueba")
+			{
+				return;
+			}
+			DateTime now = DateTime.UtcNow;
+			if (plan == Plan.Full && licSeen.IndexOf('h') < 0)
+			{
+				MarkSeen("h");
+				if (Notice("Bienvenido a StreamDelay", "3 días gratis con todo",
+					"Durante 3 días puedes usar StreamDelay completo: delay dinámico, multistream, chat conjunto, overlays, Mando y título.\n\nDespués elige un plan, mes a mes y sin permanencia:\n•  Básico, " + License.PriceBasic + ": delay dinámico y multistream.\n•  Completo, " + License.PriceFull + ": todo.\n\nLos días que te quedan se ven arriba, debajo de «English». Si ya tienes una clave, pégala en «Ver planes o activar una clave».",
+					"Empezar la prueba", "Ver planes o activar una clave"))
+				{
+					return;
+				}
+				LicenseDialog();
+				return;
+			}
+			if (plan == Plan.Full && planInfo.Expires - now < TimeSpan.FromDays(1.0) && licSeen.IndexOf('a') < 0)
+			{
+				MarkSeen("a");
+				if (!Notice("Prueba", "Te queda " + License.Left(planInfo.Expires, now) + " de prueba",
+					"Cuando termine, para seguir emitiendo con delay necesitarás un plan:\n•  Básico, " + License.PriceBasic + ": delay dinámico y multistream.\n•  Completo, " + License.PriceFull + ": todo.\n\nSi te suscribes ahora no pierdes nada: el plan empieza a contar desde que pagas.",
+					"Ver planes", "Ahora no"))
+				{
+					return;
+				}
+				LicenseDialog();
+				return;
+			}
+			if (plan == Plan.None && licSeen.IndexOf('f') < 0)
+			{
+				MarkSeen("f");
+				if (!Notice("Prueba", "La prueba de 3 días ha terminado",
+					"Gracias por probar StreamDelay. Para seguir usándolo elige un plan, mes a mes y sin permanencia:\n•  Básico, " + License.PriceBasic + ": delay dinámico y multistream.\n•  Completo, " + License.PriceFull + ": todo, también chat, overlays, Mando y título.\n\nTus ajustes se quedan guardados.",
+					"Ver planes", "Ahora no"))
+				{
+					return;
+				}
+				LicenseDialog();
+			}
+		}
+
+		private void MarkSeen(string flag)
+		{
+			if (licSeen.IndexOf(flag, StringComparison.Ordinal) < 0)
+			{
+				licSeen += flag;
+				SaveConfig();
+			}
+		}
+
+		// Ventana de aviso con dos botones. Devuelve true si se pulsa el primero (el violeta).
+		private bool Notice(string title, string heading, string text, string primary, string secondary)
+		{
+			bool first = false;
+			licNoticeOpen = true;
+			try
+			{
+				Form f = DarkForm(title, 440, 380);
+				Box(f, 24f, 20f, 392f, 280f, delegate(Graphics g, Rectangle r)
+				{
+					Card.Glow(g, new RectangleF(-r.Width * 0.2f, -r.Height * 0.4f, r.Width * 0.9f, r.Height * 0.8f), Color.FromArgb(40, Theme.Violet));
+					Theme.DrawText(g, "STREAMDELAY 4.0", Theme.Mono(7.5f), Theme.Violet, new RectangleF(0f, 0f, r.Width, S(18f)), StringAlignment.Near, StringAlignment.Center);
+					Theme.DrawText(g, heading, Theme.Display(16f), Theme.Text, new RectangleF(0f, S(20f), r.Width, S(34f)), StringAlignment.Near, StringAlignment.Center);
+					Theme.DrawWrapped(g, text, Theme.Body(9f), Theme.Muted, new RectangleF(0f, S(64f), r.Width, r.Height - S(64f)));
+				});
+				VButton b2 = new VButton { Kind = ButtonKind.Ghost, Text = secondary, FontSize = 9f };
+				VButton b1 = new VButton { Kind = ButtonKind.Primary, Text = primary, FontSize = 10f };
+				Place(f, b2, 24f, 312f, 210f, 44f);
+				Place(f, b1, 244f, 312f, 172f, 44f);
+				b1.Click += delegate
+				{
+					first = true;
+					f.Close();
+				};
+				b2.Click += delegate
+				{
+					f.Close();
+				};
+				f.ShowDialog(this);
+				f.Dispose();
+			}
+			finally
+			{
+				licNoticeOpen = false;
+			}
+			return first;
 		}
 
 		// ---------- Polar ----------
