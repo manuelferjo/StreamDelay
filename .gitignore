@@ -6,3 +6,6 @@ firma.cfg
 StreamDelay.exe
 dist/
 *.zip
+# Clave privada de licencias y la lista de claves creadas: nunca se suben.
+clave-privada*.txt
+claves-creadas.csv

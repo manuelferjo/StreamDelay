@@ -320,3 +320,38 @@
   valores raros {"font":"Sistema","size":48,"tx":"#F4F4F5","names":"user","name":"#C09AFD","acc":"#C09AFD","bg":"none","bgc":"#111116","op":0,"corners":"round","fx":"shadow","icons":true,"badges":true,"events":true,"nocmd":false,"fade":600,"anim":"slide","align":"left","panel":true}
   no base64 {"font":"Sistema","size":15,"tx":"#F4F4F5","names":"user","name":"#C09AFD","acc":"#C09AFD","bg":"none","bgc":"#111116","op":85,"corners":"round","fx":"shadow","icons":true,"badges":true,"events":true,"nocmd":false,"fade":30,"anim":"slide","align":"left","panel":false}
   ida y vuelta True
+== License
+  completo (enero) {Error="" Expires=02/01/2026 00:00:00 Name="Banco de pruebas" NeedsActivation=False Plan={value__=2} Serial=3475160000 Source="clave"}
+  completo (marzo) {Error="la clave caducó el 1/2/2026" Expires=02/01/2026 00:00:00 Name="Banco de pruebas" NeedsActivation=False Plan={value__=0} Serial=3475160000 Source="clave"}
+  básico (enero) {Error="" Expires=02/01/2026 00:00:00 Name="" NeedsActivation=False Plan={value__=1} Serial=3796600965 Source="clave"}
+  con espacios y saltos {Error="" Expires=02/01/2026 00:00:00 Name="Banco de pruebas" NeedsActivation=False Plan={value__=2} Serial=3475160000 Source="clave"}
+  en minúsculas el prefijo {Error="" Expires=02/01/2026 00:00:00 Name="Banco de pruebas" NeedsActivation=False Plan={value__=2} Serial=3475160000 Source="clave"}
+  un carácter cambiado {Error="la clave no es válida (¿está bien copiada?)" Expires=12/31/9999 23:59:59 Name="" NeedsActivation=False Plan={value__=0} Serial=0 Source=""}
+  nombre cambiado {Error="la clave no es válida (¿está bien copiada?)" Expires=12/31/9999 23:59:59 Name="" NeedsActivation=False Plan={value__=0} Serial=0 Source=""}
+  cortada {Error="la clave está incompleta o mal copiada" Expires=12/31/9999 23:59:59 Name="" NeedsActivation=False Plan={value__=0} Serial=0 Source=""}
+  otra cosa {Error="no es una clave de StreamDelay" Expires=12/31/9999 23:59:59 Name="" NeedsActivation=False Plan={value__=0} Serial=0 Source=""}
+  vacía {Error="no es una clave de StreamDelay" Expires=12/31/9999 23:59:59 Name="" NeedsActivation=False Plan={value__=0} Serial=0 Source=""}
+  IsSigned True False False
+  prueba +-2 h {Error="la prueba de 3 días ha terminado" Expires=11/04/2026 12:00:00 Name="" NeedsActivation=False Plan={value__=0} Serial=0 Source="prueba"}
+  prueba +0 h {Error="" Expires=11/04/2026 12:00:00 Name="" NeedsActivation=False Plan={value__=2} Serial=0 Source="prueba"}
+  prueba +1 h {Error="" Expires=11/04/2026 12:00:00 Name="" NeedsActivation=False Plan={value__=2} Serial=0 Source="prueba"}
+  prueba +47.5 h {Error="" Expires=11/04/2026 12:00:00 Name="" NeedsActivation=False Plan={value__=2} Serial=0 Source="prueba"}
+  prueba +71.9 h {Error="" Expires=11/04/2026 12:00:00 Name="" NeedsActivation=False Plan={value__=2} Serial=0 Source="prueba"}
+  prueba +72 h {Error="la prueba de 3 días ha terminado" Expires=11/04/2026 12:00:00 Name="" NeedsActivation=False Plan={value__=0} Serial=0 Source="prueba"}
+  prueba +200 h {Error="la prueba de 3 días ha terminado" Expires=11/04/2026 12:00:00 Name="" NeedsActivation=False Plan={value__=0} Serial=0 Source="prueba"}
+  quedan 72 h: 3 días
+  quedan 49 h: 3 días
+  quedan 24 h: 1 día
+  quedan 23.5 h: 23 h
+  quedan 5.2 h: 5 h
+  quedan 0.5 h: menos de 1 h
+  polar (ventaja de otro producto) {Error="esta clave no es de StreamDelay" Expires=12/31/9999 23:59:59 Name="a@b.c" NeedsActivation=False Plan={value__=0} Serial=0 Source="polar"}
+  polar completo sin activar {Error="" Expires=12/31/9999 23:59:59 Name="a@b.c" NeedsActivation=True Plan={value__=2} Serial=0 Source="polar"}
+  polar básico activado {Error="" Expires=12/31/9999 23:59:59 Name="" NeedsActivation=False Plan={value__=1} Serial=0 Source="polar"}
+  polar revocada {Error="la suscripción ya no está activa" Expires=12/31/9999 23:59:59 Name="" NeedsActivation=False Plan={value__=0} Serial=0 Source="polar"}
+  polar caducada {Error="la licencia ha caducado" Expires=01/10/2026 00:00:00 Name="" NeedsActivation=False Plan={value__=0} Serial=0 Source="polar"}
+  polar null {Error="respuesta vacía de la tienda" Expires=12/31/9999 23:59:59 Name="" NeedsActivation=False Plan={value__=0} Serial=0 Source=""}
+  PlanForBenefit '' None · PolarReady True
+  PlanName 0 Sin plan
+  PlanName 1 Básico
+  PlanName 2 Completo

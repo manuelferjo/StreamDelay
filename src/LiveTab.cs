@@ -393,6 +393,11 @@ namespace StreamDelay
 				}
 				return;
 			}
+			// Hace falta un plan (la prueba de 3 días, Básico o Completo).
+			if (!CanStream())
+			{
+				return;
+			}
 			CommitPort();
 			if (!ValidateDestinations())
 			{

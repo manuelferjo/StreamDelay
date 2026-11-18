@@ -283,6 +283,41 @@ static class VerifyChat
         var p5 = Call(csT, "Preset", 5);
         Out.AppendLine("  ida y vuelta " + (Call(Call(csT, "Load", Call(p5, "Save")), "ToJson").Equals(Call(p5, "ToJson"))));
 
+        Section("License");
+        var lic = T("License");
+        // Claves de prueba que caducaron el 1/2/2026 (Completo a nombre de "Banco de pruebas" y Básico sin nombre).
+        const string kFull = "SD1-AQIAH88iu8BCYW5jbyBkZSBwcnVlYmFzx24FN8GxudFAAJTPDV2YL0LMuUbco5Vdx9Tlr_UGDhRnPbsHsfEXhkUQjFc4efHtgr82zUavxrxOrlu07Zhj_p13vMU2gAhR-83hpY4TvO0Ysfn46dCP68bRQEIBTf94PHhEvE0Gfh2zAA1jf8PTnAW7GtMr1wsCpqXkNbc96Lw";
+        const string kBasic = "SD1-AQEAH-JLiIXemjDIuwV5Ovv_oPnT9pkrJbOjAKV5qAJUfIUUZDhl0xXcFighLve9IdsSrwvXli-Rejf_aH8WKpvzqSm3rkHku0wZ0AKzzIjXnpbJ8h6wTSkUQ8iBEONEaBUeOXkbqHTzogCW1r8YhK2i2JVtguwnYvIS4SM4ZrctNCzqcv6z6A";
+        var enero = new DateTime(2026, 1, 15, 0, 0, 0, DateTimeKind.Utc);
+        var marzo = new DateTime(2026, 3, 1, 0, 0, 0, DateTimeKind.Utc);
+        Action<string, string, DateTime> chk = (name, k, when) => Out.AppendLine("  " + name + " " + Dump(Call(lic, "CheckSigned", k, when)));
+        chk("completo (enero)", kFull, enero);
+        chk("completo (marzo)", kFull, marzo);
+        chk("básico (enero)", kBasic, enero);
+        chk("con espacios y saltos", "  " + kFull.Substring(0, 60) + "\r\n " + kFull.Substring(60) + " ", enero);
+        chk("en minúsculas el prefijo", "sd1-" + kFull.Substring(4), enero);
+        chk("un carácter cambiado", kFull.Substring(0, 30) + (kFull[30] == 'A' ? 'B' : 'A') + kFull.Substring(31), enero);
+        chk("nombre cambiado", "SD1-AQIAH88iu8BDYW5jbyBkZSBwcnVlYmFz" + kFull.Substring(40), enero);
+        chk("cortada", kFull.Substring(0, 120), enero);
+        chk("otra cosa", "POLAR-1234-5678", enero);
+        chk("vacía", "", enero);
+        Out.AppendLine("  IsSigned " + Call(lic, "IsSigned", kFull) + " " + Call(lic, "IsSigned", "ABCD") + " " + Call(lic, "IsSigned", (object)null));
+        var start = new DateTime(2026, 11, 1, 12, 0, 0, DateTimeKind.Utc);
+        foreach (var h in new[] { -2.0, 0.0, 1.0, 47.5, 71.9, 72.0, 200.0 })
+            Out.AppendLine("  prueba +" + h + " h " + Dump(Call(lic, "Trial", start, start.AddHours(h))));
+        foreach (var h in new[] { 72.0, 49.0, 24.0, 23.5, 5.2, 0.5 })
+            Out.AppendLine("  quedan " + h + " h: " + Call(lic, "Left", start.AddHours(h), start));
+        Func<string, Dictionary<string, object>> pj = s => (Dictionary<string, object>)Json.DeserializeObject(s);
+        Out.AppendLine("  polar (ventaja de otro producto) " + Dump(Call(lic, "FromPolar", pj("{\"benefit_id\":\"b1\",\"status\":\"granted\",\"customer\":{\"email\":\"a@b.c\"}}"), enero)));
+        const string bB = "fbce853e-32ae-4d4e-acce-558838710977", bC = "3346c6b5-e14c-4fd1-8412-7b47ff344101";
+        Out.AppendLine("  polar completo sin activar " + Dump(Call(lic, "FromPolar", pj("{\"benefit_id\":\"" + bC + "\",\"status\":\"granted\",\"limit_activations\":2,\"activation\":null,\"expires_at\":null,\"customer\":{\"email\":\"a@b.c\"}}"), enero)));
+        Out.AppendLine("  polar básico activado " + Dump(Call(lic, "FromPolar", pj("{\"benefit_id\":\"" + bB + "\",\"status\":\"granted\",\"limit_activations\":2,\"activation\":{\"id\":\"x\"},\"customer\":{}}"), enero)));
+        Out.AppendLine("  polar revocada " + Dump(Call(lic, "FromPolar", pj("{\"benefit_id\":\"" + bC + "\",\"status\":\"revoked\"}"), enero)));
+        Out.AppendLine("  polar caducada " + Dump(Call(lic, "FromPolar", pj("{\"benefit_id\":\"" + bB + "\",\"status\":\"granted\",\"expires_at\":\"2026-01-10T00:00:00Z\"}"), enero)));
+        Out.AppendLine("  polar null " + Dump(Call(lic, "FromPolar", null, enero)));
+        Out.AppendLine("  PlanForBenefit '' " + Call(lic, "PlanForBenefit", "") + " · PolarReady " + lic.GetProperty("PolarReady", F).GetValue(null, null));
+        foreach (var p in new[] { 0, 1, 2 }) Out.AppendLine("  PlanName " + p + " " + Call(lic, "PlanName", Enum.ToObject(T("Plan"), p)));
+
         // Con un segundo argumento se guarda en ese archivo (UTF-8), sin depender de la consola.
         if (a.Length > 1) File.WriteAllText(a[1], Out.ToString(), new UTF8Encoding(false));
         else { Console.OutputEncoding = Encoding.UTF8; Console.Write(Out.ToString()); }

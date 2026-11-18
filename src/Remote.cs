@@ -741,6 +741,11 @@ namespace StreamDelay
 
 		private string RemoteAction(string a, Dictionary<string, string> q)
 		{
+			// El Mando es del plan Completo: sin él solo se puede ver el estado.
+			if (plan != Plan.Full && a != "estado" && a != "state")
+			{
+				return RemoteStateJson("El Mando es del plan Completo de StreamDelay");
+			}
 			string msg = null;
 			string sv;
 			int n;

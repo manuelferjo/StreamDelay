@@ -11,6 +11,7 @@
 //   TitleTab.cs     pestaña Título (título y categoría, conectar plataformas)
 //   SettingsTab.cs  pestaña Ajustes (destinos, OBS y opciones)
 //   Updater.cs      actualización automática
+//   LicenseUi.cs    plan (prueba, Básico, Completo), ventana Licencia y pestañas de pago
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -127,7 +128,7 @@ namespace StreamDelay
 
 		// ---------- Constantes ----------
 
-		private const string Version = "3.5";
+		private const string Version = "4.0";
 
 		private const string TikTokName = "TikTok";
 
@@ -280,8 +281,10 @@ namespace StreamDelay
 		private readonly Queue<string> pendingLog = new Queue<string>();
 
 		// Controles de cada página, para enseñar solo los de la pestaña elegida.
-		private readonly List<Control>[] pages = new List<Control>[7]
+		// La 8.ª (PageLocked) es el aviso de las pestañas del plan Completo (LicenseUi.cs).
+		private readonly List<Control>[] pages = new List<Control>[8]
 		{
+			new List<Control>(),
 			new List<Control>(),
 			new List<Control>(),
 			new List<Control>(),
@@ -413,7 +416,7 @@ namespace StreamDelay
 				Text = I18n.English ? "Español" : "English",
 				FontSize = 8f
 			};
-			Place(header, langBtn, 206f, 25f, 90f, 22f);
+			Place(header, langBtn, 206f, 14f, 90f, 22f);
 			langBtn.Click += delegate
 			{
 				I18n.English = !I18n.English;
@@ -423,6 +426,8 @@ namespace StreamDelay
 				Invalidate(true);
 				AppendLog(I18n.English ? "Language: English. The chat, remote and overlay pages switch when they reload." : "Idioma: español. Las páginas del chat, el Mando y los overlays cambian al recargarlas.");
 			};
+			// Plan (prueba, Básico o Completo): botón debajo del idioma y aviso de las pestañas de pago.
+			BuildLicense(pageTop);
 			// Overlays y Mando se construyen después de cargar la configuración porque la necesitan.
 			BuildOverlays(pageTop);
 			BuildMando(pageTop);
@@ -438,6 +443,7 @@ namespace StreamDelay
 				pulse = !pulse;
 				RefreshStatus();
 				CheckHealth();
+				LicenseTick();
 			};
 			timer.Start();
 			RefreshStatus();
@@ -459,6 +465,16 @@ namespace StreamDelay
 
 		private void ShowPage(int p)
 		{
+			// Chat, Overlays, Mando y Título sin el plan Completo: se enseña el aviso en su lugar.
+			if (!PageAllowed(p))
+			{
+				lockedPage = p;
+				p = PageLocked;
+				if (lockBox != null)
+				{
+					lockBox.Invalidate();
+				}
+			}
 			SuspendLayout();
 			for (int i = 0; i < pages.Length; i++)
 			{
@@ -1063,6 +1079,7 @@ namespace StreamDelay
 				}
 			}
 			base.TopMost = tgTop.Checked;
+			LoadLicenseConfig(raw);
 			LoadDestinations(raw);
 			LoadTitleConfig(raw);
 			LoadChatConfig(raw);
@@ -1088,6 +1105,7 @@ namespace StreamDelay
 				SaveDestinations(lines);
 				SaveTitleConfig(lines);
 				SaveChatConfig(lines);
+				SaveLicenseConfig(lines);
 				File.WriteAllLines(configPath, lines.ToArray());
 			}
 			catch
