@@ -345,9 +345,13 @@
   quedan 23.5 h: 23 h
   quedan 5.2 h: 5 h
   quedan 0.5 h: menos de 1 h
-  polar (tienda sin configurar) {Error="esta clave no es de StreamDelay" Expires=12/31/9999 23:59:59 Name="a@b.c" NeedsActivation=False Plan={value__=0} Serial=0 Source="polar"}
+  polar (ventaja de otro producto) {Error="esta clave no es de StreamDelay" Expires=12/31/9999 23:59:59 Name="a@b.c" NeedsActivation=False Plan={value__=0} Serial=0 Source="polar"}
+  polar completo sin activar {Error="" Expires=12/31/9999 23:59:59 Name="a@b.c" NeedsActivation=True Plan={value__=2} Serial=0 Source="polar"}
+  polar básico activado {Error="" Expires=12/31/9999 23:59:59 Name="" NeedsActivation=False Plan={value__=1} Serial=0 Source="polar"}
+  polar revocada {Error="la suscripción ya no está activa" Expires=12/31/9999 23:59:59 Name="" NeedsActivation=False Plan={value__=0} Serial=0 Source="polar"}
+  polar caducada {Error="la licencia ha caducado" Expires=01/10/2026 00:00:00 Name="" NeedsActivation=False Plan={value__=0} Serial=0 Source="polar"}
   polar null {Error="respuesta vacía de la tienda" Expires=12/31/9999 23:59:59 Name="" NeedsActivation=False Plan={value__=0} Serial=0 Source=""}
-  PlanForBenefit '' None · PolarReady False
+  PlanForBenefit '' None · PolarReady True
   PlanName 0 Sin plan
   PlanName 1 Básico
   PlanName 2 Completo

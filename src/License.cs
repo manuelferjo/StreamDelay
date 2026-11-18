@@ -68,25 +68,26 @@ namespace StreamDelay
 		public const string PriceFull = "8 €/mes";
 
 		// ---------- Tienda (Polar) ----------
-		// Se rellenan al crear la tienda en polar.sh: el id de la organización (Settings) y el id de
-		// la ventaja "License key" de cada producto. Mientras estén vacíos, solo valen las claves SD1-.
-		public const string PolarOrg = "";
+		// Tienda Vortexs_MC en polar.sh: id de la organización (Settings) y de la ventaja "License key"
+		// de cada producto (Products → Benefits). Si PolarOrg estuviera vacío, solo valdrían las claves SD1-.
+		// Las claves de Polar empiezan por SDB- (Básico) o SDC- (Completo).
+		public const string PolarOrg = "f3c396f8-63db-4249-8b17-ca08b303c282";
 
-		public const string PolarBenefitBasic = "";
+		public const string PolarBenefitBasic = "fbce853e-32ae-4d4e-acce-558838710977";
 
-		public const string PolarBenefitFull = "";
+		public const string PolarBenefitFull = "3346c6b5-e14c-4fd1-8412-7b47ff344101";
 
 		public const string PolarApi = "https://api.polar.sh";
 
 		// Enlaces de compra (Checkout links de Polar). Vacíos: se abre la web con los precios.
-		public const string BuyBasicUrl = "";
+		public const string BuyBasicUrl = "https://buy.polar.sh/polar_cl_krvpGoOXQ86zPp5NHnp0VO8iqdqbnA3izdywx1c6ziD";
 
-		public const string BuyFullUrl = "";
+		public const string BuyFullUrl = "https://buy.polar.sh/polar_cl_qSBK218sKDqXJaIQDBLZp9vfAGzlQe129N2eY0xIcfC";
 
 		public const string PricesUrl = "https://manuelferjo.github.io/StreamDelay/#precios";
 
 		// Gestionar o cancelar la suscripción (portal de clientes de Polar).
-		public const string ManageUrl = "https://polar.sh/";
+		public const string ManageUrl = "https://polar.sh/vortexsmc/portal";
 
 		// ---------- Claves SD1- ----------
 

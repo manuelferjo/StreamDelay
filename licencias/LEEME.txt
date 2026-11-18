@@ -50,7 +50,20 @@ Al pagar, Polar le da al cliente una clave de licencia; si cancela o deja
 de pagar, Polar la anula y StreamDelay la deja de aceptar (se comprueba
 al abrir y cada 6 horas; sin internet sigue valiendo 7 días).
 
-Pasos (una sola vez; los nombres de los menús de Polar pueden cambiar un poco):
+YA CONFIGURADO (18/11/2026) en la tienda Vortexs_MC de Polar:
+  - StreamDelay Básico   5 €/mes, ventaja "Licencia StreamDelay Básico"
+    (claves SDB-..., 2 PCs).
+  - StreamDelay Completo 8 €/mes, ventaja "Licencia StreamDelay Completo"
+    (claves SDC-..., 2 PCs).
+  - Checkout links "Web y app - Básico" y "Web y app - Completo".
+  - Los ids y enlaces ya están en src/License.cs y en web/index.html.
+  FALTA (solo lo puedes hacer tú): Finance -> Payout Account -> "Submit for
+  review" (verificar tu identidad y poner tu cuenta bancaria) y verificar el
+  correo de soporte en Settings. Hasta que Polar lo apruebe, el pago sale
+  como "Payments are currently unavailable".
+
+Pasos que se siguieron (por si hay que repetirlos; los nombres de los menús
+de Polar pueden cambiar un poco):
   1. Crea la cuenta en polar.sh y la organización "StreamDelay" (o Vortexs).
      Completa los datos para cobrar (Finance -> Payout account).
   2. Products -> New product:

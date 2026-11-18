@@ -308,7 +308,12 @@ static class VerifyChat
         foreach (var h in new[] { 72.0, 49.0, 24.0, 23.5, 5.2, 0.5 })
             Out.AppendLine("  quedan " + h + " h: " + Call(lic, "Left", start.AddHours(h), start));
         Func<string, Dictionary<string, object>> pj = s => (Dictionary<string, object>)Json.DeserializeObject(s);
-        Out.AppendLine("  polar (tienda sin configurar) " + Dump(Call(lic, "FromPolar", pj("{\"benefit_id\":\"b1\",\"status\":\"granted\",\"customer\":{\"email\":\"a@b.c\"}}"), enero)));
+        Out.AppendLine("  polar (ventaja de otro producto) " + Dump(Call(lic, "FromPolar", pj("{\"benefit_id\":\"b1\",\"status\":\"granted\",\"customer\":{\"email\":\"a@b.c\"}}"), enero)));
+        const string bB = "fbce853e-32ae-4d4e-acce-558838710977", bC = "3346c6b5-e14c-4fd1-8412-7b47ff344101";
+        Out.AppendLine("  polar completo sin activar " + Dump(Call(lic, "FromPolar", pj("{\"benefit_id\":\"" + bC + "\",\"status\":\"granted\",\"limit_activations\":2,\"activation\":null,\"expires_at\":null,\"customer\":{\"email\":\"a@b.c\"}}"), enero)));
+        Out.AppendLine("  polar básico activado " + Dump(Call(lic, "FromPolar", pj("{\"benefit_id\":\"" + bB + "\",\"status\":\"granted\",\"limit_activations\":2,\"activation\":{\"id\":\"x\"},\"customer\":{}}"), enero)));
+        Out.AppendLine("  polar revocada " + Dump(Call(lic, "FromPolar", pj("{\"benefit_id\":\"" + bC + "\",\"status\":\"revoked\"}"), enero)));
+        Out.AppendLine("  polar caducada " + Dump(Call(lic, "FromPolar", pj("{\"benefit_id\":\"" + bB + "\",\"status\":\"granted\",\"expires_at\":\"2026-01-10T00:00:00Z\"}"), enero)));
         Out.AppendLine("  polar null " + Dump(Call(lic, "FromPolar", null, enero)));
         Out.AppendLine("  PlanForBenefit '' " + Call(lic, "PlanForBenefit", "") + " · PolarReady " + lic.GetProperty("PolarReady", F).GetValue(null, null));
         foreach (var p in new[] { 0, 1, 2 }) Out.AppendLine("  PlanName " + p + " " + Call(lic, "PlanName", Enum.ToObject(T("Plan"), p)));
