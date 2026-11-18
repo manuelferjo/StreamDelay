@@ -53,9 +53,9 @@ al abrir y cada 6 horas; sin internet sigue valiendo 7 días).
 
 YA CONFIGURADO (18/11/2026) en la tienda Vortexs_MC de Polar:
   - Vortexs Live Básico   5 €/mes, ventaja "Licencia Vortexs Live Básico"
-    (claves SDB-..., 1 PC).
+    (claves VLB-..., 1 PC).
   - Vortexs Live Completo 8 €/mes, ventaja "Licencia Vortexs Live Completo"
-    (claves SDC-..., 1 PC).
+    (claves VLC-..., 1 PC).
   - Checkout links "Web y app - Básico" y "Web y app - Completo".
   - Los ids y enlaces ya están en src/License.cs y en web/index.html.
   Cuenta de cobro ya conectada; web del producto y país (España) puestos.
