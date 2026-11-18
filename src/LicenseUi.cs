@@ -56,6 +56,9 @@ namespace StreamDelay
 		// Ya se ha leído la licencia (antes no se escribe en el registro, para no borrarla).
 		private bool licLoaded;
 
+		// La clave de Polar que valía ha dejado de valer: falta avisar.
+		private bool licLost;
+
 		private VButton btnPlan;
 
 		private PaintBox lockBox;
@@ -339,6 +342,7 @@ namespace StreamDelay
 				CheckPolar(null);
 			}
 			LicenseNotices();
+			LicenseLostNotice();
 		}
 
 		// ---------- Avisos de la prueba ----------
@@ -385,6 +389,23 @@ namespace StreamDelay
 				{
 					return;
 				}
+				LicenseDialog();
+			}
+		}
+
+		// Aviso de que la licencia de Polar ha dejado de valer (cambio de plan, cancelación o cobro
+		// fallido). Al cambiar de plan Polar da una clave NUEVA (la del otro plan) y anula la vieja.
+		private void LicenseLostNotice()
+		{
+			if (!licLost || licNoticeOpen || !base.Visible || Form.ActiveForm != this || engine.OutputActive || base.OwnedForms.Length > 0)
+			{
+				return;
+			}
+			licLost = false;
+			if (Notice("Licencia", "Tu licencia ya no está activa",
+				"Puede ser por una de estas razones:\n•  Has cambiado de plan (por ejemplo, de Completo a Básico): Polar te ha dado una clave nueva. Está en el correo de Polar y en tu cuenta de cliente. Pégala en Licencia.\n•  Se ha cancelado la suscripción.\n•  No se ha podido cobrar el mes: en cuanto se cobre, tu misma clave vuelve a funcionar sola.",
+				"Pegar clave nueva", "Ahora no"))
+			{
 				LicenseDialog();
 			}
 		}
@@ -520,8 +541,15 @@ namespace StreamDelay
 					}
 					else if (api != null && api.Status == 404)
 					{
-						problem = "la clave no existe o la suscripción se ha cancelado";
+						problem = "la clave ya no vale: has cambiado de plan, se ha cancelado la suscripción o no se ha podido cobrar";
+						// Si antes valía, se avisa (una vez). Si se vuelve a cobrar, Polar reactiva la
+						// MISMA clave: se comprueba cada hora para que vuelva a funcionar sola.
+						if (licCache.Length > 0 && done == null)
+						{
+							licLost = true;
+						}
 						newCache = "";
+						licNextCheck = DateTime.UtcNow.AddHours(1.0);
 					}
 					else
 					{
