@@ -70,6 +70,73 @@ namespace StreamDelay
 				.Replace('/', '_');
 		}
 
+		// ---------- Para los mods (desde su enlace, en otro PC) ----------
+		// Kick devuelve al mod a http://localhost:17563/callback de SU ordenador, donde no hay nada
+		// escuchando: la página no carga, pero la dirección lleva el código. El mod la copia y la pega.
+		private string pasteVerifier = "";
+
+		private string pasteState = "";
+
+		public string BeginPasteLogin(string scopes)
+		{
+			byte[] random = new byte[32];
+			byte[] stateBytes = new byte[16];
+			using (RandomNumberGenerator rng = RandomNumberGenerator.Create())
+			{
+				rng.GetBytes(random);
+				rng.GetBytes(stateBytes);
+			}
+			pasteVerifier = B64Url(random);
+			pasteState = B64Url(stateBytes);
+			string challenge;
+			using (SHA256 sha = SHA256.Create())
+			{
+				challenge = B64Url(sha.ComputeHash(Encoding.ASCII.GetBytes(pasteVerifier)));
+			}
+			return IdBase + "/oauth/authorize?" + Http.Form("response_type", "code", "client_id", ClientId, "redirect_uri", RedirectUri, "scope", scopes, "code_challenge", challenge, "code_challenge_method", "S256", "state", pasteState);
+		}
+
+		public void FinishPasteLogin(string pasted)
+		{
+			string url = (pasted ?? "").Trim();
+			int q = url.IndexOf('?');
+			if (pasteVerifier.Length == 0 || q < 0)
+			{
+				throw new ApiException(0, "pega la dirección completa (empieza por http://localhost:" + CallbackPort + "/callback?code=…)");
+			}
+			string code = "";
+			string state = "";
+			foreach (string kv in url.Substring(q + 1).Split('&'))
+			{
+				int e = kv.IndexOf('=');
+				if (e <= 0)
+				{
+					continue;
+				}
+				string k = kv.Substring(0, e);
+				string v = Uri.UnescapeDataString(kv.Substring(e + 1).Replace('+', ' '));
+				if (k == "code")
+				{
+					code = v;
+				}
+				else if (k == "state")
+				{
+					state = v.Split('#')[0];
+				}
+			}
+			if (code.Length == 0)
+			{
+				throw new ApiException(0, "esa dirección no lleva el código de Kick: vuelve a empezar");
+			}
+			if (state != pasteState)
+			{
+				throw new ApiException(0, "esa dirección es de otro intento: vuelve a empezar");
+			}
+			SetTokens(Http.Send("POST", IdBase + "/oauth/token", null, null, "application/x-www-form-urlencoded", Http.Form("grant_type", "authorization_code", "code", code, "client_id", ClientId, "client_secret", ClientSecret, "redirect_uri", RedirectUri, "code_verifier", pasteVerifier)));
+			pasteVerifier = "";
+			FinishLogin();
+		}
+
 		// OAuth con PKCE: se abre la página de Kick, se espera (máximo 5 min) a que el navegador vuelva
 		// a localhost con el código y se cambia el código por los tokens.
 		public override void Login(ILoginUi ui)

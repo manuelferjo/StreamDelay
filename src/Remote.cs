@@ -517,6 +517,13 @@ namespace StreamDelay
 			chatServer.OnRemote = RemoteCall;
 			chatServer.RemoteKey = () => remoteKey;
 			chatServer.OnMod = ModAction;
+			chatServer.ModName = delegate(string k)
+			{
+				ModUser m = ModByKey(k);
+				return (m == null) ? null : m.Name;
+			};
+			chatServer.OnModApi = ModApi;
+			tunnel.Log = delegate(string m) { LogLater(m); };
 		}
 
 		// Vuelve a abrir el servidor (al permitir o quitar el acceso desde el móvil).
@@ -538,6 +545,7 @@ namespace StreamDelay
 				try
 				{
 					chatServer.Start(p, remoteLan);
+					UpdateTunnel();
 					if (remoteLan)
 					{
 						AppendLog("Mando: acceso desde la red local activado (http://" + LanIp() + ":" + chatServer.Port + "/mando). Si Windows pregunta, permite el acceso en redes privadas.");

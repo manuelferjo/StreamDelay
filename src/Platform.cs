@@ -266,6 +266,53 @@ namespace StreamDelay
 
 		// Inicio de sesión con código en otro dispositivo (Twitch, YouTube): pregunta cada "interval"
 		// segundos si el usuario ya lo ha aprobado, hasta que caduque el código.
+		// ---------- Inicio de sesión sin ventana (cuentas de los mods, desde su enlace) ----------
+
+		// Pregunta una vez si el código ya se ha aprobado: null = todavía no.
+		protected Dictionary<string, object> TryDeviceToken(string tokenUrl, string[] form)
+		{
+			try
+			{
+				return Http.Send("POST", tokenUrl, null, null, "application/x-www-form-urlencoded", Http.Form(form));
+			}
+			catch (ApiException ex)
+			{
+				string message = ex.Message.ToLowerInvariant();
+				if (message.Contains("pending") || message.Contains("slow_down"))
+				{
+					return null;
+				}
+				if (message.Contains("denied"))
+				{
+					throw new ApiException(ex.Status, "has rechazado el acceso");
+				}
+				if (message.Contains("expired"))
+				{
+					throw new ApiException(ex.Status, "el código ha caducado, vuelve a intentarlo");
+				}
+				throw;
+			}
+		}
+
+		// Tokens y cuenta en una sola línea (para guardar las cuentas de los mods).
+		public string SaveTokens()
+		{
+			return Connected ? (access + "\n" + refresh + "\n" + expires.Ticks + "\n" + Account.Replace("\n", " ")) : "";
+		}
+
+		public void LoadTokens(string s)
+		{
+			string[] parts = (s ?? "").Split('\n');
+			if (parts.Length >= 4)
+			{
+				access = parts[0];
+				refresh = parts[1];
+				long ticks;
+				expires = long.TryParse(parts[2], out ticks) ? new DateTime(ticks, DateTimeKind.Utc) : DateTime.MinValue;
+				Account = parts[3];
+			}
+		}
+
 		protected Dictionary<string, object> PollDevice(ILoginUi ui, string tokenUrl, string[] form, int interval, int expiresIn)
 		{
 			DateTime deadline = DateTime.UtcNow.AddSeconds(Math.Max(60, expiresIn));

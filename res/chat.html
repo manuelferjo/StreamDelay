@@ -120,6 +120,22 @@
   .modbar button.undo { border-color: var(--yellow); color: var(--yellow); }
   .modbar .sep { width: 1px; align-self: stretch; background: var(--border); margin: 0 2px; }
 
+  /* Chat de los mods (enlace /mod): "Mis cuentas" para escribir con las suyas. */
+  #accbtn { display: none; }
+  body.modmode #accbtn { display: flex; }
+  #accpanel { display: none; flex: none; padding: 8px 12px 10px; border-bottom: 1px solid var(--border); background: var(--surface); font-size: .85em; }
+  #accpanel.open { display: block; }
+  .acc { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-top: 1px solid var(--border); flex-wrap: wrap; }
+  .acc:first-of-type { border-top: 0; }
+  .acc .who { flex: 1; color: var(--muted); }
+  .acc .who b { color: var(--text); }
+  .acc button, .acc .go { font: inherit; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--elev); color: var(--text); cursor: pointer; text-decoration: none; }
+  .acc button.prim { border-color: var(--violet); background: rgba(192,154,253,.14); }
+  .acc .steps { flex-basis: 100%; color: var(--muted); line-height: 1.5; margin: 4px 0 2px 24px; }
+  .acc .steps code { font-size: 1.15em; color: var(--yellow); letter-spacing: .08em; }
+  .acc .steps input { width: 100%; margin-top: 4px; padding: 6px 9px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font: inherit; }
+  .acc .err { flex-basis: 100%; color: #ff8a95; margin-left: 24px; }
+
   /* Panel de moderación (botón 🛡 de arriba): modos del chat de Twitch y borrar el chat. */
   #modbtn { margin-left: auto; }
   body.overlay #modbtn, body.nomod #modbtn, body.overlay #modpanel, body.nomod #modpanel { display: none !important; }
@@ -146,8 +162,10 @@
   <span class="chip" id="c-kick"><span class="dot"></span><span class="pfi"></span><b id="v-kick">—</b></span>
   <span class="chip" id="c-youtube"><span class="dot"></span><span class="pfi"></span><b id="v-youtube">—</b></span>
   <span class="chip" id="c-tiktok"><span class="dot"></span><span class="pfi"></span><b id="v-tiktok">—</b></span>
+  <span class="chip" id="accbtn" title="Conecta tus cuentas para escribir en el chat">👤 <b id="accname">Mis cuentas</b></span>
   <span class="chip" id="modbtn" title="Moderar el chat">🛡 <b>Moderar</b></span>
 </header>
+<div id="accpanel"><div id="accrows"></div></div>
 <div id="modpanel">
   <div class="mrow"><span class="mlbl">Twitch · modo lento</span><span id="slow"></span></div>
   <div class="mrow"><span class="mlbl">Twitch · solo</span><button data-k="followers">seguidores</button><button data-k="subscribers">suscriptores</button><button data-k="emotes">emotes</button></div>
@@ -217,7 +235,23 @@
     'Un momento…': 'One moment…',
     'Ocultar este mensaje solo en tu chat y en pantalla': 'Hide this message only in your chat and on screen',
     'No volver a enseñar a esta persona (Chat → Moderación para quitarla de la lista)': 'Never show this person again (Chat → Moderation to remove them from the list)',
-    'Leyendo los modos del chat…': 'Reading the chat modes…'
+    'Leyendo los modos del chat…': 'Reading the chat modes…',
+    'Mis cuentas': 'My accounts',
+    'Conecta tus cuentas para escribir en el chat': 'Connect your accounts to write in the chat',
+    'conecta tus cuentas en «Mis cuentas» (arriba) para poder escribir': 'connect your accounts in "My accounts" (top) to be able to write',
+    'conectado como ': 'connected as ',
+    'sin conectar': 'not connected',
+    'el streamer no lo tiene configurado': "the streamer hasn't set it up",
+    'Desconectar': 'Disconnect',
+    'Conectar': 'Connect',
+    '1. Abre Kick y acepta: ': '1. Open Kick and accept: ',
+    'Abrir Kick': 'Open Kick',
+    '2. Kick te lleva a una página que no carga (empieza por http://localhost). Copia su dirección entera y pégala aquí:': "2. Kick takes you to a page that doesn't load (starts with http://localhost). Copy its full address and paste it here:",
+    'Listo': 'Done',
+    'Abre ': 'Open ',
+    ' con tu cuenta y escribe este código: ': ' with your account and enter this code: ',
+    'Esperando a que lo apruebes…': 'Waiting for you to approve it…',
+    'Cancelar': 'Cancel'
   };
   function T(s) { return (LANG === 'en' && EN_TXT[s]) || s; }
   // Textos fijos de la página.
@@ -231,7 +265,16 @@
       for (var c = n.firstChild; c; c = c.nextSibling) walk(c);
     })(document.body);
   }
-  if (q.get('overlay') === '1') document.body.classList.add('overlay');
+  // Chat de un mod (enlace /mod?k=…): lo rellena StreamDelay al mandar la página.
+  var MODKEY = '__SD_MOD__', MODNAME = '__SD_MODNAME__';
+  if (MODKEY.indexOf('__SD') === 0) { MODKEY = ''; MODNAME = ''; }
+  if (MODKEY) { document.body.classList.add('modmode'); document.title = 'Mod · ' + MODNAME + ' · StreamDelay'; }
+  function apiPost(body) {
+    var o = { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) };
+    if (!MODKEY) o.headers['X-SD-Secret'] = SECRET;
+    return fetch(MODKEY ? '/mod/api?k=' + encodeURIComponent(MODKEY) : '/api/mod', o).then(function (r) { return r.json(); });
+  }
+  if (q.get('overlay') === '1' && !MODKEY) document.body.classList.add('overlay');
   if (q.get('size')) document.documentElement.style.setProperty('--size', parseInt(q.get('size'), 10) + 'px');
   var hide = (q.get('ocultar') || '').toLowerCase().split(',');
   var noEvents = q.get('eventos') === '0';
@@ -286,6 +329,7 @@
   var started = false;
   function start() { if (!started) { started = true; connect(); } }
   function styleTick() {
+    if (MODKEY) { start(); return; }   // el estilo es para tu pantalla, no para el chat de los mods
     fetch('/chatstyle.json', { cache: 'no-store' }).then(function (r) { return r.json(); })
       .then(function (st) { if (st && st.tx) applyStyle(st); }).catch(function () {})
       .then(function () { start(); setTimeout(styleTick, 2000); });
@@ -451,11 +495,20 @@
       b.onclick = function () { chosen[p] = chosen[p] === false; try { localStorage.setItem('sd-enviar-a', JSON.stringify(chosen)); } catch (x) {} renderTargets(); };
       tgts.appendChild(b);
     });
-    if (!any) tgts.innerHTML = '<span>' + T('conecta tus cuentas en StreamDelay → pestaña Título para poder escribir') + '</span>';
+    if (!any) tgts.innerHTML = '<span>' + (MODKEY ? T('conecta tus cuentas en «Mis cuentas» (arriba) para poder escribir') : T('conecta tus cuentas en StreamDelay → pestaña Título para poder escribir')) + '</span>';
     input.disabled = !any;
     updateCount();
   }
+  var accounts = {}, canConnect = {};
   function loadInfo() {
+    if (MODKEY) {
+      apiPost({ a: 'info' }).then(function (i) {
+        if (!i || !i.ok) return;
+        avail = i.send || {}; accounts = i.accounts || {}; canConnect = i.can || {};
+        renderTargets(); renderAccounts();
+      }).catch(function () {});
+      return;
+    }
     fetch('/api/info', { headers: { 'X-SD-Secret': SECRET } }).then(function (r) { return r.json(); })
       .then(function (i) { avail = (i && i.send) || {}; renderTargets(); }).catch(function () {});
   }
@@ -464,8 +517,8 @@
     if (!text || !to.length || text.length > limit()) return;
     sendBtn.disabled = true; input.disabled = true;
     result.textContent = T('Enviando…');
-    fetch('/api/send', { method: 'POST', headers: { 'X-SD-Secret': SECRET, 'Content-Type': 'application/json' }, body: JSON.stringify({ text: text, to: to }) })
-      .then(function (r) { return r.json(); })
+    (MODKEY ? apiPost({ a: 'send', text: text, to: to })
+      : fetch('/api/send', { method: 'POST', headers: { 'X-SD-Secret': SECRET, 'Content-Type': 'application/json' }, body: JSON.stringify({ text: text, to: to }) }).then(function (r) { return r.json(); }))
       .then(function (res) {
         var anyOk = false;
         result.innerHTML = to.map(function (p) {
@@ -495,9 +548,7 @@
     var m = el._m, res = bar.querySelector('.mres');
     Array.prototype.forEach.call(bar.querySelectorAll('button'), function (b) { b.disabled = true; });
     res.className = 'mres'; res.textContent = T('Un momento…');
-    fetch('/api/mod', { method: 'POST', headers: { 'X-SD-Secret': SECRET, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ p: m.p, a: a, id: m.id, uid: m.uid, user: m.user, text: m.text }) })
-      .then(function (r) { return r.json(); })
+    apiPost({ p: m.p, a: a, id: m.id, uid: m.uid, user: m.user, text: m.text })
       .then(function (r) {
         if (r.ok && r.undo) {
           // Expulsión o ban: se puede deshacer desde aquí mismo.
@@ -554,10 +605,7 @@
   var modpanel = document.getElementById('modpanel'), modstate = document.getElementById('modstate'), slowBox = document.getElementById('slow');
   var SLOW = [[0, T('No')], [5, '5 s'], [10, '10 s'], [30, '30 s'], [60, '1 min'], [120, '2 min']];
   var modes = null;
-  function modCall(body) {
-    return fetch('/api/mod', { method: 'POST', headers: { 'X-SD-Secret': SECRET, 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
-      .then(function (r) { return r.json(); });
-  }
+  function modCall(body) { return apiPost(body); }
   function renderModes() {
     Array.prototype.forEach.call(slowBox.children, function (b) { b.classList.toggle('on', !!modes && modes.slow === +b.dataset.s); b.disabled = !modes; });
     Array.prototype.forEach.call(modpanel.querySelectorAll('[data-k]'), function (b) { b.classList.toggle('on', !!modes && !!modes[b.dataset.k]); b.disabled = !modes; });
@@ -609,11 +657,87 @@
     var di = 0;
     (function demo() { var m = JSON.parse(JSON.stringify(DEMO[di++ % DEMO.length])); m.id = 'demo' + di; if (m.t === 'msg') onMsg(m); else onEvent(m); setTimeout(demo, 1400); })();
   }
+  // ---------- Mis cuentas (solo en el chat de los mods) ----------
+  var accrows = document.getElementById('accrows'), accpanel = document.getElementById('accpanel');
+  var flows = {};   // inicio de sesión a medias de cada plataforma
+  if (MODKEY) {
+    document.getElementById('accname').textContent = MODNAME;
+    document.getElementById('accbtn').onclick = function () { accpanel.classList.toggle('open'); };
+  }
+  function renderAccounts() {
+    if (!MODKEY) return;
+    accrows.innerHTML = '';
+    ['twitch', 'kick', 'youtube'].forEach(function (p) {
+      var row = document.createElement('div'); row.className = 'acc';
+      var who = document.createElement('span'); who.className = 'who';
+      var name = accounts[p] || '';
+      who.innerHTML = ICONS[p] + '<b>' + NAMES[p] + '</b> · ' + (name ? T('conectado como ') + esc(name) : canConnect[p] ? T('sin conectar') : T('el streamer no lo tiene configurado'));
+      row.appendChild(who);
+      var f = flows[p];
+      if (name) {
+        var out = document.createElement('button'); out.textContent = T('Desconectar');
+        out.onclick = function () { apiPost({ a: 'logout', p: p }).then(loadInfo); };
+        row.appendChild(out);
+      } else if (canConnect[p] && !f) {
+        var b = document.createElement('button'); b.className = 'prim'; b.textContent = T('Conectar');
+        b.onclick = function () { startLogin(p); };
+        row.appendChild(b);
+      }
+      if (f && !name) {
+        var st = document.createElement('div'); st.className = 'steps';
+        if (f.paste) {
+          st.innerHTML = T('1. Abre Kick y acepta: ') + '<a class="go" target="_blank" rel="noopener" href="' + esc(f.url) + '">' + T('Abrir Kick') + '</a><br>' +
+            T('2. Kick te lleva a una página que no carga (empieza por http://localhost). Copia su dirección entera y pégala aquí:');
+          var inp = document.createElement('input'); inp.placeholder = 'http://localhost:17563/callback?code=…';
+          var ok = document.createElement('button'); ok.className = 'prim'; ok.textContent = T('Listo'); ok.style.marginTop = '6px';
+          ok.onclick = function () {
+            ok.disabled = true;
+            apiPost({ a: 'loginfinish', p: 'kick', url: inp.value }).then(function (r) {
+              if (r && r.ok) { delete flows.kick; loadInfo(); }
+              else { flows.kick.err = (r && r.error) || 'error'; renderAccounts(); }
+            });
+          };
+          st.appendChild(inp); st.appendChild(ok);
+        } else {
+          st.innerHTML = T('Abre ') + '<a class="go" target="_blank" rel="noopener" href="' + esc(f.url) + '">' + esc(f.url.replace(/^https?:\/\//, '')) + '</a>' +
+            T(' con tu cuenta y escribe este código: ') + '<code>' + esc(f.code) + '</code><br>' + T('Esperando a que lo apruebes…');
+        }
+        var cancel = document.createElement('button'); cancel.textContent = T('Cancelar'); cancel.style.marginLeft = '6px';
+        cancel.onclick = function () { delete flows[p]; renderAccounts(); };
+        st.appendChild(cancel);
+        row.appendChild(st);
+        if (f.err) { var e = document.createElement('div'); e.className = 'err'; e.textContent = '✗ ' + f.err; row.appendChild(e); }
+      }
+      accrows.appendChild(row);
+    });
+  }
+  function startLogin(p) {
+    apiPost({ a: 'login', p: p }).then(function (r) {
+      if (!r || !r.ok) { flows[p] = { url: '', code: '', err: (r && r.error) || 'error', paste: p === 'kick' }; renderAccounts(); delete flows[p]; return; }
+      flows[p] = { url: r.url, code: r.code || '', paste: !!r.paste, started: Date.now() };
+      renderAccounts();
+      if (!r.paste) pollLogin(p);
+    });
+  }
+  function pollLogin(p) {
+    var f = flows[p];
+    if (!f || Date.now() - f.started > 15 * 60000) { delete flows[p]; renderAccounts(); return; }
+    setTimeout(function () {
+      if (flows[p] !== f) return;
+      apiPost({ a: 'loginpoll', p: p }).then(function (r) {
+        if (flows[p] !== f) return;
+        if (r && r.ok && r.pending) { pollLogin(p); return; }
+        if (r && r.ok) { delete flows[p]; accounts = r.accounts || accounts; loadInfo(); return; }
+        f.err = (r && r.error) || 'error'; renderAccounts(); delete flows[p];
+      }).catch(function () { pollLogin(p); });
+    }, 5000);
+  }
+
   styleTick();
 
   var conn = document.getElementById('conn');
   function connect() {
-    var es = new EventSource('/events');
+    var es = new EventSource(MODKEY ? '/mod/events?k=' + encodeURIComponent(MODKEY) : '/events');
     es.onopen = function () { conn.style.display = 'none'; };
     es.onerror = function () { conn.style.display = 'block'; };
     es.onmessage = function (e) {

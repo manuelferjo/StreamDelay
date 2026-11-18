@@ -18,6 +18,7 @@ OBS envía el directo a StreamDelay, que lo retrasa los segundos que elijas y lo
 - **Multistream**: Twitch, Kick, YouTube y otro destino a la vez, con el mismo delay. OBS codifica una sola vez.
 - **Varias calidades en Twitch** (Transmisión mejorada de OBS).
 - **Chat conjunto** de Twitch, Kick, YouTube y TikTok (TikTok con una clave gratuita de [Euler Stream](https://www.eulerstream.com)) con emotes de 7TV, BetterTTV y FrankerFaceZ, avisos de subs, regalos, raids, bits, Super Chats, follows y donaciones (StreamElements y Streamlabs), espectadores de cada plataforma, escribir en todos los chats a la vez, moderar (borrar, expulsar, banear y deshacer, modo lento, borrar el chat) y moderación automática (palabras prohibidas, enlaces, spam, bots).
+- **Chat para tus mods** por internet: un enlace para cada mod, con todas las funciones de moderación y escribiendo con sus propias cuentas (con ngrok, gratis).
 - **Mando** desde el móvil, el Stream Deck o un panel de OBS.
 - **Overlays** para OBS: delay, espectadores y chat en pantalla, personalizables (el chat con su propio estilo: fuente, tamaño, colores, con o sin fondo…).
 - **Título y categoría** en Twitch, Kick y YouTube a la vez.
