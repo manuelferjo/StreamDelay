@@ -101,65 +101,6 @@ namespace StreamDelay
 			FinishLogin();
 		}
 
-		// Para los mods: inicio de sesión con código, igual que en la pestaña Título.
-		public Dictionary<string, object> BeginDevice()
-		{
-			Dictionary<string, object> d = Http.Send("POST", AuthBase + "/device/code", null, null, "application/x-www-form-urlencoded", Http.Form("client_id", ClientId, "scope", Scope));
-			Dictionary<string, object> r = new Dictionary<string, object>();
-			r["code"] = Http.Str(d, "user_code");
-			string url = Http.Str(d, "verification_url");
-			r["url"] = (url.Length > 0) ? url : Http.Str(d, "verification_uri");
-			r["device"] = Http.Str(d, "device_code");
-			return r;
-		}
-
-		public bool PollDeviceOnce(string device)
-		{
-			Dictionary<string, object> t = TryDeviceToken(AuthBase + "/token", new string[8] { "client_id", ClientId, "client_secret", ClientSecret, "device_code", device, "grant_type", "urn:ietf:params:oauth:grant-type:device_code" });
-			if (t == null)
-			{
-				return false;
-			}
-			SetTokens(t);
-			FinishLogin();
-			return true;
-		}
-
-		// El chat del directo de esta cuenta (para que los mods escriban en el tuyo).
-		public string CurrentLiveChatId()
-		{
-			return LiveChatId();
-		}
-
-		// Escribir en un chat concreto (el del directo del streamer) con esta cuenta.
-		public void SendChatTo(string chatId, string text)
-		{
-			Dictionary<string, object> body = new Dictionary<string, object>
-			{
-				{
-					"snippet",
-					new Dictionary<string, object>
-					{
-						{ "liveChatId", chatId },
-						{ "type", "textMessageEvent" },
-						{ "textMessageDetails", new Dictionary<string, object> { { "messageText", text } } }
-					}
-				}
-			};
-			try
-			{
-				Api("POST", ApiBase + "/liveChat/messages?part=snippet", null, body);
-			}
-			catch (ApiException ex)
-			{
-				if (ex.Status == 403 && ex.Message.ToLowerInvariant().Contains("quota"))
-				{
-					throw new ApiException(403, "se ha gastado el cupo diario de la API de YouTube");
-				}
-				throw;
-			}
-		}
-
 		protected override void DoRefresh()
 		{
 			SetTokens(Http.Send("POST", AuthBase + "/token", null, null, "application/x-www-form-urlencoded", Http.Form("client_id", ClientId, "client_secret", ClientSecret, "refresh_token", refresh, "grant_type", "refresh_token")));

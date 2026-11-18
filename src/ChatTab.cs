@@ -172,7 +172,6 @@ namespace StreamDelay
 			{
 				StartWebQuietly();
 				UpdateMandoUrl();
-				UpdateTunnel();
 				if (chatAutoStart)
 				{
 					StartChat(false);
@@ -838,7 +837,6 @@ namespace StreamDelay
 			LoadExtrasConfig(raw);
 			LoadCmdConfig(raw);
 			LoadAutoModConfig(raw);
-			LoadModsConfig(raw);
 			LoadChatStyleConfig(raw);
 			LoadRemoteConfig(raw);
 			LoadUpdateConfig(raw);
@@ -859,7 +857,6 @@ namespace StreamDelay
 				SaveExtrasConfig(lines);
 				SaveCmdConfig(lines);
 				SaveAutoModConfig(lines);
-				SaveModsConfig(lines);
 				SaveChatStyleConfig(lines);
 				SaveRemoteConfig(lines);
 				SaveUpdateConfig(lines);
