@@ -18,10 +18,41 @@
   body.overlay { background: transparent; }
   body.overlay header { display: none; }
   body.overlay .msg { text-shadow: 0 1px 2px #000, 0 0 3px #000; }
-  /* Chat en pantalla con estilo (overlay-style.js): fuente propia y, si se elige, fondo en cada mensaje. */
-  body.overlay.sd-font { font-family: var(--font); }
-  body.overlay.sd-bubbles .msg, body.overlay.sd-bubbles .ev { background: var(--bg2); color: var(--tx); text-shadow: none; border-radius: var(--cr); padding: 6px 10px; margin: 4px 0; border: 0; border-left: max(var(--bw), 3px) solid var(--a1); }
-  body.overlay.sd-bubbles .ev .body { color: var(--lbl); }
+  /* En pantalla los mensajes se apilan abajo, como en un chat de directo. */
+  body.overlay #list { flex: 0 1 auto; min-height: 0; margin-top: auto; overflow-y: hidden; }
+  body.overlay.demo { background: repeating-conic-gradient(#3a3a44 0 25%, #2b2b33 0 50%) 0 0 / 24px 24px; }
+
+  /* ---------- Estilo del chat (StreamDelay → Overlays → Personalizar chat) ---------- */
+  /* Variables: --cfont --csize --ctx --clbl --cname --cacc --cbg --ccr. Clases cs-… en <body>. */
+  body.cs { font-family: var(--cfont); font-size: var(--csize); }
+  body.cs .msg, body.cs .ev { color: var(--ctx); }
+  body.cs .ev .body { color: var(--clbl); }
+  body.cs.cs-names-fixed .name { color: var(--cname) !important; }
+  body.cs.cs-noicons .msg > .pf, body.cs.cs-noicons .ev .head > .pf { display: none; }
+  body.cs.cs-nobadges .role { display: none; }
+  body.cs.cs-noevents .ev { display: none; }
+  body.cs.cs-fx-shadow .msg, body.cs.cs-fx-shadow .ev { text-shadow: 0 1px 2px rgba(0,0,0,.95), 0 0 4px rgba(0,0,0,.75); }
+  body.cs.cs-fx-outline .msg, body.cs.cs-fx-outline .ev { text-shadow: -1.5px -1.5px 0 #000, 1.5px -1.5px 0 #000, -1.5px 1.5px 0 #000, 1.5px 1.5px 0 #000, 0 2px 4px #000; }
+  body.cs.cs-fx-none .msg, body.cs.cs-fx-none .ev { text-shadow: none; }
+  /* Sin fondo: los avisos llevan solo su raya de color. */
+  body.cs.cs-bg-none .ev { background: transparent; border: 0; border-left: 4px solid var(--c, var(--cacc)); border-radius: 0; }
+  /* Fondo detrás de cada mensaje. */
+  body.cs.cs-bg-bubbles .msg, body.cs.cs-bg-bubbles .ev { background: var(--cbg); border: 0; border-left: 3px solid var(--cacc); border-radius: var(--ccr); padding: .3em .75em; margin: .3em 0; width: fit-content; max-width: 100%; }
+  body.cs.cs-bg-bubbles .ev { border-left-color: var(--c, var(--cacc)); }
+  /* Fondo detrás de todo el chat. */
+  body.cs.cs-bg-panel #list { background: var(--cbg); border-radius: var(--ccr); border-left: 3px solid var(--cacc); padding: .5em .8em; }
+  body.cs.cs-bg-panel .ev { background: rgba(255,255,255,.06); border: 0; border-left: 3px solid var(--c, var(--cacc)); }
+  body.cs.cs-right #list { text-align: right; }
+  body.cs.cs-right.cs-bg-bubbles .msg, body.cs.cs-right.cs-bg-bubbles .ev { margin-left: auto; border-left: 0; border-right: 3px solid var(--cacc); }
+  body.cs.cs-right .ev .head { justify-content: flex-end; }
+  body.cs.cs-right .ev .amt { margin-left: 0; }
+  body.cs.cs-anim-none .msg, body.cs.cs-anim-none .ev { animation: none; }
+  body.cs.cs-anim-fade .msg, body.cs.cs-anim-fade .ev { animation: fadein .45s ease-out; }
+  body.cs.cs-anim-pop .msg, body.cs.cs-anim-pop .ev { animation: pop .3s cubic-bezier(.2,1.6,.4,1); }
+  body.cs.cs-anim-slide.cs-right .msg, body.cs.cs-anim-slide.cs-right .ev { animation: inright .25s ease-out; }
+  @keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes pop { from { opacity: 0; transform: scale(.85); } to { opacity: 1; transform: none; } }
+  @keyframes inright { from { opacity: 0; transform: translateX(14px); } to { opacity: 1; transform: none; } }
 
   header { flex: none; padding: 10px 12px; border-bottom: 1px solid var(--border); background: var(--surface); display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
   .total { font-weight: 700; font-size: 1.05em; margin-right: 4px; display: flex; align-items: center; gap: 6px; }
@@ -86,6 +117,23 @@
   .modbar button:disabled { opacity: .5; cursor: default; }
   .modbar .mres { font-size: .8em; color: var(--muted); }
   .modbar .mres.ok { color: var(--green); } .modbar .mres.bad { color: #ff8a95; }
+  .modbar button.undo { border-color: var(--yellow); color: var(--yellow); }
+  .modbar .sep { width: 1px; align-self: stretch; background: var(--border); margin: 0 2px; }
+
+  /* Panel de moderación (botón 🛡 de arriba): modos del chat de Twitch y borrar el chat. */
+  #modbtn { margin-left: auto; }
+  body.overlay #modbtn, body.nomod #modbtn, body.overlay #modpanel, body.nomod #modpanel { display: none !important; }
+  #modpanel { display: none; flex: none; padding: 8px 12px 10px; border-bottom: 1px solid var(--border); background: var(--surface); font-size: .85em; }
+  #modpanel.open { display: block; }
+  #modpanel .mrow { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 4px 0; }
+  #modpanel .mlbl { color: var(--dim); min-width: 92px; }
+  #modpanel button { font: inherit; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--border); background: var(--elev); color: var(--muted); cursor: pointer; }
+  #modpanel button.on { color: var(--text); border-color: var(--violet); background: rgba(192,154,253,.14); }
+  #modpanel button.danger { border-color: rgba(255,70,85,.5); color: #ff8a95; }
+  #modpanel button.sure { background: var(--red); color: #fff; }
+  #modpanel button:disabled { opacity: .5; cursor: default; }
+  #modstate { color: var(--muted); margin-top: 4px; min-height: 1.2em; }
+  #modstate.bad { color: #ff8a95; }
   #empty { color: var(--dim); text-align: center; margin-top: 30vh; font-size: .95em; }
   #more { position: fixed; bottom: 104px; left: 50%; transform: translateX(-50%); display: none; padding: 6px 14px; border-radius: 999px; border: 1px solid var(--border); background: var(--violet); color: #111; font-weight: 700; cursor: pointer; font-size: .85em; }
   #conn { display: none; position: fixed; top: 8px; right: 8px; padding: 4px 10px; border-radius: 999px; background: var(--red); color: #fff; font-size: .8em; }
@@ -98,7 +146,14 @@
   <span class="chip" id="c-kick"><span class="dot"></span><span class="pfi"></span><b id="v-kick">—</b></span>
   <span class="chip" id="c-youtube"><span class="dot"></span><span class="pfi"></span><b id="v-youtube">—</b></span>
   <span class="chip" id="c-tiktok"><span class="dot"></span><span class="pfi"></span><b id="v-tiktok">—</b></span>
+  <span class="chip" id="modbtn" title="Moderar el chat">🛡 <b>Moderar</b></span>
 </header>
+<div id="modpanel">
+  <div class="mrow"><span class="mlbl">Twitch · modo lento</span><span id="slow"></span></div>
+  <div class="mrow"><span class="mlbl">Twitch · solo</span><button data-k="followers">seguidores</button><button data-k="subscribers">suscriptores</button><button data-k="emotes">emotes</button></div>
+  <div class="mrow"><span class="mlbl">Todo el chat</span><button id="clearchat" class="danger">🧹 Borrar el chat</button></div>
+  <div id="modstate"></div>
+</div>
 <div id="list"><div id="empty">Esperando mensajes…<br><small>Activa el chat en StreamDelay → pestaña Chat.</small></div></div>
 <div id="composer">
   <div id="targets"><span>Enviar a:</span><span id="tgts"></span><span id="count"></span></div>
@@ -111,10 +166,7 @@
 <button id="more">↓ Nuevos mensajes</button>
 <div id="conn">Sin conexión con StreamDelay…</div>
 
-<script src="/overlay-style.js"></script>
 <script>
-// Fuente del estilo solo si no es la de siempre (el chat usa la de Windows por defecto).
-window.onStyle = function (st) { document.body.classList.toggle('sd-font', st.font !== 'Outfit'); };
 (function () {
   var q = new URLSearchParams(location.search);
   // Idioma: lo pone StreamDelay al enviar la página ('es' o 'en').
@@ -147,7 +199,25 @@ window.onStyle = function (st) { document.body.classList.toggle('sd-font', st.fo
     '✗ No se pudo contactar con StreamDelay': "✗ Couldn't reach StreamDelay",
     '🗑 Borrar': '🗑 Delete',
     'Hecho': 'Done',
-    '¿Seguro? Banear a ': 'Sure? Ban '
+    '¿Seguro? Banear a ': 'Sure? Ban ',
+    'Moderar': 'Moderate',
+    'Moderar el chat': 'Moderate the chat',
+    'Twitch · modo lento': 'Twitch · slow mode',
+    'Twitch · solo': 'Twitch · only',
+    'seguidores': 'followers',
+    'suscriptores': 'subscribers',
+    'emotes': 'emotes',
+    'Todo el chat': 'Whole chat',
+    '🧹 Borrar el chat': '🧹 Clear the chat',
+    '¿Seguro? Borrar todo': 'Sure? Clear everything',
+    'No': 'Off',
+    '🙈 Ocultar': '🙈 Hide',
+    '🔇 No ver más': '🔇 Never show',
+    '↩ Deshacer': '↩ Undo',
+    'Un momento…': 'One moment…',
+    'Ocultar este mensaje solo en tu chat y en pantalla': 'Hide this message only in your chat and on screen',
+    'No volver a enseñar a esta persona (Chat → Moderación para quitarla de la lista)': 'Never show this person again (Chat → Moderation to remove them from the list)',
+    'Leyendo los modos del chat…': 'Reading the chat modes…'
   };
   function T(s) { return (LANG === 'en' && EN_TXT[s]) || s; }
   // Textos fijos de la página.
@@ -167,6 +237,60 @@ window.onStyle = function (st) { document.body.classList.toggle('sd-font', st.fo
   var noEvents = q.get('eventos') === '0';
   var fade = parseInt(q.get('desvanecer') || '0', 10);   // overlay: segundos que se ve cada mensaje (0 = siempre)
   var MAX = 250;
+  var cs = null;          // estilo del chat (de /chatstyle.json)
+
+  // ---------- Estilo del chat ----------
+  var FONTS = {
+    'Plus Jakarta Sans': 'wght@500;700;800', 'Inter': 'wght@500;700', 'Outfit': 'wght@500;700', 'Montserrat': 'wght@500;700',
+    'Poppins': 'wght@500;700', 'Rubik': 'wght@500;700', 'Nunito': 'wght@600;800', 'Oswald': 'wght@500;700', 'Bebas Neue': '',
+    'Orbitron': 'wght@500;700', 'Bangers': '', 'Comic Neue': 'wght@400;700', 'Permanent Marker': '', 'Press Start 2P': '', 'Roboto Mono': 'wght@500;700'
+  };
+  var fontsLoaded = {}, styleKey = '';
+  function rgbOf(hex) { var n = parseInt(String(hex || '#000000').slice(1), 16) || 0; return [n >> 16 & 255, n >> 8 & 255, n & 255]; }
+  function rgbaOf(hex, a) { var c = rgbOf(hex); return 'rgba(' + c[0] + ',' + c[1] + ',' + c[2] + ',' + a + ')'; }
+  function lightBg() { if (!cs || cs.bg === 'none' || cs.op < 40) return false; var c = rgbOf(cs.bgc); return (0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2]) / 255 > 0.6; }
+  function applyStyle(st) {
+    var on = document.body.classList.contains('overlay') || !!st.panel;
+    var key = JSON.stringify(st) + on;
+    if (key === styleKey) return;
+    styleKey = key;
+    cs = on ? st : null;
+    var b = document.body.classList, r = document.documentElement.style;
+    Array.prototype.slice.call(b).forEach(function (c) { if (c === 'cs' || c.indexOf('cs-') === 0) b.remove(c); });
+    if (!on) return;
+    if (st.font !== 'Sistema' && FONTS.hasOwnProperty(st.font) && !fontsLoaded[st.font]) {
+      fontsLoaded[st.font] = true;
+      var l = document.createElement('link'); l.rel = 'stylesheet';
+      l.href = 'https://fonts.googleapis.com/css2?family=' + st.font.replace(/ /g, '+') + (FONTS[st.font] ? ':' + FONTS[st.font] : '') + '&display=swap';
+      document.head.appendChild(l);
+    }
+    r.setProperty('--cfont', st.font === 'Sistema' ? '"Segoe UI", system-ui, sans-serif' : "'" + st.font + "', 'Segoe UI', sans-serif");
+    r.setProperty('--csize', (st.size || 15) + 'px');
+    r.setProperty('--ctx', st.tx);
+    r.setProperty('--clbl', rgbaOf(st.tx, 0.72));
+    r.setProperty('--cname', st.name);
+    r.setProperty('--cacc', st.acc);
+    r.setProperty('--cbg', rgbaOf(st.bgc, (st.op || 0) / 100));
+    r.setProperty('--ccr', st.corners === 'rect' ? '3px' : st.corners === 'pill' ? '1.2em' : '10px');
+    b.add('cs', 'cs-bg-' + st.bg, 'cs-fx-' + st.fx, 'cs-anim-' + st.anim);
+    if (st.names === 'fixed') b.add('cs-names-fixed');
+    if (!st.icons) b.add('cs-noicons');
+    if (!st.badges) b.add('cs-nobadges');
+    if (!st.events) b.add('cs-noevents');
+    if (st.align === 'right') b.add('cs-right');
+    // Cuánto se ve cada mensaje: solo en pantalla (en el panel se ve todo el historial).
+    if (document.body.classList.contains('overlay')) fade = st.fade || 0;
+  }
+  // El chat se conecta después de leer el estilo, para que los mensajes que ya había también
+  // usen la duración elegida (o al segundo y medio, si StreamDelay no contesta).
+  var started = false;
+  function start() { if (!started) { started = true; connect(); } }
+  function styleTick() {
+    fetch('/chatstyle.json', { cache: 'no-store' }).then(function (r) { return r.json(); })
+      .then(function (st) { if (st && st.tx) applyStyle(st); }).catch(function () {})
+      .then(function () { start(); setTimeout(styleTick, 2000); });
+  }
+  setTimeout(function () { start(); }, 1500);
 
   var ICONS = {
     twitch: '<svg class="pf" viewBox="0 0 24 24"><path fill="#a970ff" d="M4 2 2.5 6v14h5v3h3l3-3h4l5-5V2H4Zm16 12-3 3h-5l-3 3v-3H5V4h15v10Z"/><path fill="#a970ff" d="M15 7h2v5h-2zM10 7h2v5h-2z"/></svg>',
@@ -195,11 +319,11 @@ window.onStyle = function (st) { document.body.classList.toggle('sd-font', st.fo
   function nameColor(c, user) {
     var r, g, b;
     if (c && /^#?[0-9a-f]{6}$/i.test(c)) { c = c.replace('#', ''); r = parseInt(c.substr(0, 2), 16); g = parseInt(c.substr(2, 2), 16); b = parseInt(c.substr(4, 2), 16); }
-    else { var h = 0; for (var i = 0; i < (user || '').length; i++) h = (h * 31 + user.charCodeAt(i)) >>> 0; return 'hsl(' + (h % 360) + ',70%,68%)'; }
+    else { var h = 0; for (var i = 0; i < (user || '').length; i++) h = (h * 31 + user.charCodeAt(i)) >>> 0; return 'hsl(' + (h % 360) + ',70%,' + (lightBg() ? '38%' : '68%') + ')'; }
     var max = Math.max(r, g, b) / 255, min = Math.min(r, g, b) / 255, l = (max + min) / 2, s = 0, hh = 0, d = max - min;
     if (d) { s = l > .5 ? d / (2 - max - min) : d / (max + min); var R = r / 255, G = g / 255, B = b / 255;
       hh = max === R ? (G - B) / d + (G < B ? 6 : 0) : max === G ? (B - R) / d + 2 : (R - G) / d + 4; hh *= 60; }
-    return 'hsl(' + Math.round(hh) + ',' + Math.round(s * 100) + '%,' + Math.round(Math.max(l, .62) * 100) + '%)';
+    return 'hsl(' + Math.round(hh) + ',' + Math.round(s * 100) + '%,' + Math.round((lightBg() ? Math.min(l, .4) : Math.max(l, .62)) * 100) + '%)';
   }
 
   function partsHtml(parts) {
@@ -225,18 +349,19 @@ window.onStyle = function (st) { document.body.classList.toggle('sd-font', st.fo
 
   function onMsg(m) {
     if (hide.indexOf(m.p) >= 0) return;
+    if (cs && cs.nocmd && /^\s*!/.test(plain(m.parts))) return;
     var el = document.createElement('div');
     el.className = 'msg' + (m.kind === 'announce' ? ' announce' : '');
     if (m.id) el.dataset.id = m.p + ':' + m.id;
     if (m.uid) el.dataset.uid = m.p + ':' + m.uid;
-    // TikTok no deja moderar desde otros programas: sus mensajes no tienen botones.
-    if ((m.id || m.uid) && m.p !== 'tiktok') { el.dataset.mod = '1'; el._m = { p: m.p, id: m.id || '', uid: m.uid || '', user: m.user || '', text: plain(m.parts) }; }
+    // TikTok no deja moderar desde otros programas: sus mensajes solo se pueden ocultar.
+    if (m.id || m.uid || m.user) { el.dataset.mod = '1'; el._m = { p: m.p, id: m.id || '', uid: m.uid || '', user: m.user || '', text: plain(m.parts) }; }
     el.innerHTML = ICONS[m.p] + rolesHtml(m.roles) + '<span class="name" style="color:' + nameColor(m.color, m.user) + '">' + esc(m.user) + '</span>: ' + partsHtml(m.parts);
     add(el);
   }
 
   function onEvent(m) {
-    if (noEvents || hide.indexOf(m.p) >= 0) return;
+    if (noEvents || (cs && !cs.events) || hide.indexOf(m.p) >= 0) return;
     var el = document.createElement('div');
     el.className = 'ev k-' + (m.kind || 'other');
     if (m.kind === 'superchat' && m.color) el.style.setProperty('--c', m.color);
@@ -360,19 +485,30 @@ window.onStyle = function (st) { document.body.classList.toggle('sd-font', st.fo
 
   // ---------- Moderar: pulsa un mensaje ----------
   if (q.get('moderar') === '0') document.body.classList.add('nomod');
-  var ACTS = [['del', T('🗑 Borrar')], ['t60', '⏱ 1 min'], ['t600', '⏱ 10 min'], ['ban', '⛔ Ban']];
+  // En la plataforma: borrar, expulsar un rato o banear (con "Deshacer"). Solo aquí: ocultar el mensaje o a la persona.
+  var ACTS = [['del', T('🗑 Borrar')], ['t60', '⏱ 1 min'], ['t600', '⏱ 10 min'], ['t3600', '⏱ 1 h'], ['t86400', '⏱ 24 h'], ['ban', '⛔ Ban'], ['-'], ['hide', T('🙈 Ocultar')], ['ignore', T('🔇 No ver más')]];
+  var LOCAL = { hide: 1, ignore: 1 };
   function closeBars(except) {
     Array.prototype.forEach.call(list.querySelectorAll('.modbar'), function (b) { if (b.parentNode !== except) { b.parentNode.classList.remove('modsel'); b.remove(); } });
   }
   function doMod(el, a, bar, btn) {
     var m = el._m, res = bar.querySelector('.mres');
     Array.prototype.forEach.call(bar.querySelectorAll('button'), function (b) { b.disabled = true; });
-    res.className = 'mres'; res.textContent = 'Un momento…';
+    res.className = 'mres'; res.textContent = T('Un momento…');
     fetch('/api/mod', { method: 'POST', headers: { 'X-SD-Secret': SECRET, 'Content-Type': 'application/json' },
       body: JSON.stringify({ p: m.p, a: a, id: m.id, uid: m.uid, user: m.user, text: m.text }) })
       .then(function (r) { return r.json(); })
       .then(function (r) {
-        if (r.ok) { res.className = 'mres ok'; res.textContent = '✓ ' + (r.msg || T('Hecho')); setTimeout(function () { closeBars(null); }, 1500); }
+        if (r.ok && r.undo) {
+          // Expulsión o ban: se puede deshacer desde aquí mismo.
+          res.className = 'mres ok'; res.textContent = '✓ ' + (r.msg || T('Hecho'));
+          Array.prototype.forEach.call(bar.querySelectorAll('button'), function (b) { b.style.display = 'none'; });
+          var u = document.createElement('button'); u.className = 'undo'; u.textContent = T('↩ Deshacer');
+          u.onclick = function () { u.remove(); doMod(el, 'unban', bar, u); };
+          bar.insertBefore(u, res);
+          setTimeout(function () { if (u.isConnected) closeBars(null); }, 15000);
+        }
+        else if (r.ok) { res.className = 'mres ok'; res.textContent = '✓ ' + (r.msg || T('Hecho')); setTimeout(function () { closeBars(null); }, 1500); }
         else { res.className = 'mres bad'; res.textContent = '✗ ' + (r.error || 'error'); Array.prototype.forEach.call(bar.querySelectorAll('button'), function (b) { b.disabled = false; }); }
       })
       .catch(function () { res.className = 'mres bad'; res.textContent = T('✗ No se pudo contactar con StreamDelay'); });
@@ -389,10 +525,16 @@ window.onStyle = function (st) { document.body.classList.toggle('sd-font', st.fo
     var bar = document.createElement('div');
     bar.className = 'modbar';
     ACTS.forEach(function (x) {
+      // TikTok: solo lo de este chat (ocultar).
+      if (el._m.p === 'tiktok' && !LOCAL[x[0]]) return;
+      if (x[0] === '-') { if (el._m.p !== 'tiktok') { var sep = document.createElement('span'); sep.className = 'sep'; bar.appendChild(sep); } return; }
       var b = document.createElement('button');
       b.textContent = x[1];
       if (x[0] === 'ban') b.className = 'ban';
+      if (x[0] === 'hide') b.title = T('Ocultar este mensaje solo en tu chat y en pantalla');
+      if (x[0] === 'ignore') b.title = T('No volver a enseñar a esta persona (Chat → Moderación para quitarla de la lista)');
       if (x[0] === 'del' && !el._m.id && el._m.p !== 'youtube') b.disabled = true;
+      if (!LOCAL[x[0]] && x[0] !== 'del' && !el._m.uid) b.disabled = true;
       b.onclick = function () {
         if (x[0] === 'ban' && !b.classList.contains('sure')) {
           b.classList.add('sure'); b.textContent = T('¿Seguro? Banear a ') + el._m.user;
@@ -408,6 +550,67 @@ window.onStyle = function (st) { document.body.classList.toggle('sd-font', st.fo
     el.classList.add('modsel');
   });
 
+  // ---------- Panel de moderación: modos del chat de Twitch y borrar el chat ----------
+  var modpanel = document.getElementById('modpanel'), modstate = document.getElementById('modstate'), slowBox = document.getElementById('slow');
+  var SLOW = [[0, T('No')], [5, '5 s'], [10, '10 s'], [30, '30 s'], [60, '1 min'], [120, '2 min']];
+  var modes = null;
+  function modCall(body) {
+    return fetch('/api/mod', { method: 'POST', headers: { 'X-SD-Secret': SECRET, 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      .then(function (r) { return r.json(); });
+  }
+  function renderModes() {
+    Array.prototype.forEach.call(slowBox.children, function (b) { b.classList.toggle('on', !!modes && modes.slow === +b.dataset.s); b.disabled = !modes; });
+    Array.prototype.forEach.call(modpanel.querySelectorAll('[data-k]'), function (b) { b.classList.toggle('on', !!modes && !!modes[b.dataset.k]); b.disabled = !modes; });
+  }
+  SLOW.forEach(function (x) {
+    var b = document.createElement('button'); b.textContent = x[1]; b.dataset.s = x[0];
+    b.onclick = function () { setMode('slow', x[0]); };
+    slowBox.appendChild(b);
+  });
+  Array.prototype.forEach.call(modpanel.querySelectorAll('[data-k]'), function (b) { b.onclick = function () { setMode(b.dataset.k, !(modes && modes[b.dataset.k])); }; });
+  function showModResult(r) {
+    if (r && r.ok) { if (r.modes) { modes = r.modes; renderModes(); } modstate.className = ''; modstate.textContent = r.msg ? '✓ ' + r.msg : ''; }
+    else { modstate.className = 'bad'; modstate.textContent = '✗ ' + ((r && r.error) || 'error'); }
+  }
+  function setMode(k, v) { modCall({ a: 'setmode', k: k, v: v }).then(showModResult).catch(function () { showModResult(null); }); }
+  function loadModes() {
+    modstate.className = ''; modstate.textContent = T('Leyendo los modos del chat…');
+    modCall({ a: 'modes' }).then(function (r) { showModResult(r); if (r && r.ok) modstate.textContent = ''; }).catch(function () { showModResult(null); });
+  }
+  document.getElementById('modbtn').onclick = function () {
+    var open = modpanel.classList.toggle('open');
+    if (open) loadModes();
+  };
+  var clearBtn = document.getElementById('clearchat');
+  clearBtn.onclick = function () {
+    if (!clearBtn.classList.contains('sure')) {
+      clearBtn.classList.add('sure'); clearBtn.textContent = T('¿Seguro? Borrar todo');
+      setTimeout(function () { clearBtn.classList.remove('sure'); clearBtn.textContent = T('🧹 Borrar el chat'); }, 3500);
+      return;
+    }
+    clearBtn.classList.remove('sure'); clearBtn.textContent = T('🧹 Borrar el chat');
+    modCall({ a: 'clear' }).then(showModResult).catch(function () { showModResult(null); });
+  };
+  renderModes();
+
+  // ---------- Vista previa (?demo=1): mensajes de ejemplo ----------
+  if (q.get('demo') === '1') {
+    document.body.classList.add('demo');
+    var DEMO = [
+      { t: 'msg', p: 'twitch', user: 'Laura', color: '#FF4500', roles: ['mod'], parts: [{ x: '¡Vaya jugada! Esto hay que clipearlo' }] },
+      { t: 'msg', p: 'kick', user: 'KickFan', color: '#53FC18', roles: ['sub'], parts: [{ x: 'saludos desde Kick 👋' }] },
+      { t: 'msg', p: 'youtube', user: 'ytfan', roles: ['member'], parts: [{ x: 'llego tarde, ¿qué me he perdido?' }] },
+      { t: 'msg', p: 'tiktok', user: 'Marta 🌸', roles: [], parts: [{ x: 'holaaa desde TikTok' }] },
+      { t: 'ev', p: 'twitch', user: 'Ana', kind: 'resub', text: 'Ana lleva 6 meses suscrita', parts: [{ x: '¡a por el directo!' }] },
+      { t: 'msg', p: 'twitch', user: 'Pepe', color: '#1E90FF', roles: ['vip'], parts: [{ x: 'GG, qué nivel' }] },
+      { t: 'ev', p: 'tiktok', user: 'Racha', kind: 'tiktokgift', text: 'Racha ha enviado 5 × Rosa', amount: '💎 5' },
+      { t: 'msg', p: 'kick', user: 'Nocturno', color: '#B388FF', roles: [], parts: [{ x: 'el delay está en 30 s, tranquilos' }] }
+    ];
+    var di = 0;
+    (function demo() { var m = JSON.parse(JSON.stringify(DEMO[di++ % DEMO.length])); m.id = 'demo' + di; if (m.t === 'msg') onMsg(m); else onEvent(m); setTimeout(demo, 1400); })();
+  }
+  styleTick();
+
   var conn = document.getElementById('conn');
   function connect() {
     var es = new EventSource('/events');
@@ -418,11 +621,11 @@ window.onStyle = function (st) { document.body.classList.toggle('sd-font', st.fo
       if (m.t === 'msg') onMsg(m);
       else if (m.t === 'ev') onEvent(m);
       else if (m.t === 'del') onDelete(m);
+      else if (m.t === 'clear') { list.innerHTML = ''; }
       else if (m.t === 'viewers') { viewers = m.data || {}; renderHeader(); }
       else if (m.t === 'status') { states = m.data || {}; renderHeader(); }
     };
   }
-  connect();
 })();
 </script>
 </body>

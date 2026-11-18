@@ -217,6 +217,72 @@ static class VerifyChat
         foreach (var c in new object[] { 4404, 4005, 4555, 4429, 1000, 4401 }) { Out.AppendLine(" > cierre " + c); Out.AppendLine("  espera " + Dump(Call(tk, "Closed", c, c.ToString() == "1000" ? "adiós" : ""))); }
         Call(tk, "State", "error: The server returned status code '401' when status code '101' was expected.");
 
+        Section("AutoModRules");
+        var am = Activator.CreateInstance(T("AutoModRules"));
+        Func<string, string, string[], object[], object> item = (p, user, roles, parts) =>
+        {
+            var it = Activator.CreateInstance(T("ChatItem"));
+            SetField(it, "t", "msg"); SetField(it, "p", p); SetField(it, "user", user); SetField(it, "roles", roles);
+            var list = (IList)Activator.CreateInstance(typeof(List<>).MakeGenericType(T("ChatPart")));
+            foreach (var x in parts)
+            {
+                var cp = Activator.CreateInstance(T("ChatPart"));
+                var arr = x as string[];
+                if (arr != null) { SetField(cp, "e", arr[0]); SetField(cp, "n", arr[1]); } else SetField(cp, "x", (string)x);
+                list.Add(cp);
+            }
+            SetField(it, "parts", list);
+            return it;
+        };
+        Action<string, object> check = (label, it) =>
+        {
+            var args = new object[] { it, 0 };
+            var mi = T("AutoModRules").GetMethod("Check", F);
+            var r = mi.Invoke(am, args);
+            Out.AppendLine("  " + label + " → " + Dump(r) + " act=" + args[1]);
+        };
+        check("apagada", item("twitch", "pepe", new string[0], new object[] { "eres tonto" }));
+        SetField(am, "On", true);
+        SetField(am, "Words", "tonto\r\npalabr*\r\n  \r\nmala frase");
+        check("palabra", item("twitch", "pepe", new string[0], new object[] { "eres TÓNTO" }));
+        check("dentro de otra", item("twitch", "pepe", new string[0], new object[] { "tontorrón" }));
+        check("comodín", item("kick", "pepe", new string[0], new object[] { "qué palabrota" }));
+        check("frase", item("youtube", "pepe", new string[0], new object[] { "esto es una mala frase, sí" }));
+        check("mod", item("twitch", "moderador", new[] { "mod" }, new object[] { "tonto" }));
+        check("streamer", item("twitch", "yo", new[] { "broadcaster" }, new object[] { "tonto" }));
+        check("sub (exento)", item("twitch", "subby", new[] { "sub" }, new object[] { "tonto" }));
+        SetField(am, "ExemptSubs", false);
+        check("sub (no exento)", item("twitch", "subby", new[] { "sub" }, new object[] { "tonto" }));
+        check("enlace", item("twitch", "spam1", new string[0], new object[] { "mira mi canal en http://x.com/a" }));
+        check("dominio", item("twitch", "spam1", new string[0], new object[] { "entra en gratis.gg ya" }));
+        check("sin enlace", item("twitch", "spam1", new string[0], new object[] { "son las 3.30 de la tarde" }));
+        SetField(am, "Caps", true);
+        check("mayúsculas", item("twitch", "grita", new string[0], new object[] { "HOLA A TODOS QUE TAL" }));
+        check("pocas letras", item("twitch", "grita", new string[0], new object[] { "GG WP" }));
+        SetField(am, "Emotes", true);
+        var many = new List<object>(); for (int i = 0; i < 12; i++) many.Add(new[] { "https://e/" + i, "KEKW" });
+        check("emotes", item("twitch", "emoter", new string[0], many.ToArray()));
+        check("repetido 1", item("kick", "rep", new string[0], new object[] { "compra ya" }));
+        check("repetido 2", item("kick", "rep", new string[0], new object[] { "Compra ya" }));
+        check("repetido 3", item("kick", "rep", new string[0], new object[] { "compra ya" }));
+        SetField(am, "HideBots", true);
+        check("bot", item("twitch", "Nightbot", new[] { "mod" }, new object[] { "!comandos" }));
+        var ign = (HashSet<string>)T("AutoModRules").GetField("Ignored", F).GetValue(am); ign.Add("pesado");
+        check("ignorado", item("tiktok", "@Pesado", new string[0], new object[] { "hola" }));
+        SetField(am, "On", false);
+        check("ignorado (apagada)", item("tiktok", "pesado", new string[0], new object[] { "hola" }));
+        Out.AppendLine("  Fold " + Dump(Call(T("AutoModRules"), "Fold", "ÁÉÍÓÚ Ñandú Ü")));
+
+        Section("ChatStyle");
+        var csT = T("ChatStyle");
+        Out.AppendLine("  defecto " + Call(Activator.CreateInstance(csT), "ToJson"));
+        for (int i = 0; i < 8; i++) Out.AppendLine("  " + i + " " + Call(Call(csT, "Preset", i), "ToJson"));
+        var raro = Convert.ToBase64String(Encoding.UTF8.GetBytes("{\"font\":\"Arial\",\"size\":999,\"tx\":\"rojo\",\"bg\":\"x\",\"op\":-5,\"fade\":99999,\"anim\":\"bailar\",\"panel\":true}"));
+        Out.AppendLine("  valores raros " + Call(Call(csT, "Load", raro), "ToJson"));
+        Out.AppendLine("  no base64 " + Call(Call(csT, "Load", "%%%"), "ToJson"));
+        var p5 = Call(csT, "Preset", 5);
+        Out.AppendLine("  ida y vuelta " + (Call(Call(csT, "Load", Call(p5, "Save")), "ToJson").Equals(Call(p5, "ToJson"))));
+
         // Con un segundo argumento se guarda en ese archivo (UTF-8), sin depender de la consola.
         if (a.Length > 1) File.WriteAllText(a[1], Out.ToString(), new UTF8Encoding(false));
         else { Console.OutputEncoding = Encoding.UTF8; Console.Write(Out.ToString()); }

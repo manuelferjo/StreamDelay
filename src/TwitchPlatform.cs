@@ -9,7 +9,7 @@ namespace StreamDelay
 {
 	internal class TwitchPlatform : Platform
 	{
-		private const string Scopes = "channel:manage:broadcast moderator:read:followers user:write:chat moderator:manage:chat_messages moderator:manage:banned_users";
+		private const string Scopes = "channel:manage:broadcast moderator:read:followers user:write:chat moderator:manage:chat_messages moderator:manage:banned_users moderator:manage:chat_settings";
 
 		public static string IdBase = "https://id.twitch.tv";
 
@@ -228,6 +228,94 @@ namespace StreamDelay
 		}
 
 		// Pide a Twitch que avise de los follows por la conexión EventSub (sessionId).
+		// Quita un ban o una expulsión temporal.
+		public void Unban(string channelLogin, string targetUserId)
+		{
+			string b = BroadcasterId(channelLogin);
+			try
+			{
+				Api("DELETE", ApiBase + "/moderation/bans?broadcaster_id=" + b + "&moderator_id=" + userId + "&user_id=" + Uri.EscapeDataString(targetUserId), H(), null);
+			}
+			catch (ApiException ex)
+			{
+				throw ModError(ex);
+			}
+		}
+
+		// Borra todos los mensajes del chat.
+		public void ClearChat(string channelLogin)
+		{
+			string b = BroadcasterId(channelLogin);
+			try
+			{
+				Api("DELETE", ApiBase + "/moderation/chat?broadcaster_id=" + b + "&moderator_id=" + userId, H(), null);
+			}
+			catch (ApiException ex)
+			{
+				throw ModError(ex);
+			}
+		}
+
+		// Modos del chat: slow (segundos, 0 = no), followers, subscribers, emotes.
+		public Dictionary<string, object> GetChatSettings(string channelLogin)
+		{
+			string b = BroadcasterId(channelLogin);
+			List<Dictionary<string, object>> list = Http.Arr(Api("GET", ApiBase + "/chat/settings?broadcaster_id=" + b + "&moderator_id=" + userId, H(), null), "data");
+			return ChatModes((list.Count > 0) ? list[0] : new Dictionary<string, object>());
+		}
+
+		// Cambia solo lo que venga en "changes" (mismas claves que GetChatSettings) y devuelve cómo queda.
+		public Dictionary<string, object> SetChatSettings(string channelLogin, Dictionary<string, object> changes)
+		{
+			string b = BroadcasterId(channelLogin);
+			Dictionary<string, object> body = new Dictionary<string, object>();
+			object v;
+			if (changes.TryGetValue("slow", out v))
+			{
+				int s = Convert.ToInt32(v);
+				body["slow_mode"] = s > 0;
+				if (s > 0)
+				{
+					body["slow_mode_wait_time"] = Math.Max(3, Math.Min(120, s));
+				}
+			}
+			if (changes.TryGetValue("followers", out v))
+			{
+				body["follower_mode"] = Convert.ToBoolean(v);
+			}
+			if (changes.TryGetValue("subscribers", out v))
+			{
+				body["subscriber_mode"] = Convert.ToBoolean(v);
+			}
+			if (changes.TryGetValue("emotes", out v))
+			{
+				body["emote_mode"] = Convert.ToBoolean(v);
+			}
+			try
+			{
+				List<Dictionary<string, object>> list = Http.Arr(Api("PATCH", ApiBase + "/chat/settings?broadcaster_id=" + b + "&moderator_id=" + userId, H(), body), "data");
+				return ChatModes((list.Count > 0) ? list[0] : new Dictionary<string, object>());
+			}
+			catch (ApiException ex)
+			{
+				if (ex.Status == 401 || ex.Status == 403)
+				{
+					throw new ApiException(ex.Status, "para cambiar los modos del chat vuelve a conectar Twitch en la pestaña Título (permiso nuevo)");
+				}
+				throw;
+			}
+		}
+
+		private static Dictionary<string, object> ChatModes(Dictionary<string, object> d)
+		{
+			Dictionary<string, object> r = new Dictionary<string, object>();
+			r["slow"] = (Http.Str(d, "slow_mode").ToLowerInvariant() == "true") ? Http.Int(d, "slow_mode_wait_time", 0) : 0;
+			r["followers"] = Http.Str(d, "follower_mode").ToLowerInvariant() == "true";
+			r["subscribers"] = Http.Str(d, "subscriber_mode").ToLowerInvariant() == "true";
+			r["emotes"] = Http.Str(d, "emote_mode").ToLowerInvariant() == "true";
+			return r;
+		}
+
 		public void SubscribeFollows(string sessionId, string channelLogin)
 		{
 			string broadcasterId = BroadcasterId(channelLogin);

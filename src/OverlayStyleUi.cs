@@ -181,15 +181,9 @@ namespace StreamDelay
 			{
 				tIcon.Checked = ovStyle.Icon;
 			});
-			Toggle tBubbles = new Toggle { Text = "Fondo en los mensajes del chat en pantalla" };
-			Place(right, tBubbles, 18f, 312f, 316f, 28f);
-			tBubbles.CheckedChanged += delegate
+			Box(right, 18f, 312f, 316f, 30f, delegate(Graphics g, Rectangle r)
 			{
-				ovStyle.ChatBubbles = tBubbles.Checked;
-			};
-			refresh.Add(delegate
-			{
-				tBubbles.Checked = ovStyle.ChatBubbles;
+				Theme.DrawWrapped(g, "El chat en pantalla tiene su propio estilo: Overlays → Chat en pantalla → Personalizar chat.", Theme.Body(7.75f), Theme.Violet, r);
 			});
 			Box(right, 18f, 348f, 316f, 40f, delegate(Graphics g, Rectangle r)
 			{

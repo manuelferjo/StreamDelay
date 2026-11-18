@@ -329,6 +329,33 @@ namespace StreamDelay
 			}
 		}
 
+		// Para poder deshacer: id de cada ban que se ha puesto en esta sesión, por canal del usuario.
+		private readonly Dictionary<string, string> banIds = new Dictionary<string, string>();
+
+		public void Unban(string authorChannelId)
+		{
+			string id;
+			lock (banIds)
+			{
+				if (!banIds.TryGetValue(authorChannelId, out id))
+				{
+					throw new ApiException(404, "YouTube solo deja deshacer los bans puestos desde StreamDelay en esta sesión");
+				}
+			}
+			try
+			{
+				Api("DELETE", ApiBase + "/liveChat/bans?id=" + Uri.EscapeDataString(id), null, null);
+				lock (banIds)
+				{
+					banIds.Remove(authorChannelId);
+				}
+			}
+			catch (ApiException ex)
+			{
+				throw ModError(ex);
+			}
+		}
+
 		// seconds = 0: ban permanente.
 		public void Ban(string authorChannelId, int seconds)
 		{
@@ -344,7 +371,14 @@ namespace StreamDelay
 			body.Add("snippet", snippet);
 			try
 			{
-				Api("POST", ApiBase + "/liveChat/bans?part=snippet", null, body);
+				string id = Http.Str(Api("POST", ApiBase + "/liveChat/bans?part=snippet", null, body), "id");
+				if (id.Length > 0)
+				{
+					lock (banIds)
+					{
+						banIds[authorChannelId] = id;
+					}
+				}
 			}
 			catch (ApiException ex)
 			{

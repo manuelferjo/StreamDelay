@@ -284,3 +284,39 @@
   log: Chat de TikTok: error: la clave de Euler Stream no es válida.
   item {amount=null color=null data=[[twitch, error: canal suspendido o inexistente], [kick, conectado], [youtube, error: x], [tiktok, error: la clave de Euler Stream no es válida], [follows, Twitch retiró el permiso de follows: vuelve a conectar Twitch], [streamelements, token incorrecto o caducado], [streamlabs, token incorrecto]] id=null kind=null p=null parts=null roles=null t="status" text=null uid=null user=null}
   espera 0
+== AutoModRules
+  apagada → null act=-1
+  palabra → "palabra prohibida" act=1
+  dentro de otra → null act=-1
+  comodín → "palabra prohibida" act=1
+  frase → "palabra prohibida" act=1
+  mod → null act=-1
+  streamer → null act=-1
+  sub (exento) → null act=-1
+  sub (no exento) → "palabra prohibida" act=1
+  enlace → "enlace" act=1
+  dominio → "enlace" act=1
+  sin enlace → null act=-1
+  mayúsculas → "mayúsculas" act=1
+  pocas letras → null act=-1
+  emotes → "demasiados emotes" act=1
+  repetido 1 → null act=-1
+  repetido 2 → null act=-1
+  repetido 3 → "mensaje repetido" act=1
+  bot → "usuario oculto" act=-1
+  ignorado → "usuario oculto" act=-1
+  ignorado (apagada) → "usuario oculto" act=-1
+  Fold "aeiou nandu u"
+== ChatStyle
+  defecto {"font":"Sistema","size":15,"tx":"#F4F4F5","names":"user","name":"#C09AFD","acc":"#C09AFD","bg":"none","bgc":"#111116","op":85,"corners":"round","fx":"shadow","icons":true,"badges":true,"events":true,"nocmd":false,"fade":30,"anim":"slide","align":"left","panel":false}
+  0 {"font":"Sistema","size":15,"tx":"#F4F4F5","names":"user","name":"#C09AFD","acc":"#C09AFD","bg":"none","bgc":"#111116","op":85,"corners":"round","fx":"shadow","icons":true,"badges":true,"events":true,"nocmd":false,"fade":30,"anim":"slide","align":"left","panel":false}
+  1 {"font":"Plus Jakarta Sans","size":16,"tx":"#F4F4F5","names":"user","name":"#C09AFD","acc":"#C09AFD","bg":"bubbles","bgc":"#111116","op":85,"corners":"round","fx":"none","icons":true,"badges":true,"events":true,"nocmd":false,"fade":30,"anim":"slide","align":"left","panel":false}
+  2 {"font":"Inter","size":15,"tx":"#F4F4F5","names":"user","name":"#C09AFD","acc":"#C09AFD","bg":"panel","bgc":"#0B0B10","op":70,"corners":"round","fx":"none","icons":true,"badges":true,"events":true,"nocmd":false,"fade":30,"anim":"slide","align":"left","panel":false}
+  3 {"font":"Rubik","size":24,"tx":"#F4F4F5","names":"user","name":"#C09AFD","acc":"#C09AFD","bg":"none","bgc":"#111116","op":85,"corners":"round","fx":"outline","icons":true,"badges":true,"events":true,"nocmd":false,"fade":30,"anim":"slide","align":"left","panel":false}
+  4 {"font":"Montserrat","size":16,"tx":"#18181B","names":"user","name":"#C09AFD","acc":"#7C3AED","bg":"bubbles","bgc":"#FFFFFF","op":92,"corners":"round","fx":"none","icons":true,"badges":true,"events":true,"nocmd":false,"fade":30,"anim":"slide","align":"left","panel":false}
+  5 {"font":"Orbitron","size":15,"tx":"#E0FFFF","names":"fixed","name":"#00F0FF","acc":"#FF00E5","bg":"bubbles","bgc":"#05050A","op":80,"corners":"pill","fx":"none","icons":true,"badges":true,"events":true,"nocmd":false,"fade":30,"anim":"slide","align":"left","panel":false}
+  6 {"font":"Inter","size":16,"tx":"#F4F4F5","names":"user","name":"#C09AFD","acc":"#C09AFD","bg":"none","bgc":"#111116","op":85,"corners":"round","fx":"shadow","icons":false,"badges":false,"events":true,"nocmd":false,"fade":30,"anim":"fade","align":"left","panel":false}
+  7 {"font":"Press Start 2P","size":13,"tx":"#39FF14","names":"fixed","name":"#FFFFFF","acc":"#39FF14","bg":"bubbles","bgc":"#000000","op":85,"corners":"rect","fx":"none","icons":true,"badges":true,"events":true,"nocmd":false,"fade":30,"anim":"none","align":"left","panel":false}
+  valores raros {"font":"Sistema","size":48,"tx":"#F4F4F5","names":"user","name":"#C09AFD","acc":"#C09AFD","bg":"none","bgc":"#111116","op":0,"corners":"round","fx":"shadow","icons":true,"badges":true,"events":true,"nocmd":false,"fade":600,"anim":"slide","align":"left","panel":true}
+  no base64 {"font":"Sistema","size":15,"tx":"#F4F4F5","names":"user","name":"#C09AFD","acc":"#C09AFD","bg":"none","bgc":"#111116","op":85,"corners":"round","fx":"shadow","icons":true,"badges":true,"events":true,"nocmd":false,"fade":30,"anim":"slide","align":"left","panel":false}
+  ida y vuelta True

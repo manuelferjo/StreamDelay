@@ -114,6 +114,17 @@ namespace StreamDelay
 					CopyText(chatServer.Url, btnChatDock, "URL para OBS");
 				}
 			};
+			VButton btnMod = new VButton
+			{
+				Kind = ButtonKind.Ghost,
+				Text = "Moderación",
+				FontSize = 9f
+			};
+			Place(this, btnMod, 304f, buttonsTop, 136f, 36f, PageChat);
+			btnMod.Click += delegate
+			{
+				AutoModDialog();
+			};
 			btnChatAlerts = new VButton
 			{
 				Kind = ButtonKind.Ghost,
@@ -428,6 +439,11 @@ namespace StreamDelay
 			// Cada mensaje va a la página del chat y a los comandos (!delay…).
 			chatHub.Item = delegate(ChatItem it)
 			{
+				// Moderación automática: lo filtrado no llega ni a la página ni a los comandos.
+				if (!AutoModAllows(it))
+				{
+					return;
+				}
 				chatServer.Send(it);
 				OnChatItem(it);
 			};
@@ -820,6 +836,8 @@ namespace StreamDelay
 			tgChat.Checked = chatAutoStart;
 			LoadExtrasConfig(raw);
 			LoadCmdConfig(raw);
+			LoadAutoModConfig(raw);
+			LoadChatStyleConfig(raw);
 			LoadRemoteConfig(raw);
 			LoadUpdateConfig(raw);
 		}
@@ -838,6 +856,8 @@ namespace StreamDelay
 				lines.Add("chat_sl=" + Secret.Protect(slToken));
 				SaveExtrasConfig(lines);
 				SaveCmdConfig(lines);
+				SaveAutoModConfig(lines);
+				SaveChatStyleConfig(lines);
 				SaveRemoteConfig(lines);
 				SaveUpdateConfig(lines);
 			}

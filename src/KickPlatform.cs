@@ -391,6 +391,25 @@ namespace StreamDelay
 			}
 		}
 
+		// Quita un ban o una expulsión temporal.
+		public void Unban(string slug, string targetUserId)
+		{
+			long b = ChannelUserId(slug);
+			long uid;
+			long.TryParse(targetUserId, out uid);
+			Dictionary<string, object> body = new Dictionary<string, object>();
+			body.Add("broadcaster_user_id", b);
+			body.Add("user_id", uid);
+			try
+			{
+				Api("DELETE", ApiBase + "/v1/moderation/bans", null, body);
+			}
+			catch (ApiException ex)
+			{
+				throw ModError(ex);
+			}
+		}
+
 		// seconds = 0: ban permanente. Kick cuenta las expulsiones en minutos (de 1 a 10080).
 		public void Ban(string slug, string targetUserId, int seconds, string reason)
 		{
