@@ -25,8 +25,11 @@ Novedades de la 4.0
   enseñan qué incluyen y cómo activarlas. Si la licencia se acaba en
   pleno directo, no se corta nada: el cambio espera al final.
 - Las suscripciones se comprueban por internet al abrir y cada 6 horas;
-  sin internet siguen valiendo 7 días. Las claves de regalo (SD1-...)
-  no necesitan internet.
+  sin internet siguen valiendo 7 días.
+- Cada licencia vale en un solo PC: al activarla queda guardada y atada
+  a ese equipo (también si reinstalas). Para cambiar de PC, "Quitar
+  clave" en el viejo y pégala en el nuevo. Los regalos son códigos de un
+  solo uso que se canjean gratis en la página de pago.
 - ¿Vienes de la 3.x? Tus ajustes se conservan y la prueba de 3 días
   empieza al abrir la 4.0.
 

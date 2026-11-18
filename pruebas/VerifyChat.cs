@@ -299,6 +299,8 @@ static class VerifyChat
         chk("un carácter cambiado", kFull.Substring(0, 30) + (kFull[30] == 'A' ? 'B' : 'A') + kFull.Substring(31), enero);
         chk("nombre cambiado", "SD1-AQIAH88iu8BDYW5jbyBkZSBwcnVlYmFz" + kFull.Substring(40), enero);
         chk("cortada", kFull.Substring(0, 120), enero);
+        // Primera clave de regalo (anulada el 18/11/2026: los regalos son ahora códigos de Polar de un solo uso).
+        chk("regalo anulada", "SD1-AQIAAPPQ9Y9SZWdhbG8gZGUgVm9ydGV4cyAwMdJT31DIkLUCytW8qqgdj5oNS046S8_QdkcFvY4Nm3O_0je03xskzgFm2pjbf2sTm3srjK83Z7_g8dlgVQ8sPv44qHA3aJS1edXg9_XNF20Ox962BF51UVjh1cZ_LqKWVxRwHBFitvHvMqU8wnFMaDNQu_Y9Wk_jBoJxUUwo3ASd", marzo);
         chk("otra cosa", "POLAR-1234-5678", enero);
         chk("vacía", "", enero);
         Out.AppendLine("  IsSigned " + Call(lic, "IsSigned", kFull) + " " + Call(lic, "IsSigned", "ABCD") + " " + Call(lic, "IsSigned", (object)null));
@@ -312,6 +314,7 @@ static class VerifyChat
         const string bB = "fbce853e-32ae-4d4e-acce-558838710977", bC = "3346c6b5-e14c-4fd1-8412-7b47ff344101";
         Out.AppendLine("  polar completo sin activar " + Dump(Call(lic, "FromPolar", pj("{\"benefit_id\":\"" + bC + "\",\"status\":\"granted\",\"limit_activations\":2,\"activation\":null,\"expires_at\":null,\"customer\":{\"email\":\"a@b.c\"}}"), enero)));
         Out.AppendLine("  polar básico activado " + Dump(Call(lic, "FromPolar", pj("{\"benefit_id\":\"" + bB + "\",\"status\":\"granted\",\"limit_activations\":2,\"activation\":{\"id\":\"x\"},\"customer\":{}}"), enero)));
+        Out.AppendLine("  polar regalo " + Dump(Call(lic, "FromPolar", pj("{\"benefit_id\":\"b96352a3-f89d-43a9-b129-3708a34e538a\",\"status\":\"granted\",\"limit_activations\":1,\"activation\":{\"id\":\"x\"},\"expires_at\":null,\"customer\":{\"email\":\"amigo@ejemplo.com\"}}"), enero)));
         Out.AppendLine("  polar revocada " + Dump(Call(lic, "FromPolar", pj("{\"benefit_id\":\"" + bC + "\",\"status\":\"revoked\"}"), enero)));
         Out.AppendLine("  polar caducada " + Dump(Call(lic, "FromPolar", pj("{\"benefit_id\":\"" + bB + "\",\"status\":\"granted\",\"expires_at\":\"2026-01-10T00:00:00Z\"}"), enero)));
         Out.AppendLine("  polar null " + Dump(Call(lic, "FromPolar", null, enero)));
