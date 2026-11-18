@@ -17,7 +17,7 @@ OBS envía el directo a StreamDelay, que lo retrasa los segundos que elijas y lo
 - **Delay dinámico**: elige los segundos y cámbialos en directo. Al subirlo se repiten los últimos segundos emitidos; al bajarlo, el stream salta hacia delante. Atajos de teclado globales.
 - **Multistream**: Twitch, Kick, YouTube y otro destino a la vez, con el mismo delay. OBS codifica una sola vez.
 - **Varias calidades en Twitch** (Transmisión mejorada de OBS).
-- **Chat conjunto** de Twitch, Kick y YouTube con emotes de 7TV, BetterTTV y FrankerFaceZ, avisos de subs, regalos, raids, bits, Super Chats, follows y donaciones (StreamElements y Streamlabs), espectadores de cada plataforma, escribir en todos los chats a la vez y moderar.
+- **Chat conjunto** de Twitch, Kick, YouTube y TikTok (TikTok con una clave gratuita de [Euler Stream](https://www.eulerstream.com)) con emotes de 7TV, BetterTTV y FrankerFaceZ, avisos de subs, regalos, raids, bits, Super Chats, follows y donaciones (StreamElements y Streamlabs), espectadores de cada plataforma, escribir en todos los chats a la vez y moderar.
 - **Mando** desde el móvil, el Stream Deck o un panel de OBS.
 - **Overlays** para OBS: delay, espectadores y chat en pantalla.
 - **Título y categoría** en Twitch, Kick y YouTube a la vez.

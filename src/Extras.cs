@@ -105,7 +105,7 @@ namespace StreamDelay
 
 		// ---------- Overlay de espectadores ----------
 
-		private readonly bool[] vwShow = new bool[4] { true, true, true, true };  // Twitch, Kick, YouTube, Total
+		private readonly bool[] vwShow = new bool[5] { true, true, true, true, true };  // Twitch, Kick, YouTube, Total, TikTok
 
 		private string ViewersStateJson()
 		{
@@ -113,9 +113,10 @@ namespace StreamDelay
 			int tw = (h != null && h.Running) ? h.TwitchViewers : -1;
 			int kc = (h != null && h.Running) ? h.KickViewers : -1;
 			int yt = (h != null && h.Running) ? h.YouTubeViewers : -1;
+			int tk = (h != null && h.Running) ? h.TikTokViewers : -1;
 			return "{\"chat\":" + ((h != null && h.Running) ? "true" : "false") +
-				",\"show\":{\"twitch\":" + B(vwShow[0]) + ",\"kick\":" + B(vwShow[1]) + ",\"youtube\":" + B(vwShow[2]) + ",\"total\":" + B(vwShow[3]) + "}" +
-				",\"v\":{\"twitch\":" + tw + ",\"kick\":" + kc + ",\"youtube\":" + yt + "}" +
+				",\"show\":{\"twitch\":" + B(vwShow[0]) + ",\"kick\":" + B(vwShow[1]) + ",\"youtube\":" + B(vwShow[2]) + ",\"tiktok\":" + B(vwShow[4]) + ",\"total\":" + B(vwShow[3]) + "}" +
+				",\"v\":{\"twitch\":" + tw + ",\"kick\":" + kc + ",\"youtube\":" + yt + ",\"tiktok\":" + tk + "}" +
 				",\"pos\":\"" + vwPos + "\",\"vertical\":" + B(vwVertical) +
 				",\"k\":" + vwScale.ToString(System.Globalization.CultureInfo.InvariantCulture) +
 				",\"dk\":" + ovDelayScale.ToString(System.Globalization.CultureInfo.InvariantCulture) + "}";
@@ -222,12 +223,14 @@ namespace StreamDelay
 			c2.Subtitle = "De cada plataforma y el total. Necesita el chat activado.";
 			Place(this, c2, 20f, y2, 420f, 222f, 5);
 			Label(c2, "QUÉ MOSTRAR (NINGUNO = NO SE VE NADA)", 20f, 54f, 380f);
-			string[] vnames = new string[4] { "Twitch", "Kick", "YouTube", "Total" };
-			for (int i = 0; i < 4; i++)
+			// Orden en pantalla; el número es la posición en vwShow (TikTok se añadió al final).
+			string[] vnames = new string[5] { "Twitch", "Kick", "YouTube", "TikTok", "Total" };
+			int[] vidx = new int[5] { 0, 1, 2, 4, 3 };
+			for (int i = 0; i < 5; i++)
 			{
-				int idx = i;
-				VButton p = new VButton { Kind = ButtonKind.Pill, Text = vnames[i], Selected = vwShow[i], FontSize = 7.5f };
-				Place(c2, p, 20f + (float)i * 96f, 72f, 90f, 26f);
+				int idx = vidx[i];
+				VButton p = new VButton { Kind = ButtonKind.Pill, Text = vnames[i], Selected = vwShow[idx], FontSize = 7.5f };
+				Place(c2, p, 20f + (float)i * 77f, 72f, 72f, 26f);
 				p.Click += delegate
 				{
 					vwShow[idx] = !vwShow[idx];
@@ -250,7 +253,7 @@ namespace StreamDelay
 			int y3 = y2 + 230;
 			Card c3 = new Card();
 			c3.Title = "Chat en pantalla";
-			c3.Subtitle = "Twitch, Kick y YouTube juntos; cada mensaje dura 30 s.";
+			c3.Subtitle = "Twitch, Kick, YouTube y TikTok juntos; cada mensaje dura 30 s.";
 			Place(this, c3, 20f, y3, 420f, 100f, 5);
 			UrlButtons(c3, "?overlay=1&desvanecer=30", "chat", 56f);
 			StyleLink(c3);
@@ -365,7 +368,8 @@ namespace StreamDelay
 			if (raw.TryGetValue("ann_to", out v) && v.Length == 3) for (int i = 0; i < 3; i++) annTo[i] = v[i] == '1';
 			if (raw.TryGetValue("ann_msg_on", out v) && v.Length > 0) annOnMsg = Unb64(v, annOnMsg);
 			if (raw.TryGetValue("ann_msg_off", out v) && v.Length > 0) annOffMsg = Unb64(v, annOffMsg);
-			if (raw.TryGetValue("vw_show", out v) && v.Length == 4) for (int i = 0; i < 4; i++) vwShow[i] = v[i] == '1';
+			// 4 letras: versiones sin TikTok (TikTok se queda visible); 5: con TikTok.
+			if (raw.TryGetValue("vw_show", out v) && (v.Length == 4 || v.Length == 5)) for (int i = 0; i < v.Length; i++) vwShow[i] = v[i] == '1';
 			if (raw.TryGetValue("ov_delay_hide", out v)) ovDelayHideOff = v == "1";
 			if (raw.TryGetValue("ov_style", out v) && v.Length > 0) ovStyle = OverlayStyle.Load(v);
 			float f;
@@ -382,7 +386,7 @@ namespace StreamDelay
 			lines.Add("ann_to=" + (annTo[0] ? "1" : "0") + (annTo[1] ? "1" : "0") + (annTo[2] ? "1" : "0"));
 			lines.Add("ann_msg_on=" + Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(annOnMsg)));
 			lines.Add("ann_msg_off=" + Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(annOffMsg)));
-			lines.Add("vw_show=" + (vwShow[0] ? "1" : "0") + (vwShow[1] ? "1" : "0") + (vwShow[2] ? "1" : "0") + (vwShow[3] ? "1" : "0"));
+			lines.Add("vw_show=" + (vwShow[0] ? "1" : "0") + (vwShow[1] ? "1" : "0") + (vwShow[2] ? "1" : "0") + (vwShow[3] ? "1" : "0") + (vwShow[4] ? "1" : "0"));
 			lines.Add("ov_delay_hide=" + (ovDelayHideOff ? "1" : "0"));
 			lines.Add("ov_style=" + ovStyle.Save());
 			lines.Add("ov_delay_k=" + ovDelayScale.ToString(System.Globalization.CultureInfo.InvariantCulture));

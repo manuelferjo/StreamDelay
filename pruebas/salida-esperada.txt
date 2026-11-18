@@ -16,17 +16,17 @@
   ""
   ""
   log: Chat de Twitch: conectado.
-  item {amount=null color=null data=[[twitch, conectado], [kick, ], [youtube, ], [follows, ], [streamelements, ], [streamlabs, ]] id=null kind=null p=null parts=null roles=null t="status" text=null uid=null user=null}
+  item {amount=null color=null data=[[twitch, conectado], [kick, ], [youtube, ], [tiktok, ], [follows, ], [streamelements, ], [streamlabs, ]] id=null kind=null p=null parts=null roles=null t="status" text=null uid=null user=null}
   log: Chat de Kick: sin directo.
-  item {amount=null color=null data=[[twitch, conectado], [kick, sin directo], [youtube, ], [follows, ], [streamelements, ], [streamlabs, ]] id=null kind=null p=null parts=null roles=null t="status" text=null uid=null user=null}
+  item {amount=null color=null data=[[twitch, conectado], [kick, sin directo], [youtube, ], [tiktok, ], [follows, ], [streamelements, ], [streamlabs, ]] id=null kind=null p=null parts=null roles=null t="status" text=null uid=null user=null}
   log: Chat de YouTube: error: x.
-  item {amount=null color=null data=[[twitch, conectado], [kick, sin directo], [youtube, error: x], [follows, ], [streamelements, ], [streamlabs, ]] id=null kind=null p=null parts=null roles=null t="status" text=null uid=null user=null}
+  item {amount=null color=null data=[[twitch, conectado], [kick, sin directo], [youtube, error: x], [tiktok, ], [follows, ], [streamelements, ], [streamlabs, ]] id=null kind=null p=null parts=null roles=null t="status" text=null uid=null user=null}
   log: Follows de Twitch: activo.
-  item {amount=null color=null data=[[twitch, conectado], [kick, sin directo], [youtube, error: x], [follows, activo], [streamelements, ], [streamlabs, ]] id=null kind=null p=null parts=null roles=null t="status" text=null uid=null user=null}
+  item {amount=null color=null data=[[twitch, conectado], [kick, sin directo], [youtube, error: x], [tiktok, ], [follows, activo], [streamelements, ], [streamlabs, ]] id=null kind=null p=null parts=null roles=null t="status" text=null uid=null user=null}
   log: Streamlabs: token incorrecto.
-  item {amount=null color=null data=[[twitch, conectado], [kick, sin directo], [youtube, error: x], [follows, activo], [streamelements, ], [streamlabs, token incorrecto]] id=null kind=null p=null parts=null roles=null t="status" text=null uid=null user=null}
+  item {amount=null color=null data=[[twitch, conectado], [kick, sin directo], [youtube, error: x], [tiktok, ], [follows, activo], [streamelements, ], [streamlabs, token incorrecto]] id=null kind=null p=null parts=null roles=null t="status" text=null uid=null user=null}
   log: StreamElements: conectado.
-  item {amount=null color=null data=[[twitch, conectado], [kick, sin directo], [youtube, error: x], [follows, activo], [streamelements, conectado], [streamlabs, token incorrecto]] id=null kind=null p=null parts=null roles=null t="status" text=null uid=null user=null}
+  item {amount=null color=null data=[[twitch, conectado], [kick, sin directo], [youtube, error: x], [tiktok, ], [follows, activo], [streamelements, conectado], [streamlabs, token incorrecto]] id=null kind=null p=null parts=null roles=null t="status" text=null uid=null user=null}
   TwitchFollowsActive=True
 == TwitchChat
   Unescape "hola que;tal\"
@@ -81,7 +81,7 @@
  > :tmi.twitch.tv CLEARCHAT #canal
  > @msg-id=msg_channel_suspended :tmi.twitch.tv NOTICE #canal :
   log: Chat de Twitch: error: canal suspendido o inexistente.
-  item {amount=null color=null data=[[twitch, error: canal suspendido o inexistente], [kick, sin directo], [youtube, error: x], [follows, ], [streamelements, conectado], [streamlabs, token incorrecto]] id=null kind=null p=null parts=null roles=null t="status" text=null uid=null user=null}
+  item {amount=null color=null data=[[twitch, error: canal suspendido o inexistente], [kick, sin directo], [youtube, error: x], [tiktok, ], [follows, ], [streamelements, conectado], [streamlabs, token incorrecto]] id=null kind=null p=null parts=null roles=null t="status" text=null uid=null user=null}
  > @msg-id=otro :tmi.twitch.tv NOTICE #canal :otro aviso
   EXCEPCIÓN Handle: IOException: Twitch pidió reconectar
 == KickChat
@@ -111,10 +111,10 @@
  > {"event":"App\\Events\\GiftOtro","data":{"sender":{"username
  > {"event":"pusher:error","data":{"message":"fallo"}}
   log: Chat de Kick: error: fallo.
-  item {amount=null color=null data=[[twitch, error: canal suspendido o inexistente], [kick, error: fallo], [youtube, error: x], [follows, ], [streamelements, conectado], [streamlabs, token incorrecto]] id=null kind=null p=null parts=null roles=null t="status" text=null uid=null user=null}
+  item {amount=null color=null data=[[twitch, error: canal suspendido o inexistente], [kick, error: fallo], [youtube, error: x], [tiktok, ], [follows, ], [streamelements, conectado], [streamlabs, token incorrecto]] id=null kind=null p=null parts=null roles=null t="status" text=null uid=null user=null}
  > {"event":"pusher_internal:subscription_succeeded","data":{}}
   log: Chat de Kick: conectado.
-  item {amount=null color=null data=[[twitch, error: canal suspendido o inexistente], [kick, conectado], [youtube, error: x], [follows, ], [streamelements, conectado], [streamlabs, token incorrecto]] id=null kind=null p=null parts=null roles=null t="status" text=null uid=null user=null}
+  item {amount=null color=null data=[[twitch, error: canal suspendido o inexistente], [kick, conectado], [youtube, error: x], [tiktok, ], [follows, ], [streamelements, conectado], [streamlabs, token incorrecto]] id=null kind=null p=null parts=null roles=null t="status" text=null uid=null user=null}
  > {"event":"desconocido","data":{}}
  > no es json
 == YouTubeChat
@@ -213,21 +213,74 @@
   item {amount=null color=null data=null id=null kind="follow" p="twitch" parts=null roles=null t="ev" text="Nuevo_Seguidor te sigue" uid="123" user="Nuevo_Seguidor"}
   item {amount=null color=null data=null id=null kind="follow" p="twitch" parts=null roles=null t="ev" text="solo_login te sigue" uid="124" user="solo_login"}
   log: Follows de Twitch: Twitch retiró el permiso de follows: vuelve a conectar Twitch.
-  item {amount=null color=null data=[[twitch, error: canal suspendido o inexistente], [kick, conectado], [youtube, error: x], [follows, Twitch retiró el permiso de follows: vuelve a conectar Twitch], [streamelements, conectado], [streamlabs, token incorrecto]] id=null kind=null p=null parts=null roles=null t="status" text=null uid=null user=null}
+  item {amount=null color=null data=[[twitch, error: canal suspendido o inexistente], [kick, conectado], [youtube, error: x], [tiktok, ], [follows, Twitch retiró el permiso de follows: vuelve a conectar Twitch], [streamelements, conectado], [streamlabs, token incorrecto]] id=null kind=null p=null parts=null roles=null t="status" text=null uid=null user=null}
   item {amount="5,00 €" color=null data=null id=null kind="tip" p="tip" parts=[{e=null n=null x="Ánimo "}, {e="https://cdn.7tv.app/emote/K/2x.webp" n="KEKW" x=null}] roles=null t="ev" text="Donante ha donado 5,00 €" uid=null user="Donante"}
   item {amount="7,50 $" color=null data=null id=null kind="tip" p="tip" parts=null roles=null t="ev" text="Anónimo ha donado 7,50 $" uid=null user="Anónimo"}
   item {amount=null color=null data=null id=null kind="follow" p="twitch" parts=null roles=null t="ev" text="fan2 te sigue" uid=null user="fan2"}
   log: StreamElements: error: err_bad_request.
-  item {amount=null color=null data=[[twitch, error: canal suspendido o inexistente], [kick, conectado], [youtube, error: x], [follows, Twitch retiró el permiso de follows: vuelve a conectar Twitch], [streamelements, error: err_bad_request], [streamlabs, token incorrecto]] id=null kind=null p=null parts=null roles=null t="status" text=null uid=null user=null}
+  item {amount=null color=null data=[[twitch, error: canal suspendido o inexistente], [kick, conectado], [youtube, error: x], [tiktok, ], [follows, Twitch retiró el permiso de follows: vuelve a conectar Twitch], [streamelements, error: err_bad_request], [streamlabs, token incorrecto]] id=null kind=null p=null parts=null roles=null t="status" text=null uid=null user=null}
   log: StreamElements: conectado.
-  item {amount=null color=null data=[[twitch, error: canal suspendido o inexistente], [kick, conectado], [youtube, error: x], [follows, Twitch retiró el permiso de follows: vuelve a conectar Twitch], [streamelements, conectado], [streamlabs, token incorrecto]] id=null kind=null p=null parts=null roles=null t="status" text=null uid=null user=null}
+  item {amount=null color=null data=[[twitch, error: canal suspendido o inexistente], [kick, conectado], [youtube, error: x], [tiktok, ], [follows, Twitch retiró el permiso de follows: vuelve a conectar Twitch], [streamelements, conectado], [streamlabs, token incorrecto]] id=null kind=null p=null parts=null roles=null t="status" text=null uid=null user=null}
   log: StreamElements: token incorrecto o caducado.
-  item {amount=null color=null data=[[twitch, error: canal suspendido o inexistente], [kick, conectado], [youtube, error: x], [follows, Twitch retiró el permiso de follows: vuelve a conectar Twitch], [streamelements, token incorrecto o caducado], [streamlabs, token incorrecto]] id=null kind=null p=null parts=null roles=null t="status" text=null uid=null user=null}
+  item {amount=null color=null data=[[twitch, error: canal suspendido o inexistente], [kick, conectado], [youtube, error: x], [tiktok, ], [follows, Twitch retiró el permiso de follows: vuelve a conectar Twitch], [streamelements, token incorrecto o caducado], [streamlabs, token incorrecto]] id=null kind=null p=null parts=null roles=null t="status" text=null uid=null user=null}
   log: Streamlabs: conectado.
-  item {amount=null color=null data=[[twitch, error: canal suspendido o inexistente], [kick, conectado], [youtube, error: x], [follows, Twitch retiró el permiso de follows: vuelve a conectar Twitch], [streamelements, token incorrecto o caducado], [streamlabs, conectado]] id=null kind=null p=null parts=null roles=null t="status" text=null uid=null user=null}
+  item {amount=null color=null data=[[twitch, error: canal suspendido o inexistente], [kick, conectado], [youtube, error: x], [tiktok, ], [follows, Twitch retiró el permiso de follows: vuelve a conectar Twitch], [streamelements, token incorrecto o caducado], [streamlabs, conectado]] id=null kind=null p=null parts=null roles=null t="status" text=null uid=null user=null}
   item {amount="12,50 €" color=null data=null id=null kind="tip" p="tip" parts=[{e=null n=null x="Para un café "}, {e="https://cdn.betterttv.net/emote/P/2x" n="Pog" x=null}] roles=null t="ev" text="Pablo ha donado 12,50 €" uid=null user="Pablo"}
   item {amount="3,00 $" color=null data=null id=null kind="tip" p="tip" parts=null roles=null t="ev" text="Anónimo ha donado 3,00 $" uid=null user="Anónimo"}
   item {amount=null color=null data=null id=null kind="follow" p="twitch" parts=null roles=null t="ev" text="segui te sigue" uid=null user="segui"}
   log: Streamlabs: token incorrecto.
-  item {amount=null color=null data=[[twitch, error: canal suspendido o inexistente], [kick, conectado], [youtube, error: x], [follows, Twitch retiró el permiso de follows: vuelve a conectar Twitch], [streamelements, token incorrecto o caducado], [streamlabs, token incorrecto]] id=null kind=null p=null parts=null roles=null t="status" text=null uid=null user=null}
+  item {amount=null color=null data=[[twitch, error: canal suspendido o inexistente], [kick, conectado], [youtube, error: x], [tiktok, ], [follows, Twitch retiró el permiso de follows: vuelve a conectar Twitch], [streamelements, token incorrecto o caducado], [streamlabs, token incorrecto]] id=null kind=null p=null parts=null roles=null t="status" text=null uid=null user=null}
   PingMs=25000
+== TikTokChat
+ > {"type":"tiktok.connect","data":{"agentId":"a1"}}
+  log: Chat de TikTok: conectado.
+  item {amount=null color=null data=[[twitch, error: canal suspendido o inexistente], [kick, conectado], [youtube, error: x], [tiktok, conectado], [follows, Twitch retiró el permiso de follows: vuelve a conectar Twitch], [streamelements, token incorrecto o caducado], [streamlabs, token incorrecto]] id=null kind=null p=null parts=null roles=null t="status" text=null uid=null user=null}
+ > {"timestamp":1,"messages":[{"type":"WebcastChatMessage","dat
+  item {amount=null color=null data=null id="7300000000000000001" kind=null p="tiktok" parts=[{e=null n=null x="hola "}, {e="https://p16.tiktokcdn.com/e1.webp" n="emote" x=null}, {e="https://cdn.7tv.app/emote/K/2x.webp" n="KEKW" x=null}, {e=null n=null x=" qué tal"}] roles=["mod", "sub"] t="msg" text=null uid="6800000000000000001" user="Laura 🌸"}
+  item {amount=null color=null data=null id="7300000000000000002" kind=null p="tiktok" parts=[{e=null n=null x="emote al final"}, {e="https://p16.tiktokcdn.com/e2.webp" n="emote" x=null}] roles=["broadcaster"] t="msg" text=null uid="6800000000000000002" user="solo_id"}
+ > {"messages":[{"type":"WebcastGiftMessage","data":{"user":{"n
+  item {amount="💎 5" color=null data=null id=null kind="tiktokgift" p="tiktok" parts=null roles=null t="ev" text="Racha ha enviado 5 × Rosa" uid=null user="Racha"}
+  item {amount="💎 29.999" color=null data=null id=null kind="tiktokgift" p="tiktok" parts=null roles=null t="ev" text="Ballena ha enviado León" uid=null user="Ballena"}
+  item {amount=null color=null data=null id=null kind="tiktokgift" p="tiktok" parts=null roles=null t="ev" text="Alguien ha enviado un regalo" uid=null user="Alguien"}
+ > {"messages":[{"type":"WebcastSubNotifyMessage","data":{"user
+  item {amount=null color=null data=null id=null kind="sub" p="tiktok" parts=null roles=null t="ev" text="Fiel lleva 3 meses suscrito" uid=null user="Fiel"}
+  item {amount=null color=null data=null id=null kind="sub" p="tiktok" parts=null roles=null t="ev" text="nuevo_sub se ha suscrito" uid=null user="nuevo_sub"}
+ > {"messages":[{"type":"WebcastSocialMessage","data":{"common"
+  item {amount=null color=null data=null id=null kind="follow" p="tiktok" parts=null roles=null t="ev" text="Seguidora te sigue" uid=null user="Seguidora"}
+ > {"messages":[{"type":"WebcastLikeMessage","data":{"count":15
+ > {"messages":[{"type":"WebcastRoomUserSeqMessage","data":{"to
+ > {"messages":[{"type":"WebcastEmoteChatMessage","data":{"comm
+  item {amount=null color=null data=null id="7300000000000000003" kind=null p="tiktok" parts=[{e="https://p16.tiktokcdn.com/s1.webp" n="emote" x=null}] roles=[] t="msg" text=null uid="9" user="Sticker"}
+ > {"messages":[{"type":"WebcastImDeleteMessage","data":{"delet
+  item {amount=null color=null data=null id="7300000000000000001" kind=null p="tiktok" parts=null roles=null t="del" text=null uid=null user=null}
+  item {amount=null color=null data=null id=null kind=null p="tiktok" parts=null roles=null t="del" text=null uid="6800000000000000002" user=null}
+ > {"type":"WebcastChatMessage","data":{"user":{"nickname":"Sue
+  item {amount=null color=null data=null id="" kind=null p="tiktok" parts=[{e=null n=null x="sin paquete "}, {e="https://cdn.betterttv.net/emote/P/2x" n="Pog" x=null}] roles=[] t="msg" text=null uid="" user="Suelto"}
+ > {"messages":[{"type":"WebcastChatMessage","data":{"user":{"n
+ > {"messages":[{"type":"WebcastControlMessage","data":{"action
+  log: Chat de TikTok: sin directo.
+  item {amount=null color=null data=[[twitch, error: canal suspendido o inexistente], [kick, conectado], [youtube, error: x], [tiktok, sin directo], [follows, Twitch retiró el permiso de follows: vuelve a conectar Twitch], [streamelements, token incorrecto o caducado], [streamlabs, token incorrecto]] id=null kind=null p=null parts=null roles=null t="status" text=null uid=null user=null}
+ > {"type":"room.status","data":{"state":"connected"}}
+  log: Chat de TikTok: conectado.
+  item {amount=null color=null data=[[twitch, error: canal suspendido o inexistente], [kick, conectado], [youtube, error: x], [tiktok, conectado], [follows, Twitch retiró el permiso de follows: vuelve a conectar Twitch], [streamelements, token incorrecto o caducado], [streamlabs, token incorrecto]] id=null kind=null p=null parts=null roles=null t="status" text=null uid=null user=null}
+ > {"type":"workerInfo","data":{}}
+ > no es json
+  TikTokViewers=-2
+ > cierre 4404
+  log: Chat de TikTok: sin directo.
+  item {amount=null color=null data=[[twitch, error: canal suspendido o inexistente], [kick, conectado], [youtube, error: x], [tiktok, sin directo], [follows, Twitch retiró el permiso de follows: vuelve a conectar Twitch], [streamelements, token incorrecto o caducado], [streamlabs, token incorrecto]] id=null kind=null p=null parts=null roles=null t="status" text=null uid=null user=null}
+  espera 120000
+ > cierre 4005
+  espera 120000
+ > cierre 4555
+  espera 1000
+ > cierre 4429
+  log: Chat de TikTok: error: demasiadas conexiones con esta clave de Euler Stream.
+  item {amount=null color=null data=[[twitch, error: canal suspendido o inexistente], [kick, conectado], [youtube, error: x], [tiktok, error: demasiadas conexiones con esta clave de Euler Stream], [follows, Twitch retiró el permiso de follows: vuelve a conectar Twitch], [streamelements, token incorrecto o caducado], [streamlabs, token incorrecto]] id=null kind=null p=null parts=null roles=null t="status" text=null uid=null user=null}
+  espera 60000
+ > cierre 1000
+  espera 0
+ > cierre 4401
+  log: Chat de TikTok: error: la clave de Euler Stream no es válida.
+  item {amount=null color=null data=[[twitch, error: canal suspendido o inexistente], [kick, conectado], [youtube, error: x], [tiktok, error: la clave de Euler Stream no es válida], [follows, Twitch retiró el permiso de follows: vuelve a conectar Twitch], [streamelements, token incorrecto o caducado], [streamlabs, token incorrecto]] id=null kind=null p=null parts=null roles=null t="status" text=null uid=null user=null}
+  espera 0

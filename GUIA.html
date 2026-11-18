@@ -243,9 +243,9 @@
 
   <section id="chat">
     <h2><span class="n">8</span>Chat conjunto y espectadores <span class="tag">NUEVO</span></h2>
-    <p style="margin-top:0">Los chats de <b>Twitch, Kick y YouTube</b> en un solo sitio, con los emotes de <b>7TV, BetterTTV y FrankerFaceZ</b>, los avisos de subs, regalos, raids, bits, Super Chats y miembros, y los <b>espectadores de cada plataforma</b>. No hace falta iniciar sesión ni crear apps: solo el nombre de cada canal.</p>
+    <p style="margin-top:0">Los chats de <b>Twitch, Kick, YouTube y TikTok</b> en un solo sitio, con los emotes de <b>7TV, BetterTTV y FrankerFaceZ</b>, los avisos de subs, regalos, raids, bits, Super Chats y miembros, y los <b>espectadores de cada plataforma</b>. No hace falta iniciar sesión ni crear apps: solo el nombre de cada canal.</p>
     <ol>
-      <li>Pestaña <b>Chat</b>: escribe el nombre de tu canal de Twitch y de Kick, y tu canal de YouTube (<code>@tucanal</code> o el enlace del directo). Deja vacío lo que no uses.</li>
+      <li>Pestaña <b>Chat</b>: escribe el nombre de tu canal de Twitch y de Kick, tu canal de YouTube (<code>@tucanal</code> o el enlace del directo) y tu <code>@usuario</code> de TikTok. Deja vacío lo que no uses. TikTok necesita además una clave gratuita (ver abajo).</li>
       <li>Activa el interruptor <b>Activado</b>. Abajo verás los espectadores y si cada chat está conectado.</li>
       <li>Para verlo: <b>Abrir chat</b> lo abre en tu navegador.</li>
     </ol>
@@ -254,6 +254,19 @@
       <tr><td>Panel dentro de OBS</td><td>Pulsa <b>URL para OBS</b>. En OBS: <b>Docks → Docks de navegador personalizados</b>, pon un nombre (por ejemplo “Chat”), pega la URL y aplica.</td></tr>
       <tr><td>En pantalla, en el directo</td><td>Pestaña <b>Overlays</b> → tarjeta <b>Chat en pantalla</b> → <b>Copiar URL</b>. En OBS añade una fuente <b>Navegador</b> con esa URL, ancho <code>500</code> y alto <code>700</code> por ejemplo, y colócala donde quieras (fondo transparente; cada mensaje se ve 30 s y desaparece).</td></tr>
     </table>
+    <h3 style="margin:18px 0 8px">Chat de TikTok <span class="tag">NUEVO</span></h3>
+    <p style="margin-top:0">TikTok no deja que otros programas lean el chat de un directo. Por eso StreamDelay usa <b>Euler Stream</b>, un servicio que se conecta a tu directo y le pasa el chat. Su plan <b>Community</b> es gratis (sin tarjeta) y sobra para tu directo.</p>
+    <ol>
+      <li>Crea una cuenta en <a href="https://www.eulerstream.com">eulerstream.com</a> y, en su panel, copia tu <b>API Key</b>.</li>
+      <li>En StreamDelay, pestaña <b>Chat</b>: escribe tu <code>@usuario</code> de TikTok, pulsa <b>Clave Euler Stream</b>, pega la clave y <b>Guardar</b>. El botón pasa a decir <b>Clave puesta ✓</b>.</li>
+      <li>Con el chat <b>Activado</b>, en cuanto empiezas el directo en TikTok verás sus mensajes, regalos, suscripciones, follows y espectadores (también en el overlay de espectadores, pestaña <b>Overlays</b>).</li>
+    </ol>
+    <ul>
+      <li>Solo se <b>lee</b>: TikTok no deja escribir en su chat ni moderar desde otros programas. Los comandos (<code>!delay</code>…) no se contestan en TikTok.</li>
+      <li>Los regalos en racha (rosas…) salen una vez, al acabar la racha, con el total de diamantes.</li>
+      <li>Mientras no estés en directo, StreamDelay vuelve a mirar cada 2 minutos (cada 5 tras media hora) para gastar poco del plan gratuito.</li>
+      <li>La clave se guarda cifrada en <code>StreamDelay.ini</code>. Es como una contraseña: <b>no la compartas</b>.</li>
+    </ul>
     <ul style="margin-top:12px">
       <li>El chat va <b>en tiempo real</b>, sin delay: así ves lo que escribe la gente al momento (ellos reaccionan a lo que vieron hace X segundos).</li>
       <li>Los emotes de 7TV/BTTV/FFZ de tu canal de Twitch se usan también en Kick y YouTube; los de 7TV de Kick y YouTube se añaden si los tienes.</li>
@@ -405,7 +418,8 @@
       <tr><td>OBS no conecta</td><td>Comprueba que pulsaste “Iniciar servicio”, que el servidor en OBS empieza por <code>rtmp://</code> (sin s) y que el puerto coincide.</td></tr>
       <tr><td>Algo no va con el emisor nuevo</td><td>Activa <b>Modo clásico con ffmpeg</b> en Ajustes: envía como la versión anterior (una sola calidad, necesita ffmpeg).</td></tr>
       <tr><td>“Control inteligente de aplicaciones bloqueó…”</td><td>Windows 11 bloquea algunos programas nuevos sin firma digital. Puedes desactivarlo en <i>Seguridad de Windows → Control de aplicaciones y navegador</i>, pero es una decisión de seguridad tuya: en muchas versiones no se puede volver a activar sin reinstalar Windows.</td></tr>
-    </table>
+          <tr><td>El chat de TikTok no sale</td><td>Mira la pestaña Chat, columna TIKTOK: “Sin directo” = aún no estás en directo en TikTok (se vuelve a mirar cada 2 min). “Falta la clave” o “la clave no es válida” = pega de nuevo tu API Key de eulerstream.com en <b>Clave Euler Stream</b>. Escribe el @usuario sin espacios.</td></tr>
+</table>
     <p>La pestaña <b>Registro</b> muestra lo que va pasando. <b>Si pides ayuda, copia ese texto</b>: no contiene tu clave.</p>
     <p class="note ok">Antes del primer directo de verdad, haz una prueba corta: en OBS añade <code>?bandwidthtest=true</code> al final de tu clave de Twitch y la prueba no se emitirá en público.</p>
   </section>

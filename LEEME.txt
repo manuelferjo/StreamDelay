@@ -1,7 +1,15 @@
-STREAM DELAY 3.3 - delay dinámico gratuito para OBS (by Vortexs)
+STREAM DELAY 3.4 - delay dinámico gratuito para OBS (by Vortexs)
 ================================================================
 
 Abre GUIA.html (doble clic) para ver la guía completa.
+
+Novedades de la 3.4
+- Chat de TikTok LIVE en el chat conjunto: mensajes (con sus emotes),
+  regalos, suscripciones, follows y espectadores, también en el overlay
+  de espectadores. TikTok no deja leer su chat a otros programas, así que
+  se usa Euler Stream (gratis): crea una cuenta en eulerstream.com, copia
+  tu API Key y pégala en Chat -> "Clave Euler Stream". Solo se lee: TikTok
+  no deja escribir ni moderar desde otros programas.
 
 Novedades de la 3.3
 - Overlays personalizables: pestaña Overlays -> "Personalizar ->".

@@ -41,6 +41,7 @@
   <div class="pill gone" id="p-twitch"><svg viewBox="0 0 24 24"><path fill="#a970ff" d="M4 2 2.5 6v14h5v3h3l3-3h4l5-5V2H4Zm16 12-3 3h-5l-3 3v-3H5V4h15v10Z"/><path fill="#a970ff" d="M15 7h2v5h-2zM10 7h2v5h-2z"/></svg><span class="num" id="n-twitch">0</span></div>
   <div class="pill gone" id="p-kick"><svg viewBox="0 0 24 24"><rect width="24" height="24" rx="5" fill="#53fc18"/><path fill="#000" d="M6 5h4v4h2V7h2V5h4v5h-2v2h-2v0h2v2h2v5h-4v-2h-2v-2h-2v4H6z"/></svg><span class="num" id="n-kick">0</span></div>
   <div class="pill gone" id="p-youtube"><svg viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="5" fill="#ff3b3b"/><path fill="#fff" d="m10 8.5 6 3.5-6 3.5z"/></svg><span class="num" id="n-youtube">0</span></div>
+  <div class="pill gone" id="p-tiktok"><svg viewBox="0 0 24 24"><rect width="24" height="24" rx="5" fill="#111"/><path fill="#25f4ee" d="M12.6 4.5h2.3c.2 1.9 1.4 3.2 3.4 3.4v2.3c-1.3 0-2.4-.4-3.4-1.1v5.2a4.3 4.3 0 1 1-4.3-4.3h.4v2.4h-.4a1.9 1.9 0 1 0 1.9 1.9z"/><path fill="#fe2c55" d="M13.4 5.3h2.3c.2 1.9 1.4 3.2 3.4 3.4V11c-1.3 0-2.4-.4-3.4-1.1v5.2a4.3 4.3 0 1 1-4.3-4.3h.4v2.4h-.4a1.9 1.9 0 1 0 1.9 1.9z" opacity=".85"/><path fill="#fff" d="M13 4.9h2.3c.2 1.9 1.4 3.2 3.4 3.4v2.3c-1.3 0-2.4-.4-3.4-1.1v5.2a4.3 4.3 0 1 1-4.3-4.3h.4v2.4H11a1.9 1.9 0 1 0 1.9 1.9z"/></svg><span class="num" id="n-tiktok">0</span></div>
 </div>
 <script src="/overlay-style.js"></script>
 <script>
@@ -82,7 +83,7 @@
   function render(s) {
     if (s) applyOpts(s);
     var show = (s && s.show) || {}, v = (s && s.v) || {}, total = 0, any = false;
-    ['twitch', 'kick', 'youtube'].forEach(function (p) {
+    ['twitch', 'kick', 'youtube', 'tiktok'].forEach(function (p) {
       var n = v[p];
       var live = typeof n === 'number' && n >= 0;
       if (live) { total += n; any = true; }
@@ -95,7 +96,7 @@
       .then(render).catch(function () { render(null); })
       .then(function () { setTimeout(tick, 2000); });
   }
-  if (q.get('demo')) render({ show: { twitch: true, kick: true, youtube: true, total: true }, v: { twitch: 154, kick: 87, youtube: 23 } });
+  if (q.get('demo')) render({ show: { twitch: true, kick: true, youtube: true, tiktok: true, total: true }, v: { twitch: 154, kick: 87, youtube: 23, tiktok: 312 } });
   else tick();
 </script>
 </body>
