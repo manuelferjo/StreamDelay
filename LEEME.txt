@@ -11,6 +11,9 @@ Novedades de la 4.0
     Completo  8 €/mes  todo: además chat conjunto con moderación,
                        overlays, Mando y título y categoría.
   Se cancela cuando quieras.
+- La primera vez sale una ventana de bienvenida con la prueba y los
+  planes. Avisa también cuando queda menos de 1 día de prueba y cuando
+  termina (nunca en pleno directo).
 - Botón del plan arriba, debajo de "English": enseña tu plan (o los días
   de prueba que quedan) y abre la ventana Licencia, donde se elige el
   plan y se pega la clave (la de tu compra o una que te hayan regalado).
