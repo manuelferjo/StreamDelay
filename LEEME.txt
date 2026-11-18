@@ -1,16 +1,7 @@
-STREAM DELAY 3.6 - delay dinámico gratuito para OBS (by Vortexs)
+STREAM DELAY 3.5 - delay dinámico gratuito para OBS (by Vortexs)
 ================================================================
 
 Abre GUIA.html (doble clic) para ver la guía completa.
-
-Novedades de la 3.6
-- Chat para tus mods por internet: cada mod tiene su propio enlace (Chat ->
-  Moderación -> Enlaces para mods) para moderar desde su casa con todas las
-  funciones, en Twitch, Kick y YouTube a la vez. Moderan con tus cuentas y
-  en el Registro queda qué mod hizo cada cosa. Pueden escribir con SUS
-  cuentas (las conectan desde su enlace, en "Mis cuentas"). Usa ngrok
-  (cuenta gratis, enlace fijo). "Quitar" corta el acceso al momento.
-  Solo funciona con StreamDelay abierto. Pasos en la guía, apartado 12.
 
 Novedades de la 3.5
 - Chat con su propio estilo: Overlays -> Chat en pantalla -> "Personalizar

@@ -73,15 +73,6 @@ namespace StreamDelay
 		// Estilo de los overlays (colores, forma, fuente…), lo leen las tres páginas.
 		public Func<string> OnStyleState = () => "{}";
 
-		// Chat de los mods (por internet, con el túnel): nombre del mod de cada clave (null = no vale)
-		// y sus peticiones (moderar, sus cuentas, escribir).
-		public Func<string, string> ModName = (string k) => null;
-
-		public Func<string, string, Dictionary<string, object>, Dictionary<string, object>> OnModApi = (string k, string n, Dictionary<string, object> d) => new Dictionary<string, object>();
-
-		// Páginas abiertas de cada mod (para cortarlas al quitarle el enlace).
-		private readonly Dictionary<Stream, string> clientKeys = new Dictionary<Stream, string>();
-
 		// Estilo propio del chat (fuente, tamaño, colores, fondo…), lo lee la página del chat.
 		public Func<string> OnChatStyle = () => "{}";
 
@@ -276,7 +267,6 @@ namespace StreamDelay
 						catch
 						{
 						}
-						clientKeys.Remove(clients[i]);
 						clients.RemoveAt(i);
 					}
 				}
@@ -345,21 +335,10 @@ namespace StreamDelay
 				string pathOnly = request.Path.Split('?')[0];
 				bool local = text == "127.0.0.1:" + Port || text == "localhost:" + Port;
 				bool fromPc = IPAddress.IsLoopback(((IPEndPoint)c.Client.RemoteEndPoint).Address);
-				// Lo que llega por el túnel (ngrok) trae X-Forwarded-For y el dominio público: por ahí solo
-				// se puede abrir el chat de los mods, y solo con la clave de un mod.
-				bool tunneled = Header(request, "x-forwarded-for").Length > 0;
-				if (pathOnly == "/mod" || pathOnly == "/mod/events" || pathOnly == "/mod/api")
-				{
-					if (ModRoute(stream, request, pathOnly))
-					{
-						c.Close();
-					}
-					return;
-				}
 				if (pathOnly == "/mando" || pathOnly == "/mando/api")
 				{
 					// El mando se puede abrir desde el móvil, pero solo con la clave correcta.
-					if (tunneled || (!local && !Lan) || (!fromPc && !Lan))
+					if ((!local && !Lan) || (!fromPc && !Lan))
 					{
 						Respond(stream, "403 Forbidden", "text/plain", "");
 						c.Close();
@@ -369,7 +348,7 @@ namespace StreamDelay
 					c.Close();
 					return;
 				}
-				if (!local || !fromPc || tunneled)
+				if (!local || !fromPc)
 				{
 					Respond(stream, "403 Forbidden", "text/plain", "");
 					c.Close();
@@ -393,8 +372,33 @@ namespace StreamDelay
 				switch (route)
 				{
 				case "/events":
-					Sse(stream, null);
+				{
+					// Server-Sent Events: la página se queda conectada y recibe cada mensaje. Al entrar
+					// se le manda el último estado, los espectadores y los mensajes recientes.
+					Write(stream, "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream; charset=utf-8\r\nCache-Control: no-cache\r\nConnection: keep-alive\r\n\r\nretry: 2000\n\n");
+					StringBuilder backlog = new StringBuilder();
+					lock (lk)
+					{
+						if (lastStatus != null)
+						{
+							backlog.Append("data: ").Append(lastStatus).Append("\n\n");
+						}
+						if (lastViewers != null)
+						{
+							backlog.Append("data: ").Append(lastViewers).Append("\n\n");
+						}
+						foreach (string item in recent)
+						{
+							backlog.Append("data: ").Append(item).Append("\n\n");
+						}
+						byte[] bytes = Encoding.UTF8.GetBytes(backlog.ToString());
+						stream.Write(bytes, 0, bytes.Length);
+						stream.Flush();
+						clients.Add(stream);
+					}
+					stream.ReadTimeout = -1;
 					return;
+				}
 				case "/delay":
 				case "/overlay-delay":
 					Respond(stream, "200 OK", "text/html; charset=utf-8", delayHtml.Replace("__SD_LANG__", I18n.Lang));
@@ -465,7 +469,7 @@ namespace StreamDelay
 				case "/":
 				case "/index.html":
 				case "/chat":
-					Respond(stream, "200 OK", "text/html; charset=utf-8", pageHtml.Replace("__SD_SECRET__", secret).Replace("__SD_LANG__", I18n.Lang).Replace("'__SD_MODNAME__'", "''").Replace("__SD_MOD__", ""));
+					Respond(stream, "200 OK", "text/html; charset=utf-8", pageHtml.Replace("__SD_SECRET__", secret).Replace("__SD_LANG__", I18n.Lang));
 					break;
 				default:
 					Respond(stream, "404 Not Found", "text/plain", "");
@@ -481,127 +485,6 @@ namespace StreamDelay
 				}
 				catch
 				{
-				}
-			}
-		}
-
-		// Server-Sent Events: la página se queda conectada y recibe cada mensaje. Al entrar se le
-		// manda el último estado, los espectadores y los mensajes recientes.
-		private void Sse(Stream stream, string modKey)
-		{
-			Write(stream, "HTTP/1.1 200 OK\r\nContent-Type: text/event-stream; charset=utf-8\r\nCache-Control: no-cache\r\nX-Accel-Buffering: no\r\nConnection: keep-alive\r\n\r\nretry: 2000\n\n");
-			StringBuilder backlog = new StringBuilder();
-			lock (lk)
-			{
-				if (lastStatus != null)
-				{
-					backlog.Append("data: ").Append(lastStatus).Append("\n\n");
-				}
-				if (lastViewers != null)
-				{
-					backlog.Append("data: ").Append(lastViewers).Append("\n\n");
-				}
-				foreach (string item in recent)
-				{
-					backlog.Append("data: ").Append(item).Append("\n\n");
-				}
-				byte[] bytes = Encoding.UTF8.GetBytes(backlog.ToString());
-				stream.Write(bytes, 0, bytes.Length);
-				stream.Flush();
-				clients.Add(stream);
-				if (modKey != null)
-				{
-					clientKeys[stream] = modKey;
-				}
-			}
-			stream.ReadTimeout = -1;
-		}
-
-		// Chat de los mods. Devuelve true si la conexión se puede cerrar (false: se queda abierta, SSE).
-		private bool ModRoute(Stream s, Request req, string p)
-		{
-			Dictionary<string, string> q = Query(req.Path);
-			string k;
-			q.TryGetValue("k", out k);
-			k = (k ?? "").Trim();
-			string name = (k.Length >= 16) ? ModName(k) : null;
-			if (name == null)
-			{
-				if (p == "/mod")
-				{
-					Respond(s, "403 Forbidden", "text/html; charset=utf-8", "<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width'><body style='background:#09090c;color:#f4f4f5;font:16px system-ui;padding:24px'><h2>" + WebUtility.HtmlEncode(I18n.Tr("Este enlace de mod no vale")) + "</h2><p>" + WebUtility.HtmlEncode(I18n.Tr("Pide al streamer un enlace nuevo (StreamDelay → Chat → Moderación → Enlaces para mods).")) + "</p>");
-				}
-				else
-				{
-					Respond(s, "403 Forbidden", "application/json; charset=utf-8", "{\"error\":\"enlace no válido\"}");
-				}
-				return true;
-			}
-			if (p == "/mod")
-			{
-				if (req.Method != "GET")
-				{
-					Respond(s, "405 Method Not Allowed", "text/plain", "");
-					return true;
-				}
-				string js = Web.ToJson(name);
-				Respond(s, "200 OK", "text/html; charset=utf-8", pageHtml.Replace("__SD_SECRET__", "").Replace("__SD_LANG__", I18n.Lang).Replace("'__SD_MODNAME__'", js).Replace("__SD_MOD__", k));
-				return true;
-			}
-			if (p == "/mod/events")
-			{
-				Sse(s, k);
-				return false;
-			}
-			if (req.Method != "POST")
-			{
-				Respond(s, "405 Method Not Allowed", "text/plain", "");
-				return true;
-			}
-			Dictionary<string, object> d = Web.Parse(req.Body) as Dictionary<string, object>;
-			if (d == null)
-			{
-				Respond(s, "400 Bad Request", "text/plain", "");
-				return true;
-			}
-			Dictionary<string, object> r;
-			try
-			{
-				r = OnModApi(k, name, d);
-			}
-			catch (Exception ex)
-			{
-				r = new Dictionary<string, object>();
-				r["error"] = ex.Message;
-			}
-			Respond(s, "200 OK", "application/json; charset=utf-8", Web.ToJson(TrValues(r)));
-			return true;
-		}
-
-		// Corta las páginas abiertas con esa clave de mod (al quitarle el enlace).
-		public void DropMod(string key)
-		{
-			lock (lk)
-			{
-				List<Stream> gone = new List<Stream>();
-				foreach (KeyValuePair<Stream, string> kv in clientKeys)
-				{
-					if (kv.Value == key)
-					{
-						gone.Add(kv.Key);
-					}
-				}
-				foreach (Stream st in gone)
-				{
-					clientKeys.Remove(st);
-					clients.Remove(st);
-					try
-					{
-						st.Close();
-					}
-					catch
-					{
-					}
 				}
 			}
 		}

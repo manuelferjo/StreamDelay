@@ -150,9 +150,6 @@ namespace StreamDelay
 			string uid = J.S(d, "uid");
 			string user = J.S(d, "user");
 			string text = J.S(d, "text");
-			// Si lo hace un mod desde su enlace, queda apuntado quién.
-			string by = J.S(d, "by");
-			string who = (by.Length > 0) ? (" (mod " + by + ")") : "";
 			string twCh = "";
 			string kcCh = "";
 			try
@@ -187,7 +184,7 @@ namespace StreamDelay
 				{
 					chatServer.Send(new ChatItem { t = "del", p = p, uid = uid });
 				}
-				LogLater("Moderación: " + user + " ya no sale en tu chat ni en pantalla" + who + " (Chat → Moderación para quitarlo de la lista).");
+				LogLater("Moderación: " + user + " ya no sale en tu chat ni en pantalla (Chat → Moderación para quitarlo de la lista).");
 				res["ok"] = true;
 				res["msg"] = user + " ya no sale en tu chat ni en pantalla";
 				return res;
@@ -211,7 +208,7 @@ namespace StreamDelay
 						extra = " (Twitch: " + ex.Message + ")";
 					}
 				}
-				LogLater("Moderación: chat borrado" + extra + who + ".");
+				LogLater("Moderación: chat borrado" + extra + ".");
 				res["ok"] = true;
 				res["msg"] = "chat borrado" + extra;
 				return res;
@@ -242,7 +239,7 @@ namespace StreamDelay
 						Dictionary<string, object> ch = new Dictionary<string, object>();
 						ch[k] = v;
 						modes = twitch.SetChatSettings(twCh, ch);
-						LogLater("Moderación Twitch: " + ModeText(k, v) + who + ".");
+						LogLater("Moderación Twitch: " + ModeText(k, v) + ".");
 					}
 					res["ok"] = true;
 					res["modes"] = modes;
@@ -329,7 +326,7 @@ namespace StreamDelay
 					youtube.Ban(uid, secs);
 				}
 				string what = del ? ("mensaje de " + user + " borrado") : (unban ? ("ban de " + user + " quitado") : ((secs > 0) ? (user + " expulsado " + Duration(secs)) : (user + " baneado")));
-				LogLater("Moderación " + plat.Name + ": " + what + who + ".");
+				LogLater("Moderación " + plat.Name + ": " + what + ".");
 				res["ok"] = true;
 				res["msg"] = what;
 				res["undo"] = !del && !unban;

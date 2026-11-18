@@ -79,30 +79,6 @@ namespace StreamDelay
 			FinishLogin();
 		}
 
-		// Para los mods: empieza el inicio de sesión con código (devuelve el código y la web donde se escribe).
-		public Dictionary<string, object> BeginDevice(string scopes)
-		{
-			Dictionary<string, object> d = Http.Send("POST", IdBase + "/oauth2/device", null, null, "application/x-www-form-urlencoded", Http.Form("client_id", ClientId, "scopes", scopes));
-			Dictionary<string, object> r = new Dictionary<string, object>();
-			r["code"] = Http.Str(d, "user_code");
-			r["url"] = Http.Str(d, "verification_uri");
-			r["device"] = Http.Str(d, "device_code");
-			return r;
-		}
-
-		// true cuando ya se ha aprobado (y queda conectada la cuenta); false si aún no.
-		public bool PollDeviceOnce(string device, string scopes)
-		{
-			Dictionary<string, object> t = TryDeviceToken(IdBase + "/oauth2/token", new string[8] { "client_id", ClientId, "scopes", scopes, "device_code", device, "grant_type", "urn:ietf:params:oauth:grant-type:device_code" });
-			if (t == null)
-			{
-				return false;
-			}
-			SetTokens(t);
-			FinishLogin();
-			return true;
-		}
-
 		protected override void DoRefresh()
 		{
 			SetTokens(Http.Send("POST", IdBase + "/oauth2/token", null, null, "application/x-www-form-urlencoded", Http.Form("client_id", ClientId, "grant_type", "refresh_token", "refresh_token", refresh)));
