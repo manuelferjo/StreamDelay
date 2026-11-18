@@ -1,7 +1,8 @@
-// Chat conjunto de Twitch, Kick y YouTube SIN iniciar sesión: basta con el nombre de cada canal.
+// Chat conjunto de Twitch, Kick, YouTube y TikTok SIN iniciar sesión: basta con el nombre de cada canal.
 // - Twitch: chat IRC anónimo (subs, regalos, raids y bits llegan por el propio chat).
 // - Kick: el websocket público de su chat (mensajes, subs, regalos, hosts y follows).
 // - YouTube: la API interna de la web (mensajes, Super Chats, miembros y regalos), sin clave ni cupo.
+// - TikTok: a través de Euler Stream (necesita una clave gratuita): mensajes, regalos, subs y follows.
 // Emotes de 7TV, BetterTTV y FrankerFaceZ en las tres plataformas, y espectadores de cada una.
 // Todo se entrega como ChatItem a la página del chat (ChatServer).
 using System;
@@ -12,7 +13,8 @@ namespace StreamDelay
 {
     class ChatHub
     {
-        public string TwitchChannel = "", KickChannel = "", YouTubeChannel = "";
+        public string TwitchChannel = "", KickChannel = "", YouTubeChannel = "", TikTokChannel = "";
+        public string TikTokKey = "";       // clave de Euler Stream
         // Avisos extra: follows de Twitch con la cuenta conectada en "Título" y donaciones.
         public TwitchPlatform TwitchApi;
         public string StreamElementsToken = "", StreamlabsToken = "";
@@ -26,14 +28,15 @@ namespace StreamDelay
         public readonly Emotes Emotes = new Emotes();
 
         // Espectadores: -1 sin dato, -2 sin directo.
-        public volatile int TwitchViewers = -1, KickViewers = -1, YouTubeViewers = -1;
+        public volatile int TwitchViewers = -1, KickViewers = -1, YouTubeViewers = -1, TikTokViewers = -1;
         // Estado de cada conexión, para la interfaz: "" (no configurado), "conectando", "conectado", "sin directo", "error: …"
-        public volatile string TwitchState = "", KickState = "", YouTubeState = "";
+        public volatile string TwitchState = "", KickState = "", YouTubeState = "", TikTokState = "";
 
         volatile bool running;
         TwitchChat tw;
         KickChat kc;
         YouTubeChat yt;
+        TikTokChat tk;
         Thread viewersThread;
         readonly object stopLock = new object();
 
@@ -43,14 +46,16 @@ namespace StreamDelay
         {
             if (running) return;
             running = true;
-            TwitchViewers = KickViewers = YouTubeViewers = -1;
+            TwitchViewers = KickViewers = YouTubeViewers = TikTokViewers = -1;
             TwitchState = Clean(TwitchChannel).Length > 0 ? "conectando" : "";
             KickState = Clean(KickChannel).Length > 0 ? "conectando" : "";
             YouTubeState = YouTubeChannel.Trim().Length > 0 ? "conectando" : "";
+            TikTokState = Clean(TikTokChannel).Length > 0 ? (TikTokKey.Trim().Length > 0 ? "conectando" : "error: falta la clave de Euler Stream") : "";
             Background(() => Emotes.LoadGlobal(Log));
             if (TwitchState.Length > 0) { tw = new TwitchChat(this, Clean(TwitchChannel)); tw.Start(); }
             if (KickState.Length > 0) { kc = new KickChat(this, Clean(KickChannel)); kc.Start(); }
             if (YouTubeState.Length > 0) { yt = new YouTubeChat(this, YouTubeChannel.Trim()); yt.Start(); }
+            if (TikTokState == "conectando") { tk = new TikTokChat(this, Clean(TikTokChannel), TikTokKey); tk.Start(); }
             FollowsState = StreamElementsState = StreamlabsState = "";
             if (TwitchState.Length > 0)
             {
@@ -72,13 +77,14 @@ namespace StreamDelay
                 if (tw != null) tw.Stop();
                 if (kc != null) kc.Stop();
                 if (yt != null) yt.Stop();
+                if (tk != null) tk.Stop();
                 if (follows != null) follows.Stop();
                 if (se != null) se.Stop();
                 if (sl != null) sl.Stop();
-                tw = null; kc = null; yt = null; follows = null; se = null; sl = null;
-                TwitchState = KickState = YouTubeState = "";
+                tw = null; kc = null; yt = null; tk = null; follows = null; se = null; sl = null;
+                TwitchState = KickState = YouTubeState = TikTokState = "";
                 FollowsState = StreamElementsState = StreamlabsState = "";
-                TwitchViewers = KickViewers = YouTubeViewers = -1;
+                TwitchViewers = KickViewers = YouTubeViewers = TikTokViewers = -1;
             }
             Status();
             Viewers();
@@ -97,10 +103,10 @@ namespace StreamDelay
 
         internal void SetState(string p, string s)
         {
-            string old = p == "twitch" ? TwitchState : p == "kick" ? KickState : YouTubeState;
+            string old = p == "twitch" ? TwitchState : p == "kick" ? KickState : p == "tiktok" ? TikTokState : YouTubeState;
             if (!running || old == s) return;
-            if (p == "twitch") TwitchState = s; else if (p == "kick") KickState = s; else YouTubeState = s;
-            string name = p == "twitch" ? "Twitch" : p == "kick" ? "Kick" : "YouTube";
+            if (p == "twitch") TwitchState = s; else if (p == "kick") KickState = s; else if (p == "tiktok") TikTokState = s; else YouTubeState = s;
+            string name = p == "twitch" ? "Twitch" : p == "kick" ? "Kick" : p == "tiktok" ? "TikTok" : "YouTube";
             Log("Chat de " + name + ": " + s + ".");
             Status();
             if (s == "conectado" || s == "sin directo") viewersNow.Set(); // actualizar espectadores ya
@@ -120,7 +126,7 @@ namespace StreamDelay
         void Status()
         {
             var d = new Dictionary<string, object>();
-            d["twitch"] = TwitchState; d["kick"] = KickState; d["youtube"] = YouTubeState;
+            d["twitch"] = TwitchState; d["kick"] = KickState; d["youtube"] = YouTubeState; d["tiktok"] = TikTokState;
             d["follows"] = FollowsState; d["streamelements"] = StreamElementsState; d["streamlabs"] = StreamlabsState;
             Emit(new ChatItem { t = "status", data = d });
         }
@@ -128,23 +134,45 @@ namespace StreamDelay
         void Viewers()
         {
             var d = new Dictionary<string, object>();
-            d["twitch"] = TwitchViewers; d["kick"] = KickViewers; d["youtube"] = YouTubeViewers;
+            d["twitch"] = TwitchViewers; d["kick"] = KickViewers; d["youtube"] = YouTubeViewers; d["tiktok"] = TikTokViewers;
             Emit(new ChatItem { t = "viewers", data = d });
         }
+
+        // TikTok avisa de los espectadores por su cuenta (cada pocos segundos): se envían a la página
+        // enseguida, sin volver a preguntar a las otras plataformas.
+        volatile bool tikTokOnly;
+        internal void ViewersChanged() { tikTokOnly = true; viewersNow.Set(); }
 
         // Espectadores cada 30 s (también vale como "¿está en directo?").
         void ViewersLoop()
         {
             int lastSent = -999;
+            bool fetch = true;
             while (running)
             {
-                var t = tw; var k = kc; var y = yt;
-                if (t != null) TwitchViewers = Try(t.FetchViewers);
-                if (k != null) KickViewers = Try(k.FetchViewers);
-                if (y != null) YouTubeViewers = Try(y.FetchViewers);
-                int sig = TwitchViewers * 31 + KickViewers * 17 + YouTubeViewers;
+                if (fetch)
+                {
+                    var t = tw; var k = kc; var y = yt;
+                    if (t != null) TwitchViewers = Try(t.FetchViewers);
+                    if (k != null) KickViewers = Try(k.FetchViewers);
+                    if (y != null) YouTubeViewers = Try(y.FetchViewers);
+                }
+                int sig = ((TwitchViewers * 31 + KickViewers) * 17 + YouTubeViewers) * 13 + TikTokViewers;
                 if (sig != lastSent) { lastSent = sig; Viewers(); }
-                for (int i = 0; i < 30 && running; i++) if (viewersNow.WaitOne(1000)) break;
+                fetch = true;
+                for (int i = 0; i < 30 && running; i++)
+                {
+                    if (!viewersNow.WaitOne(1000)) continue;
+                    if (tikTokOnly)
+                    {
+                        // Solo ha cambiado TikTok: se manda y se sigue esperando a los 30 s.
+                        tikTokOnly = false;
+                        int s2 = ((TwitchViewers * 31 + KickViewers) * 17 + YouTubeViewers) * 13 + TikTokViewers;
+                        if (s2 != lastSent) { lastSent = s2; Viewers(); }
+                        continue;
+                    }
+                    break;
+                }
             }
         }
 

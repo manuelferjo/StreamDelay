@@ -9,7 +9,7 @@
     --bg: #09090c; --surface: #111116; --elev: #171720; --border: #26262e;
     --text: #f4f4f5; --muted: #a1a1aa; --dim: #71717a;
     --violet: #c09afd; --yellow: #ede103; --red: #ff4655; --green: #34d399;
-    --twitch: #a970ff; --kick: #53fc18; --youtube: #ff3b3b;
+    --twitch: #a970ff; --kick: #53fc18; --youtube: #ff3b3b; --tiktok: #fe2c55;
     --size: 15px;
   }
   * { box-sizing: border-box; }
@@ -55,7 +55,7 @@
   .ev .body { margin-top: 3px; color: var(--muted); }
   .k-sub, .k-resub { --c: var(--violet); } .k-gift, .k-giftbomb, .k-giftmember { --c: #ff6bd6; } .k-raid { --c: #ffb020; }
   .k-bits { --c: #8ab4ff; } .k-follow { --c: var(--green); } .k-superchat, .k-sticker { --c: var(--yellow); } .k-member { --c: var(--green); }
-  .k-kicks { --c: var(--kick); } .k-other { --c: var(--dim); } .k-tip { --c: var(--yellow); }
+  .k-kicks { --c: var(--kick); } .k-tiktokgift { --c: var(--tiktok); } .k-other { --c: var(--dim); } .k-tip { --c: var(--yellow); }
 
   #composer { flex: none; border-top: 1px solid var(--border); background: var(--surface); padding: 8px 10px 10px; }
   body.overlay #composer, body.noinput #composer { display: none; }
@@ -97,6 +97,7 @@
   <span class="chip" id="c-twitch"><span class="dot"></span><span class="pfi"></span><b id="v-twitch">—</b></span>
   <span class="chip" id="c-kick"><span class="dot"></span><span class="pfi"></span><b id="v-kick">—</b></span>
   <span class="chip" id="c-youtube"><span class="dot"></span><span class="pfi"></span><b id="v-youtube">—</b></span>
+  <span class="chip" id="c-tiktok"><span class="dot"></span><span class="pfi"></span><b id="v-tiktok">—</b></span>
 </header>
 <div id="list"><div id="empty">Esperando mensajes…<br><small>Activa el chat en StreamDelay → pestaña Chat.</small></div></div>
 <div id="composer">
@@ -171,12 +172,14 @@ window.onStyle = function (st) { document.body.classList.toggle('sd-font', st.fo
     twitch: '<svg class="pf" viewBox="0 0 24 24"><path fill="#a970ff" d="M4 2 2.5 6v14h5v3h3l3-3h4l5-5V2H4Zm16 12-3 3h-5l-3 3v-3H5V4h15v10Z"/><path fill="#a970ff" d="M15 7h2v5h-2zM10 7h2v5h-2z"/></svg>',
     kick: '<svg class="pf" viewBox="0 0 24 24"><rect width="24" height="24" rx="5" fill="#53fc18"/><path fill="#000" d="M6 5h4v4h2V7h2V5h4v5h-2v2h-2v0h2v2h2v5h-4v-2h-2v-2h-2v4H6z"/></svg>',
     youtube: '<svg class="pf" viewBox="0 0 24 24"><rect x="1" y="4" width="22" height="16" rx="5" fill="#ff3b3b"/><path fill="#fff" d="m10 8.5 6 3.5-6 3.5z"/></svg>',
+    tiktok: '<svg class="pf" viewBox="0 0 24 24"><rect width="24" height="24" rx="5" fill="#111"/><path fill="#25f4ee" d="M12.6 4.5h2.3c.2 1.9 1.4 3.2 3.4 3.4v2.3c-1.3 0-2.4-.4-3.4-1.1v5.2a4.3 4.3 0 1 1-4.3-4.3h.4v2.4h-.4a1.9 1.9 0 1 0 1.9 1.9z"/><path fill="#fe2c55" d="M13.4 5.3h2.3c.2 1.9 1.4 3.2 3.4 3.4V11c-1.3 0-2.4-.4-3.4-1.1v5.2a4.3 4.3 0 1 1-4.3-4.3h.4v2.4h-.4a1.9 1.9 0 1 0 1.9 1.9z" opacity=".85"/><path fill="#fff" d="M13 4.9h2.3c.2 1.9 1.4 3.2 3.4 3.4v2.3c-1.3 0-2.4-.4-3.4-1.1v5.2a4.3 4.3 0 1 1-4.3-4.3h.4v2.4H11a1.9 1.9 0 1 0 1.9 1.9z"/></svg>',
     tip: '<svg class="pf" viewBox="0 0 24 24"><circle cx="12" cy="12" r="11" fill="#ede103"/><path fill="#111" d="M12.9 5v1.6c1.5.3 2.6 1.2 2.8 2.7h-2c-.1-.7-.7-1.1-1.7-1.1-1 0-1.6.4-1.6 1 0 .6.5.9 2 1.2 2.3.5 3.5 1.3 3.5 3.1 0 1.6-1.2 2.6-3 2.9V18h-1.8v-1.6c-1.8-.3-3-1.3-3.1-3h2c.1.8.8 1.3 1.9 1.3 1.1 0 1.7-.4 1.7-1.1 0-.6-.5-.9-2-1.2-2.1-.4-3.4-1.2-3.4-3 0-1.5 1.1-2.5 2.9-2.8V5z"/></svg>'
   };
   var ROLES = { broadcaster: ['◉', 'Streamer'], mod: ['⚔', 'Moderador'], vip: ['◆', 'VIP'], sub: ['★', 'Suscriptor'], member: ['★', 'Miembro'], founder: ['✦', 'Fundador'], verified: ['✓', 'Verificado'], og: ['OG', 'OG'] };
-  var EV_ICON = { sub: '⭐', resub: '⭐', gift: '🎁', giftbomb: '🎁', giftmember: '🎁', raid: '🚀', bits: '💎', follow: '❤️', superchat: '💰', sticker: '💰', member: '🎉', kicks: '💚', tip: '💸', other: '📣' };
+  var EV_ICON = { sub: '⭐', resub: '⭐', gift: '🎁', giftbomb: '🎁', giftmember: '🎁', raid: '🚀', bits: '💎', follow: '❤️', superchat: '💰', sticker: '💰', member: '🎉', kicks: '💚', tiktokgift: '🎁', tip: '💸', other: '📣' };
 
-  ['twitch', 'kick', 'youtube'].forEach(function (p) { document.querySelector('#c-' + p + ' .pfi').innerHTML = ICONS[p]; });
+  var PL = ['twitch', 'kick', 'youtube', 'tiktok'];
+  PL.forEach(function (p) { document.querySelector('#c-' + p + ' .pfi').innerHTML = ICONS[p]; });
 
   var list = document.getElementById('list'), empty = document.getElementById('empty'), more = document.getElementById('more');
   var stick = true;
@@ -226,7 +229,8 @@ window.onStyle = function (st) { document.body.classList.toggle('sd-font', st.fo
     el.className = 'msg' + (m.kind === 'announce' ? ' announce' : '');
     if (m.id) el.dataset.id = m.p + ':' + m.id;
     if (m.uid) el.dataset.uid = m.p + ':' + m.uid;
-    if (m.id || m.uid) { el.dataset.mod = '1'; el._m = { p: m.p, id: m.id || '', uid: m.uid || '', user: m.user || '', text: plain(m.parts) }; }
+    // TikTok no deja moderar desde otros programas: sus mensajes no tienen botones.
+    if ((m.id || m.uid) && m.p !== 'tiktok') { el.dataset.mod = '1'; el._m = { p: m.p, id: m.id || '', uid: m.uid || '', user: m.user || '', text: plain(m.parts) }; }
     el.innerHTML = ICONS[m.p] + rolesHtml(m.roles) + '<span class="name" style="color:' + nameColor(m.color, m.user) + '">' + esc(m.user) + '</span>: ' + partsHtml(m.parts);
     add(el);
   }
@@ -258,25 +262,26 @@ window.onStyle = function (st) { document.body.classList.toggle('sd-font', st.fo
   if (q.get('espectadores') === '1') hideV = {};
   function saveHide() { try { localStorage.setItem('sd-ocultar-espectadores', JSON.stringify(hideV)); } catch (x) {} renderHeader(); }
   document.querySelector('.total').onclick = function () { hideV = hideV.all ? {} : { all: true }; saveHide(); };
-  ['twitch', 'kick', 'youtube'].forEach(function (p) {
+  function someHidden() { return PL.some(function (p) { return hideV[p]; }); }
+  PL.forEach(function (p) {
     document.getElementById('c-' + p).onclick = function () {
-      if (hideV.all) { hideV = { twitch: true, kick: true, youtube: true }; }
+      if (hideV.all) { hideV = {}; PL.forEach(function (x) { hideV[x] = true; }); }
       hideV[p] = !hideV[p];
-      if (hideV.twitch && hideV.kick && hideV.youtube) hideV = { all: true };
+      if (PL.every(function (x) { return hideV[x]; })) hideV = { all: true };
       saveHide();
     };
   });
   function fmt(n) { return n >= 0 ? n.toLocaleString(LOC) : n === -2 ? 'offline' : '—'; }
   function renderHeader() {
     var total = 0, any = false, anyShown = false;
-    ['twitch', 'kick', 'youtube'].forEach(function (p) {
+    PL.forEach(function (p) {
       var chip = document.getElementById('c-' + p), st = states[p] || '', v = viewers[p];
       chip.style.display = st || (v != null && v !== -1) ? '' : 'none';
       chip.classList.toggle('off', !(v >= 0));
       var dot = chip.querySelector('.dot');
       dot.className = 'dot ' + (st === 'conectado' ? 'ok' : st.indexOf('error') === 0 ? 'err' : st ? 'wait' : '');
       var hidden = hideV.all || hideV[p];
-      chip.title = p.charAt(0).toUpperCase() + p.slice(1) + ': ' + (st || T('no configurado')) + ' · ' + T('pulsa para ') + (hidden ? T('ver') : T('ocultar')) + T(' sus espectadores');
+      chip.title = (p === 'tiktok' ? 'TikTok' : p === 'youtube' ? 'YouTube' : p.charAt(0).toUpperCase() + p.slice(1)) + ': ' + (st || T('no configurado')) + ' · ' + T('pulsa para ') + (hidden ? T('ver') : T('ocultar')) + T(' sus espectadores');
       var vEl = document.getElementById('v-' + p);
       vEl.textContent = hidden ? '•••' : fmt(v == null ? -1 : v);
       vEl.classList.toggle('hid', !!hidden);
@@ -285,14 +290,14 @@ window.onStyle = function (st) { document.body.classList.toggle('sd-font', st.fo
     var tEl = document.getElementById('total'), tBox = document.querySelector('.total');
     if (!any) { tEl.textContent = T('Sin directo'); tEl.className = ''; }
     else if (hideV.all || !anyShown) { tEl.textContent = T('Espectadores ocultos'); tEl.className = 'hid'; }
-    else { tEl.textContent = total.toLocaleString(LOC) + T(' espectadores') + (hideV.twitch || hideV.kick || hideV.youtube ? '*' : ''); tEl.className = ''; }
-    tBox.title = hideV.all ? T('Pulsa para ver los espectadores') : T('Pulsa para ocultar los espectadores') + (hideV.twitch || hideV.kick || hideV.youtube ? T(' (* sin contar las plataformas ocultas)') : '');
+    else { tEl.textContent = total.toLocaleString(LOC) + T(' espectadores') + (someHidden() ? '*' : ''); tEl.className = ''; }
+    tBox.title = hideV.all ? T('Pulsa para ver los espectadores') : T('Pulsa para ocultar los espectadores') + (someHidden() ? T(' (* sin contar las plataformas ocultas)') : '');
   }
   renderHeader();
 
   // ---------- Escribir en el chat de todas las plataformas ----------
   var SECRET = '__SD_SECRET__';
-  var NAMES = { twitch: 'Twitch', kick: 'Kick', youtube: 'YouTube' };
+  var NAMES = { twitch: 'Twitch', kick: 'Kick', youtube: 'YouTube', tiktok: 'TikTok' };
   var LIMIT = { twitch: 500, kick: 500, youtube: 200 };
   if (q.get('escribir') === '0') document.body.classList.add('noinput');
   var input = document.getElementById('msg'), sendBtn = document.getElementById('send'), result = document.getElementById('result');

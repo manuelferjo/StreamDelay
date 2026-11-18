@@ -31,6 +31,9 @@ namespace StreamDelay
         protected abstract string Url();
         protected abstract void OnText(string s);
         protected virtual void Opened() { }
+        // El servidor cerró la conexión con este código. Devuelve cuántos ms esperar antes de reintentar
+        // (0: la espera normal, que va creciendo). Para no reintentar más, llamar a Fatal().
+        protected virtual int Closed(int code, string reason) { return 0; }
         protected abstract void State(string s);
 
         public void Start() { run = true; th = new Thread(Loop) { IsBackground = true, Name = "chat-" + Name }; th.Start(); }
@@ -44,6 +47,7 @@ namespace StreamDelay
             int wait = 2000;
             while (run && hub.Alive)
             {
+                int forced = 0;
                 try
                 {
                     ws = new ClientWebSocket();
@@ -73,7 +77,11 @@ namespace StreamDelay
                             try { r = ws.ReceiveAsync(new ArraySegment<byte>(buf), cts.Token).Result; }
                             catch (AggregateException) { if (cts.IsCancellationRequested) throw new Exception("sin respuesta del servidor"); throw; }
                         }
-                        if (r.MessageType == WebSocketMessageType.Close) break;
+                        if (r.MessageType == WebSocketMessageType.Close)
+                        {
+                            forced = Closed(ws.CloseStatus.HasValue ? (int)ws.CloseStatus.Value : 0, ws.CloseStatusDescription ?? "");
+                            break;
+                        }
                         msg.Write(buf, 0, r.Count);
                         if (!r.EndOfMessage) continue;
                         string text = Encoding.UTF8.GetString(msg.ToArray());
@@ -89,6 +97,11 @@ namespace StreamDelay
                 }
                 try { if (ws != null) ws.Abort(); } catch { }
                 if (!run) break;
+                if (forced > 0)
+                {
+                    for (int i = 0; i < forced / 100 && run && hub.Alive; i++) Thread.Sleep(100);
+                    continue;
+                }
                 Thread.Sleep(wait);
                 wait = Math.Min(wait * 2, 30000);
             }

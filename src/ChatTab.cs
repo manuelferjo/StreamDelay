@@ -1,4 +1,4 @@
-// Pestaña Chat: chat conjunto de Twitch, Kick y YouTube, espectadores, follows y donaciones.
+// Pestaña Chat: chat conjunto de Twitch, Kick, YouTube y TikTok, espectadores, follows y donaciones.
 // También arranca la página local (127.0.0.1:8935…) que usan el chat, los overlays de OBS y el Mando.
 using System;
 using System.Collections.Generic;
@@ -20,9 +20,9 @@ namespace StreamDelay
 			Card card = new Card
 			{
 				Title = "Chat conjunto",
-				Subtitle = "Twitch, Kick y YouTube en un solo chat. Sin iniciar sesión."
+				Subtitle = "Twitch, Kick, YouTube y TikTok en un solo chat."
 			};
-			Place(this, card, 20f, y0, 420f, 244f, PageChat);
+			Place(this, card, 20f, y0, 420f, 276f, PageChat);
 			tgChat = new Toggle
 			{
 				Text = "Activado"
@@ -43,16 +43,34 @@ namespace StreamDelay
 					SaveConfig();
 				}
 			};
-			Label(card, "TWITCH · NOMBRE DEL CANAL", 20f, 62f, 300f);
+			Label(card, "TWITCH · NOMBRE DEL CANAL", 20f, 58f, 300f);
 			fldChatTw = new Field();
-			Place(card, fldChatTw, 20f, 80f, 380f, 34f);
-			Label(card, "KICK · NOMBRE DEL CANAL", 20f, 120f, 300f);
+			Place(card, fldChatTw, 20f, 74f, 380f, 32f);
+			Label(card, "KICK · NOMBRE DEL CANAL", 20f, 110f, 300f);
 			fldChatKick = new Field();
-			Place(card, fldChatKick, 20f, 138f, 380f, 34f);
-			Label(card, "YOUTUBE · @CANAL O ENLACE DEL DIRECTO", 20f, 178f, 360f);
+			Place(card, fldChatKick, 20f, 126f, 380f, 32f);
+			Label(card, "YOUTUBE · @CANAL O ENLACE DEL DIRECTO", 20f, 162f, 360f);
 			fldChatYt = new Field();
-			Place(card, fldChatYt, 20f, 196f, 380f, 34f);
-			foreach (Field field in new Field[3] { fldChatTw, fldChatKick, fldChatYt })
+			Place(card, fldChatYt, 20f, 178f, 380f, 32f);
+			Label(card, "TIKTOK · @USUARIO", 20f, 214f, 200f);
+			fldChatTk = new Field();
+			Place(card, fldChatTk, 20f, 230f, 250f, 32f);
+			// TikTok necesita la clave gratuita de Euler Stream: el botón dice si ya está puesta.
+			VButton btnTkKey = new VButton
+			{
+				Kind = ButtonKind.Ghost,
+				Text = "Clave Euler Stream",
+				FontSize = 8.5f
+			};
+			Place(card, btnTkKey, 278f, 230f, 122f, 32f);
+			btnTkKey.Click += delegate
+			{
+				TikTokKeyDialog();
+				btnTkKey.Text = (tkKey.Length > 0) ? "Clave puesta ✓" : "Clave Euler Stream";
+				btnTkKey.Invalidate();
+			};
+			tkKeyButton = btnTkKey;
+			foreach (Field field in new Field[4] { fldChatTw, fldChatKick, fldChatYt, fldChatTk })
 			{
 				field.Box.TextChanged += delegate
 				{
@@ -64,17 +82,17 @@ namespace StreamDelay
 			}
 
 			// Espectadores y estado de cada chat.
-			chatViewers = Box(this, 20f, y0 + 254, 420f, 104f, PaintChatViewers, PageChat);
+			chatViewers = Box(this, 20f, y0 + 284, 420f, 100f, PaintChatViewers, PageChat);
 
 			// Botones.
-			int buttonsTop = y0 + 370;
+			int buttonsTop = y0 + 392;
 			btnChatOpen = new VButton
 			{
 				Kind = ButtonKind.Primary,
 				Text = "Abrir chat",
 				FontSize = 9.5f
 			};
-			Place(this, btnChatOpen, 20f, buttonsTop, 136f, 40f, PageChat);
+			Place(this, btnChatOpen, 20f, buttonsTop, 136f, 36f, PageChat);
 			btnChatOpen.Click += delegate
 			{
 				if (EnsureChatServer())
@@ -88,7 +106,7 @@ namespace StreamDelay
 				Text = "URL para OBS",
 				FontSize = 9f
 			};
-			Place(this, btnChatDock, 162f, buttonsTop, 136f, 40f, PageChat);
+			Place(this, btnChatDock, 162f, buttonsTop, 136f, 36f, PageChat);
 			btnChatDock.Click += delegate
 			{
 				if (EnsureChatServer())
@@ -102,7 +120,7 @@ namespace StreamDelay
 				Text = "Follows y donaciones",
 				FontSize = 9f
 			};
-			Place(this, btnChatAlerts, 20f, buttonsTop + 48, 420f, 38f, PageChat);
+			Place(this, btnChatAlerts, 20f, buttonsTop + 42, 420f, 34f, PageChat);
 			btnChatAlerts.Click += delegate
 			{
 				AlertsDialog();
@@ -113,21 +131,11 @@ namespace StreamDelay
 				Text = "Avisos de delay y comandos del chat",
 				FontSize = 9f
 			};
-			Place(this, btnExtras, 20f, buttonsTop + 92, 420f, 38f, PageChat);
+			Place(this, btnExtras, 20f, buttonsTop + 82, 420f, 34f, PageChat);
 			btnExtras.Click += delegate
 			{
 				AnnounceDialog();
 			};
-			string[] notes = new string[1] { "Los overlays para OBS (chat, delay, espectadores) están en la pestaña Overlays." };
-			for (int i = 0; i < notes.Length; i++)
-			{
-				string t = notes[i];
-				Box(this, 22f, buttonsTop + 136 + i * 18, 416f, 18f, delegate(Graphics g, Rectangle r)
-				{
-					Theme.DrawText(g, t, Theme.Body(7.75f), Theme.Muted, r, StringAlignment.Near, StringAlignment.Center);
-				}, PageChat);
-			}
-
 			// Cada segundo: espectadores y texto del botón "Follows y donaciones".
 			System.Windows.Forms.Timer refreshTimer = new System.Windows.Forms.Timer
 			{
@@ -378,14 +386,15 @@ namespace StreamDelay
 			string tw = fldChatTw.Box.Text.Trim();
 			string kc = fldChatKick.Box.Text.Trim();
 			string yt = fldChatYt.Box.Text.Trim();
-			if (tw.Length + kc.Length + yt.Length == 0)
+			string tk = fldChatTk.Box.Text.Trim();
+			if (tw.Length + kc.Length + yt.Length + tk.Length == 0)
 			{
 				loading = true;
 				tgChat.Checked = false;
 				loading = false;
 				if (userAction)
 				{
-					I18n.Show(this, "Escribe al menos un canal (Twitch, Kick o YouTube) para activar el chat.", "Chat");
+					I18n.Show(this, "Escribe al menos un canal (Twitch, Kick, YouTube o TikTok) para activar el chat.", "Chat");
 				}
 				return;
 			}
@@ -405,6 +414,8 @@ namespace StreamDelay
 				TwitchChannel = tw,
 				KickChannel = kc,
 				YouTubeChannel = yt,
+				TikTokChannel = tk,
+				TikTokKey = tkKey,
 				TwitchApi = twitch,
 				StreamElementsToken = seToken,
 				StreamlabsToken = slToken
@@ -421,7 +432,12 @@ namespace StreamDelay
 				OnChatItem(it);
 			};
 			chatHub.Start();
+			if (tk.Length > 0 && tkKey.Length == 0)
+			{
+				AppendLog("Chat de TikTok: falta la clave de Euler Stream (botón «Clave Euler Stream» en la pestaña Chat).");
+			}
 			// Con el chat encendido no se pueden cambiar los canales.
+			fldChatTk.Locked = true;
 			fldChatYt.Locked = true;
 			fldChatKick.Locked = true;
 			fldChatTw.Locked = true;
@@ -435,6 +451,7 @@ namespace StreamDelay
 				chatHub.Stop();
 			}
 			chatHub = null;
+			fldChatTk.Locked = false;
 			fldChatYt.Locked = false;
 			fldChatKick.Locked = false;
 			fldChatTw.Locked = false;
@@ -457,33 +474,36 @@ namespace StreamDelay
 				}
 			}
 			ChatHub hub = chatHub;
-			string[] names = new string[3] { "TWITCH", "KICK", "YOUTUBE" };
-			string[] channels = new string[3]
+			string[] names = new string[4] { "TWITCH", "KICK", "YOUTUBE", "TIKTOK" };
+			string[] channels = new string[4]
 			{
 				fldChatTw.Box.Text.Trim(),
 				fldChatKick.Box.Text.Trim(),
-				fldChatYt.Box.Text.Trim()
+				fldChatYt.Box.Text.Trim(),
+				fldChatTk.Box.Text.Trim()
 			};
 			// -1 = aún no se sabe, -2 = no está en directo.
-			int[] viewers = new int[3]
+			int[] viewers = new int[4]
 			{
 				(hub != null) ? hub.TwitchViewers : (-1),
 				(hub != null) ? hub.KickViewers : (-1),
-				(hub != null) ? hub.YouTubeViewers : (-1)
+				(hub != null) ? hub.YouTubeViewers : (-1),
+				(hub != null) ? hub.TikTokViewers : (-1)
 			};
-			string[] states = new string[3]
+			string[] states = new string[4]
 			{
 				(hub != null) ? hub.TwitchState : "",
 				(hub != null) ? hub.KickState : "",
-				(hub != null) ? hub.YouTubeState : ""
+				(hub != null) ? hub.YouTubeState : "",
+				(hub != null) ? hub.TikTokState : ""
 			};
-			float colWidth = (float)r.Width / 3f;
+			float colWidth = (float)r.Width / 4f;
 			float top = S(26f);
 			CultureInfo es = CultureInfo.GetCultureInfo("es-ES");
 			int total = 0;
 			bool anyViewers = false;
 			Theme.DrawText(g, "ESPECTADORES", Theme.Mono(7f), Theme.Dim, new RectangleF(S(16f), S(8f), S(200f), S(16f)), StringAlignment.Near, StringAlignment.Center);
-			for (int i = 0; i < 3; i++)
+			for (int i = 0; i < 4; i++)
 			{
 				float x = (float)i * colWidth;
 				string count;
@@ -525,7 +545,7 @@ namespace StreamDelay
 					g.FillEllipse(brush2, x + (float)S(16f), top + (float)S(9f), S(7f), S(7f));
 				}
 				Theme.DrawText(g, names[i], Theme.Mono(7f), Theme.Muted, new RectangleF(x + (float)S(29f), top + (float)S(3f), colWidth - (float)S(34f), S(18f)), StringAlignment.Near, StringAlignment.Center);
-				Theme.DrawText(g, count, Theme.BodyBold(11.5f), Theme.Text, new RectangleF(x + (float)S(15f), top + (float)S(22f), colWidth - (float)S(20f), S(26f)), StringAlignment.Near, StringAlignment.Center);
+				Theme.DrawText(g, count, Theme.BodyBold((count.Length > 7) ? 9.5f : 11.5f), Theme.Text, new RectangleF(x + (float)S(15f), top + (float)S(22f), colWidth - (float)S(20f), S(26f)), StringAlignment.Near, StringAlignment.Center);
 				Theme.DrawText(g, status, Theme.Body(7.25f), (color == Theme.Red) ? Color.FromArgb(255, 120, 130) : Theme.Muted, new RectangleF(x + (float)S(15f), top + (float)S(50f), colWidth - (float)S(20f), S(18f)), StringAlignment.Near, StringAlignment.Center);
 				if (i > 0)
 				{
@@ -700,6 +720,75 @@ namespace StreamDelay
 			f.ShowDialog(this);
 		}
 
+		// ---------- TikTok: clave de Euler Stream ----------
+
+		private VButton tkKeyButton;
+
+		private void TikTokKeyDialog()
+		{
+			Form f = DarkForm("Chat de TikTok", 460, 452);
+			Card c = new Card
+			{
+				Title = "Chat de TikTok",
+				Subtitle = "Con Euler Stream, un servicio gratuito."
+			};
+			Place(f, c, 20f, 18f, 420f, 360f);
+			Box(c, 20f, 56f, 380f, 112f, delegate(Graphics g, Rectangle r)
+			{
+				Theme.DrawWrapped(g, "TikTok no deja que otros programas lean el chat de un directo. Euler Stream se conecta a tu directo y se lo pasa a StreamDelay. Necesitas una clave gratuita:\n1. Crea una cuenta en eulerstream.com (sin tarjeta).\n2. En el panel, copia tu API Key.\n3. Pégala aquí y escribe tu @usuario de TikTok en la pestaña Chat.", Theme.Body(8.25f), Theme.Text, r);
+			});
+			VButton web = new VButton
+			{
+				Kind = ButtonKind.Ghost,
+				Text = "Abrir eulerstream.com",
+				FontSize = 9f
+			};
+			Place(c, web, 20f, 176f, 380f, 34f);
+			web.Click += delegate
+			{
+				Http.OpenBrowser("https://www.eulerstream.com");
+			};
+			Label(c, "EULER STREAM · API KEY", 20f, 220f, 300f);
+			Field fKey = new Field();
+			Place(c, fKey, 20f, 238f, 380f, 36f);
+			fKey.Box.UseSystemPasswordChar = true;
+			fKey.Box.Text = tkKey;
+			Box(c, 20f, 282f, 380f, 70f, delegate(Graphics g, Rectangle r)
+			{
+				Theme.DrawWrapped(g, "Llegan los mensajes, regalos, suscripciones, follows y espectadores. TikTok no deja escribir ni moderar desde otros programas. El plan gratis de Euler Stream sobra para tu directo. La clave se guarda cifrada en StreamDelay.ini.", Theme.Body(7.75f), Theme.Muted, r);
+			});
+			VButton cancel = new VButton
+			{
+				Kind = ButtonKind.Ghost,
+				Text = "Cancelar",
+				FontSize = 10f
+			};
+			VButton save = new VButton
+			{
+				Kind = ButtonKind.Primary,
+				Text = "Guardar",
+				FontSize = 10f
+			};
+			Place(f, cancel, 20f, 392f, 130f, 42f);
+			Place(f, save, 160f, 392f, 280f, 42f);
+			cancel.Click += delegate
+			{
+				f.Close();
+			};
+			save.Click += delegate
+			{
+				tkKey = fKey.Box.Text.Trim();
+				SaveConfig();
+				f.Close();
+				// Si el chat está encendido con TikTok, se reinicia para usar la clave nueva.
+				if (chatHub != null && fldChatTk.Box.Text.Trim().Length > 0)
+				{
+					StartChat(false);
+				}
+			};
+			f.ShowDialog(this);
+		}
+
 		// ---------- Configuración (StreamDelay.ini) ----------
 
 		// Además del chat, carga lo de los otros archivos (avisos, comandos, Mando, actualizaciones).
@@ -710,6 +799,12 @@ namespace StreamDelay
 			fldChatTw.Box.Text = get("chat_tw");
 			fldChatKick.Box.Text = get("chat_kick");
 			fldChatYt.Box.Text = get("chat_yt");
+			fldChatTk.Box.Text = get("chat_tk");
+			tkKey = Secret.Unprotect(get("chat_tk_key"));
+			if (tkKeyButton != null)
+			{
+				tkKeyButton.Text = (tkKey.Length > 0) ? "Clave puesta ✓" : "Clave Euler Stream";
+			}
 			// Primera vez: los canales salen de las cuentas conectadas en la pestaña Título.
 			if (!raw.ContainsKey("chat_tw") && twitch.Account.Length > 0)
 			{
@@ -737,6 +832,8 @@ namespace StreamDelay
 				lines.Add("chat_tw=" + fldChatTw.Box.Text.Trim());
 				lines.Add("chat_kick=" + fldChatKick.Box.Text.Trim());
 				lines.Add("chat_yt=" + fldChatYt.Box.Text.Trim());
+				lines.Add("chat_tk=" + fldChatTk.Box.Text.Trim());
+				lines.Add("chat_tk_key=" + Secret.Protect(tkKey));
 				lines.Add("chat_se=" + Secret.Protect(seToken));
 				lines.Add("chat_sl=" + Secret.Protect(slToken));
 				SaveExtrasConfig(lines);

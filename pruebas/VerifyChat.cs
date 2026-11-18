@@ -192,6 +192,31 @@ static class VerifyChat
             "42[\"otro\",{}]", "44\"Authentication error\"" }) Call(sl, "OnText", s);
         Out.AppendLine("  PingMs=" + sl.GetType().BaseType.GetField("PingMs", F).GetValue(sl));
 
+        Section("TikTokChat");
+        var tk = Make("TikTokChat", hub, "vortexs", "clave");
+        string[] tiktok =
+        {
+            "{\"type\":\"tiktok.connect\",\"data\":{\"agentId\":\"a1\"}}",
+            "{\"timestamp\":1,\"messages\":[{\"type\":\"WebcastChatMessage\",\"data\":{\"common\":{\"msgId\":\"7300000000000000001\"},\"user\":{\"id\":\"6800000000000000001\",\"nickname\":\"Laura 🌸\",\"uniqueId\":\"laura_tt\"},\"content\":\"hola KEKW qué tal\",\"emotes\":[{\"index\":5,\"emote\":{\"emoteId\":\"e1\",\"image\":{\"url\":[\"https://p16.tiktokcdn.com/e1.webp\"]}}}],\"userIdentity\":{\"isModeratorOfAnchor\":true,\"isSubscriberOfAnchor\":true}}},{\"type\":\"WebcastChatMessage\",\"data\":{\"common\":{\"msgId\":\"7300000000000000002\"},\"user\":{\"idStr\":\"6800000000000000002\",\"displayId\":\"solo_id\",\"nickname\":\"\"},\"comment\":\"emote al final\",\"emotes\":[{\"placeInComment\":99,\"emote\":{\"image\":{\"imageUrl\":\"https://p16.tiktokcdn.com/e2.webp\"}}}],\"UserIdentity\":{\"isAnchor\":true}}}]}",
+            "{\"messages\":[{\"type\":\"WebcastGiftMessage\",\"data\":{\"user\":{\"nickname\":\"Racha\"},\"repeatCount\":3,\"repeatEnd\":false,\"gift\":{\"name\":\"Rosa\",\"diamondCount\":1,\"type\":1}}},{\"type\":\"WebcastGiftMessage\",\"data\":{\"user\":{\"nickname\":\"Racha\"},\"repeatCount\":5,\"repeatEnd\":1,\"gift\":{\"name\":\"Rosa\",\"diamondCount\":1,\"type\":1}}},{\"type\":\"WebcastGiftMessage\",\"data\":{\"user\":{\"nickname\":\"Ballena\"},\"repeatCount\":1,\"giftDetails\":{\"giftName\":\"León\",\"diamondCount\":29999,\"giftType\":2}}},{\"type\":\"WebcastGiftMessage\",\"data\":{\"user\":{},\"repeatCount\":0,\"gift\":{}}}]}",
+            "{\"messages\":[{\"type\":\"WebcastSubNotifyMessage\",\"data\":{\"user\":{\"nickname\":\"Fiel\"},\"subMonth\":\"3\"}},{\"type\":\"WebcastSubNotifyMessage\",\"data\":{\"user\":{\"uniqueId\":\"nuevo_sub\"}}}]}",
+            "{\"messages\":[{\"type\":\"WebcastSocialMessage\",\"data\":{\"common\":{\"displayText\":{\"key\":\"pm_main_follow_message_viewer_2\"}},\"user\":{\"nickname\":\"Seguidora\"}}},{\"type\":\"WebcastSocialMessage\",\"data\":{\"common\":{\"displayText\":{\"key\":\"pm_mt_guidance_share\"}},\"user\":{\"nickname\":\"Comparte\"}}}]}",
+            "{\"messages\":[{\"type\":\"WebcastLikeMessage\",\"data\":{\"count\":15}},{\"type\":\"WebcastMemberMessage\",\"data\":{\"action\":1}},{\"type\":\"WebcastRoomUserSeqMessage\",\"data\":{\"viewerCount\":312}}]}",
+            "{\"messages\":[{\"type\":\"WebcastRoomUserSeqMessage\",\"data\":{\"total\":\"1500\",\"totalUser\":9000}}]}",
+            "{\"messages\":[{\"type\":\"WebcastEmoteChatMessage\",\"data\":{\"common\":{\"msgId\":\"7300000000000000003\"},\"user\":{\"id\":\"9\",\"nickname\":\"Sticker\"},\"emoteList\":[{\"emoteId\":\"s1\",\"image\":{\"urlList\":[\"https://p16.tiktokcdn.com/s1.webp\"]}}]}}]}",
+            "{\"messages\":[{\"type\":\"WebcastImDeleteMessage\",\"data\":{\"deleteMsgIdsList\":[\"7300000000000000001\"],\"deleteUserIdsList\":[\"6800000000000000002\"]}}]}",
+            "{\"type\":\"WebcastChatMessage\",\"data\":{\"user\":{\"nickname\":\"Suelto\"},\"content\":\"sin paquete Pog\"}}",
+            "{\"messages\":[{\"type\":\"WebcastChatMessage\",\"data\":{\"user\":{\"nickname\":\"Vacío\"},\"content\":\"\"}}]}",
+            "{\"messages\":[{\"type\":\"WebcastControlMessage\",\"data\":{\"action\":\"CONTROL_ACTION_STREAM_ENDED\"}}]}",
+            "{\"type\":\"room.status\",\"data\":{\"state\":\"connected\"}}",
+            "{\"type\":\"workerInfo\",\"data\":{}}",
+            "no es json",
+        };
+        foreach (var s in tiktok) { Out.AppendLine(" > " + (s.Length > 60 ? s.Substring(0, 60) : s)); Call(tk, "Handle", s); }
+        Out.AppendLine("  TikTokViewers=" + T("ChatHub").GetField("TikTokViewers", F).GetValue(hub));
+        foreach (var c in new object[] { 4404, 4005, 4555, 4429, 1000, 4401 }) { Out.AppendLine(" > cierre " + c); Out.AppendLine("  espera " + Dump(Call(tk, "Closed", c, c.ToString() == "1000" ? "adiós" : ""))); }
+        Call(tk, "State", "error: The server returned status code '401' when status code '101' was expected.");
+
         // Con un segundo argumento se guarda en ese archivo (UTF-8), sin depender de la consola.
         if (a.Length > 1) File.WriteAllText(a[1], Out.ToString(), new UTF8Encoding(false));
         else { Console.OutputEncoding = Encoding.UTF8; Console.Write(Out.ToString()); }

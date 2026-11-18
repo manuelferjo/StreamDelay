@@ -87,7 +87,12 @@ namespace StreamDelay
 			if (cmd == ClipCommand)
 			{
 				// Comando fijo: guarda los últimos 60 s en tu PC, solo si lo escribe el dueño del canal.
-				ChatClip(it, (it.p == "twitch") ? "Twitch" : ((it.p == "kick") ? "Kick" : "YouTube"));
+				ChatClip(it, (it.p == "twitch") ? "Twitch" : ((it.p == "kick") ? "Kick" : ((it.p == "tiktok") ? "TikTok" : "YouTube")));
+				return;
+			}
+			// TikTok no deja escribir en el chat desde otros programas: no se puede contestar.
+			if (it.p == "tiktok")
+			{
 				return;
 			}
 			string reply;

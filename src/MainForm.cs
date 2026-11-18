@@ -127,7 +127,7 @@ namespace StreamDelay
 
 		// ---------- Constantes ----------
 
-		private const string Version = "3.3";
+		private const string Version = "3.4";
 
 		private const string TikTokName = "TikTok";
 
@@ -249,6 +249,8 @@ namespace StreamDelay
 
 		private Field fldChatYt;
 
+		private Field fldChatTk;
+
 		private PaintBox chatViewers;
 
 		private VButton btnChatOpen;
@@ -263,6 +265,9 @@ namespace StreamDelay
 		private string seToken = "";
 
 		private string slToken = "";
+
+		// Clave de Euler Stream para leer el chat de TikTok (cifrada en StreamDelay.ini).
+		private string tkKey = "";
 
 		// ---------- Ventana y pestaña Directo ----------
 
