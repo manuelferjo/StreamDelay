@@ -52,14 +52,15 @@ al abrir y cada 6 horas; sin internet sigue valiendo 7 días).
 
 YA CONFIGURADO (18/11/2026) en la tienda Vortexs_MC de Polar:
   - StreamDelay Básico   5 €/mes, ventaja "Licencia StreamDelay Básico"
-    (claves SDB-..., 2 PCs).
+    (claves SDB-..., 1 PC).
   - StreamDelay Completo 8 €/mes, ventaja "Licencia StreamDelay Completo"
-    (claves SDC-..., 2 PCs).
+    (claves SDC-..., 1 PC).
   - Checkout links "Web y app - Básico" y "Web y app - Completo".
   - Los ids y enlaces ya están en src/License.cs y en web/index.html.
-  FALTA (solo lo puedes hacer tú): Finance -> Payout Account -> "Submit for
-  review" (verificar tu identidad y poner tu cuenta bancaria) y verificar el
-  correo de soporte en Settings. Hasta que Polar lo apruebe, el pago sale
+  Cuenta de cobro ya conectada; web del producto y país (España) puestos.
+  FALTA (solo lo puedes hacer tú): Finance -> Account -> "Verify your
+  identity" (con tu DNI), verificar el correo de soporte en Settings y
+  después "Submit for review". Hasta que Polar lo apruebe, el pago sale
   como "Payments are currently unavailable".
 
 Pasos que se siguieron (por si hay que repetirlos; los nombres de los menús
@@ -69,9 +70,9 @@ de Polar pueden cambiar un poco):
   2. Products -> New product:
        "StreamDelay Básico"   - Subscription, mensual, 5 EUR
        "StreamDelay Completo" - Subscription, mensual, 8 EUR
-     En cada uno, Benefits -> License key. Recomendado: "Activation limit" = 2
-     (la misma clave vale en 2 PCs; el cliente puede liberar uno con
-     "Quitar clave").
+     En cada uno, Benefits -> License key. "Limit Activations" = 1
+     (cada clave vale en un solo PC; para cambiar de PC, el cliente la
+     libera con "Quitar clave" o desde el portal de clientes).
   3. Pásame (o pon tú en src/License.cs):
        PolarOrg           el id de la organización (Settings -> General)
        PolarBenefitBasic  el id de la ventaja License key del Básico

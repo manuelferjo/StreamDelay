@@ -297,7 +297,7 @@ namespace StreamDelay
 					{
 						if (ex2.Status == 403 || ex2.Status == 400)
 						{
-							throw new ApiException(-1, "esta licencia ya está activada en el máximo de equipos. Quítala del otro PC (Licencia → Quitar clave) o desde tu cuenta de la tienda.");
+							throw new ApiException(-1, "esta licencia ya está activada en otro PC (cada licencia vale en un solo PC). Quítala de ese PC (Licencia → Quitar clave) o desde «Gestionar o cancelar mi suscripción».");
 						}
 						throw;
 					}
