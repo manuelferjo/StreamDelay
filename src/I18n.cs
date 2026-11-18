@@ -393,6 +393,11 @@ namespace StreamDelay
 			"Guardar clip (últimos 60 s)", "Save clip (last 60 s)",
 			"Guardando clip (últimos ", "Saving clip (last ",
 			"!clip de ", "!clip by ",
+			"Abrir la carpeta de clips", "Open the clips folder",
+			"Elegir dónde se guardan los clips…", "Choose where clips are saved…",
+			"Volver a la carpeta de siempre", "Back to the default folder",
+			"Carpeta donde se guardan los clips (últimos 60 s)", "Folder where clips are saved (last 60 s)",
+			"^Los clips se guardan en ", "Clips are saved to ",
 			// Ajustes
 			"Destinos", "Destinations",
 			"Se emite a la vez en los activados", "Streams to all the ones turned on at once",
