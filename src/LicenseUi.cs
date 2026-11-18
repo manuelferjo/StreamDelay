@@ -6,6 +6,9 @@
 //                     lic_ok= (última comprobación de Polar, cifrada), t0= (inicio de la prueba)
 //   Registro de Windows (HKCU\Software\Vortexs\Vortexs Live): inicio de la prueba y la última vez
 //                     que se abrió, para que reinstalar o borrar el .ini no dé otra prueba.
+//   vortexs.es/api/prueba: la prueba también se apunta en la web, por PC (la huella de MachineId).
+//                     Así ni borrar el registro ni usar otro usuario de Windows dan otra prueba.
+//                     La primera vez hace falta internet; luego se guarda (t0s= y "s") y ya no.
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -40,6 +43,20 @@ namespace StreamDelay
 		private string licCache = "";
 
 		private DateTime trialStart = DateTime.UtcNow;
+
+		// Inicio de la prueba confirmado por vortexs.es (MinValue = aún no). Sin él, la prueba solo
+		// vale mientras se pregunta; si no hay internet, no hay prueba (sí planes de pago).
+		private const string TrialUrl = "https://www.vortexs.es/api/prueba";
+
+		private DateTime trialOk = DateTime.MinValue;
+
+		private bool trialAsking;
+
+		private bool trialFailed;
+
+		private bool trialFailLogged;
+
+		private DateTime trialNextAsk = DateTime.MinValue;
 
 		private bool clockBack;
 
@@ -106,6 +123,10 @@ namespace StreamDelay
 			{
 				start = t;
 			}
+			if (raw.TryGetValue("t0s", out v) && TryTicks(Secret.Unprotect(v), out t))
+			{
+				trialOk = t;
+			}
 			try
 			{
 				using (RegistryKey k = Registry.CurrentUser.CreateSubKey(RegPath))
@@ -117,6 +138,14 @@ namespace StreamDelay
 					if (TryTicks(Secret.Unprotect(k.GetValue("v") as string), out t))
 					{
 						seen = t;
+					}
+					if (TryTicks(Secret.Unprotect(k.GetValue("s") as string), out t) && (trialOk == DateTime.MinValue || t < trialOk))
+					{
+						trialOk = t;
+					}
+					if (trialOk != DateTime.MinValue && trialOk < start)
+					{
+						start = trialOk;
 					}
 					k.SetValue("p", Secret.Protect(start.Ticks.ToString(CultureInfo.InvariantCulture)));
 				}
@@ -136,6 +165,7 @@ namespace StreamDelay
 			lines.Add("lic_act=" + licActivation);
 			lines.Add("lic_ok=" + Secret.Protect(licCache));
 			lines.Add("t0=" + Secret.Protect(trialStart.Ticks.ToString(CultureInfo.InvariantCulture)));
+			lines.Add("t0s=" + ((trialOk == DateTime.MinValue) ? "" : Secret.Protect(trialOk.Ticks.ToString(CultureInfo.InvariantCulture))));
 			lines.Add("lic_avisos=" + licSeen);
 			if (!licLoaded)
 			{
@@ -256,6 +286,11 @@ namespace StreamDelay
 				trial = LicenseInfo.Bad("la fecha del PC está atrasada");
 				trial.Source = "prueba";
 			}
+			else if (trialOk == DateTime.MinValue && trialFailed)
+			{
+				trial = LicenseInfo.Bad("para empezar la prueba hace falta internet (solo la primera vez)");
+				trial.Source = "prueba";
+			}
 			LicenseInfo key = KeyInfo(now);
 			licProblem = (key != null) ? key.Error : "";
 			LicenseInfo best = (key != null && key.Plan != Plan.None && key.Plan >= trial.Plan) ? key : trial;
@@ -328,6 +363,10 @@ namespace StreamDelay
 		private void LicenseTick()
 		{
 			DateTime now = DateTime.UtcNow;
+			if (trialOk == DateTime.MinValue && !trialAsking && now >= trialNextAsk)
+			{
+				AskTrial();
+			}
 			if (now < licNextTick)
 			{
 				return;
@@ -352,7 +391,8 @@ namespace StreamDelay
 
 		private void LicenseNotices()
 		{
-			if (licNoticeOpen || !base.Visible || Form.ActiveForm != this || engine.OutputActive || base.OwnedForms.Length > 0 || planInfo.Source != "prueba")
+			// Hasta que la web confirme la prueba no se enseña ningún aviso de prueba.
+			if (licNoticeOpen || !base.Visible || Form.ActiveForm != this || engine.OutputActive || base.OwnedForms.Length > 0 || planInfo.Source != "prueba" || trialOk == DateTime.MinValue)
 			{
 				return;
 			}
@@ -431,7 +471,7 @@ namespace StreamDelay
 				Box(f, 24f, 20f, 392f, 280f, delegate(Graphics g, Rectangle r)
 				{
 					Card.Glow(g, new RectangleF(-r.Width * 0.2f, -r.Height * 0.4f, r.Width * 0.9f, r.Height * 0.8f), Color.FromArgb(40, Theme.Violet));
-					Theme.DrawText(g, "VORTEXS LIVE 4.0", Theme.Mono(7.5f), Theme.Violet, new RectangleF(0f, 0f, r.Width, S(18f)), StringAlignment.Near, StringAlignment.Center);
+					Theme.DrawText(g, "VORTEXS LIVE " + Version, Theme.Mono(7.5f), Theme.Violet, new RectangleF(0f, 0f, r.Width, S(18f)), StringAlignment.Near, StringAlignment.Center);
 					Theme.DrawText(g, heading, Theme.Display(16f), Theme.Text, new RectangleF(0f, S(20f), r.Width, S(34f)), StringAlignment.Near, StringAlignment.Center);
 					Theme.DrawWrapped(g, text, Theme.Body(9f), Theme.Muted, new RectangleF(0f, S(64f), r.Width, r.Height - S(64f)));
 				});
@@ -456,6 +496,90 @@ namespace StreamDelay
 				licNoticeOpen = false;
 			}
 			return first;
+		}
+
+		// ---------- Prueba apuntada en vortexs.es ----------
+
+		// Pregunta a la web cuándo empezó la prueba este PC (en otro hilo). La web guarda la fecha
+		// más antigua que conoce; la app se queda con la más antigua entre la suya y la de la web.
+		private void AskTrial()
+		{
+			trialAsking = true;
+			trialNextAsk = DateTime.UtcNow.AddMinutes(1.0);
+			DateTime epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+			long localMs = (long)(trialStart - epoch).TotalMilliseconds;
+			string url = TrialUrl + "?equipo=" + MachineId() + "&inicio=" + localMs.ToString(CultureInfo.InvariantCulture);
+			System.Threading.ThreadPool.QueueUserWorkItem(delegate
+			{
+				DateTime got = DateTime.MinValue;
+				try
+				{
+					Dictionary<string, object> r = Http.Send("GET", url, null, null, null, null);
+					object v;
+					if (r != null && r.TryGetValue("inicio", out v) && v != null)
+					{
+						got = epoch.AddMilliseconds(Convert.ToDouble(v, CultureInfo.InvariantCulture));
+					}
+				}
+				catch
+				{
+				}
+				try
+				{
+					BeginInvoke((Action)delegate
+					{
+						TrialAnswer(got);
+					});
+				}
+				catch
+				{
+					trialAsking = false;
+				}
+			});
+		}
+
+		private void TrialAnswer(DateTime got)
+		{
+			trialAsking = false;
+			if (got == DateTime.MinValue || got > DateTime.UtcNow.AddDays(1.0))
+			{
+				trialFailed = true;
+				if (!trialFailLogged)
+				{
+					trialFailLogged = true;
+					AppendLog("Prueba gratis: no se ha podido conectar con vortexs.es. La primera vez hace falta internet para empezarla; se vuelve a intentar cada minuto.");
+				}
+			}
+			else
+			{
+				trialFailed = false;
+				trialOk = got;
+				if (got < trialStart)
+				{
+					trialStart = got;
+				}
+				try
+				{
+					using (RegistryKey k = Registry.CurrentUser.CreateSubKey(RegPath))
+					{
+						k.SetValue("s", Secret.Protect(trialOk.Ticks.ToString(CultureInfo.InvariantCulture)));
+						k.SetValue("p", Secret.Protect(trialStart.Ticks.ToString(CultureInfo.InvariantCulture)));
+					}
+				}
+				catch
+				{
+				}
+				SaveConfig();
+				if (trialFailLogged)
+				{
+					AppendLog("Prueba gratis: conexión con vortexs.es recuperada.");
+				}
+			}
+			// En pleno directo no se quita nada: el cambio espera (LicenseTick lo aplica después).
+			if (!engine.OutputActive)
+			{
+				ComputePlan(true);
+			}
 		}
 
 		// ---------- Polar ----------
