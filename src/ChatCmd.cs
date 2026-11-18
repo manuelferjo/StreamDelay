@@ -137,6 +137,10 @@ namespace StreamDelay
 
 		// ---------- Moderación ----------
 
+		// Acciones de moderación (página del chat y moderación automática).
+		//   del · t60 · t600 · t3600 · t86400 · ban · unban   → en la plataforma, con tu cuenta de "Título"
+		//   hide (quitar el mensaje solo de tu chat y de la pantalla) · ignore (no enseñar más a ese usuario)
+		//   modes (leer los modos del chat de Twitch) · setmode (k, v) · clear (borrar todo el chat)
 		private Dictionary<string, object> ModAction(Dictionary<string, object> d)
 		{
 			Dictionary<string, object> res = new Dictionary<string, object>();
@@ -159,11 +163,106 @@ namespace StreamDelay
 			catch
 			{
 			}
-			int secs = (a == "t60") ? 60 : ((a == "t600") ? 600 : 0);
+
+			// ---- Solo en tu chat y en la pantalla (vale también para TikTok) ----
+			if (a == "hide")
+			{
+				chatServer.Send(new ChatItem { t = "del", p = p, id = id, uid = (id.Length == 0) ? uid : null });
+				res["ok"] = true;
+				res["msg"] = "oculto en tu chat y en pantalla";
+				return res;
+			}
+			if (a == "ignore")
+			{
+				if (user.Length == 0)
+				{
+					res["error"] = "este mensaje no trae el usuario";
+					return res;
+				}
+				IgnoreUser(user);
+				if (uid.Length > 0)
+				{
+					chatServer.Send(new ChatItem { t = "del", p = p, uid = uid });
+				}
+				LogLater("Moderación: " + user + " ya no sale en tu chat ni en pantalla (Chat → Moderación para quitarlo de la lista).");
+				res["ok"] = true;
+				res["msg"] = user + " ya no sale en tu chat ni en pantalla";
+				return res;
+			}
+
+			// ---- Todo el chat ----
+			if (a == "clear")
+			{
+				// En la página se borra siempre; en Twitch, además, para todos si estás conectado.
+				chatServer.Send(new ChatItem { t = "clear" });
+				string extra = "";
+				if (twitch.Connected && twCh.Length > 0)
+				{
+					try
+					{
+						twitch.ClearChat(twCh);
+						extra = " (y en Twitch para todos)";
+					}
+					catch (Exception ex)
+					{
+						extra = " (Twitch: " + ex.Message + ")";
+					}
+				}
+				LogLater("Moderación: chat borrado" + extra + ".");
+				res["ok"] = true;
+				res["msg"] = "chat borrado" + extra;
+				return res;
+			}
+			if (a == "modes" || a == "setmode")
+			{
+				if (!twitch.Connected || twCh.Length == 0)
+				{
+					res["error"] = "los modos del chat son de Twitch: conecta tu cuenta en la pestaña Título";
+					return res;
+				}
+				try
+				{
+					Dictionary<string, object> modes;
+					if (a == "modes")
+					{
+						modes = twitch.GetChatSettings(twCh);
+					}
+					else
+					{
+						string k = J.S(d, "k");
+						object v = J.At(d, "v");
+						if (k != "slow" && k != "followers" && k != "subscribers" && k != "emotes")
+						{
+							res["error"] = "modo desconocido";
+							return res;
+						}
+						Dictionary<string, object> ch = new Dictionary<string, object>();
+						ch[k] = v;
+						modes = twitch.SetChatSettings(twCh, ch);
+						LogLater("Moderación Twitch: " + ModeText(k, v) + ".");
+					}
+					res["ok"] = true;
+					res["modes"] = modes;
+				}
+				catch (Exception ex)
+				{
+					res["error"] = ex.Message;
+				}
+				return res;
+			}
+
+			// ---- Una persona o un mensaje, en la plataforma ----
+			int secs = (a == "t60") ? 60 : ((a == "t600") ? 600 : ((a == "t3600") ? 3600 : ((a == "t86400") ? 86400 : 0)));
 			bool del = a == "del";
-			if (!del && a != "ban" && secs == 0)
+			bool unban = a == "unban";
+			if (!del && !unban && a != "ban" && secs == 0)
 			{
 				res["error"] = "acción desconocida";
+				return res;
+			}
+			if (p == "tiktok")
+			{
+				res["error"] = "TikTok no deja moderar desde otros programas: usa Ocultar";
 				return res;
 			}
 			Platform plat = (p == "twitch") ? twitch : ((p == "kick") ? ((Platform)kick) : ((p == "youtube") ? ((Platform)youtube) : null));
@@ -190,6 +289,10 @@ namespace StreamDelay
 					{
 						twitch.DeleteMessage(twCh, id);
 					}
+					else if (unban)
+					{
+						twitch.Unban(twCh, uid);
+					}
 					else
 					{
 						twitch.Ban(twCh, uid, secs, "StreamDelay");
@@ -201,6 +304,10 @@ namespace StreamDelay
 					{
 						kick.DeleteMessage(id);
 					}
+					else if (unban)
+					{
+						kick.Unban(kcCh, uid);
+					}
 					else
 					{
 						kick.Ban(kcCh, uid, secs, "StreamDelay");
@@ -210,15 +317,20 @@ namespace StreamDelay
 				{
 					youtube.DeleteMessage(uid, text);
 				}
+				else if (unban)
+				{
+					youtube.Unban(uid);
+				}
 				else
 				{
 					youtube.Ban(uid, secs);
 				}
-				string what = del ? ("mensaje de " + user + " borrado") : ((secs > 0) ? (user + " expulsado " + secs / 60 + " min") : (user + " baneado"));
+				string what = del ? ("mensaje de " + user + " borrado") : (unban ? ("ban de " + user + " quitado") : ((secs > 0) ? (user + " expulsado " + Duration(secs)) : (user + " baneado")));
 				LogLater("Moderación " + plat.Name + ": " + what + ".");
 				res["ok"] = true;
 				res["msg"] = what;
-				if (del && chatServer != null)
+				res["undo"] = !del && !unban;
+				if (del)
 				{
 					// Se quita ya de la página (la plataforma también lo avisará).
 					chatServer.Send(new ChatItem { t = "del", p = p, id = id });
@@ -230,6 +342,31 @@ namespace StreamDelay
 				LogLater("Moderación " + plat.Name + ": " + ex.Message);
 			}
 			return res;
+		}
+
+		private static string Duration(int secs)
+		{
+			if (secs >= 86400)
+			{
+				return secs / 86400 + " día" + ((secs >= 172800) ? "s" : "");
+			}
+			if (secs >= 3600)
+			{
+				return secs / 3600 + " h";
+			}
+			return secs / 60 + " min";
+		}
+
+		private static string ModeText(string k, object v)
+		{
+			if (k == "slow")
+			{
+				int s = Convert.ToInt32(v);
+				return (s > 0) ? ("modo lento de " + s + " s") : "modo lento quitado";
+			}
+			bool on = Convert.ToBoolean(v);
+			string name = (k == "followers") ? "solo seguidores" : ((k == "subscribers") ? "solo suscriptores" : "solo emotes");
+			return (on ? "activado " : "quitado ") + name;
 		}
 
 		// ---------- Configuración ----------

@@ -59,7 +59,7 @@
     <img src="res/logo.png" alt="">
     <div>
       <h1>Stream <span>Delay</span></h1>
-      <div class="by">by Vortexs · v3.3</div>
+      <div class="by">by Vortexs · v3.5</div>
     </div>
   </header>
   <p class="sub">Delay dinámico y gratuito para tus directos con OBS: cámbialo, actívalo o desactívalo sin cortar el stream. Ahora conserva todas las calidades de la <b>Transmisión mejorada</b> de Twitch.</p>
@@ -252,7 +252,7 @@
     <table style="margin-top:12px">
       <tr><th>Dónde verlo</th><th>Cómo</th></tr>
       <tr><td>Panel dentro de OBS</td><td>Pulsa <b>URL para OBS</b>. En OBS: <b>Docks → Docks de navegador personalizados</b>, pon un nombre (por ejemplo “Chat”), pega la URL y aplica.</td></tr>
-      <tr><td>En pantalla, en el directo</td><td>Pestaña <b>Overlays</b> → tarjeta <b>Chat en pantalla</b> → <b>Copiar URL</b>. En OBS añade una fuente <b>Navegador</b> con esa URL, ancho <code>500</code> y alto <code>700</code> por ejemplo, y colócala donde quieras (fondo transparente; cada mensaje se ve 30 s y desaparece).</td></tr>
+      <tr><td>En pantalla, en el directo</td><td>Pestaña <b>Overlays</b> → tarjeta <b>Chat en pantalla</b> → <b>Copiar URL</b>. En OBS añade una fuente <b>Navegador</b> con esa URL, ancho <code>500</code> y alto <code>700</code> por ejemplo, y colócala donde quieras. Su aspecto (fuente, tamaño, colores, con o sin fondo…) se cambia en <b>Personalizar chat →</b> (ver apartado 9).</td></tr>
     </table>
     <h3 style="margin:18px 0 8px">Chat de TikTok <span class="tag">NUEVO</span></h3>
     <p style="margin-top:0">TikTok no deja que otros programas lean el chat de un directo. Por eso StreamDelay usa <b>Euler Stream</b>, un servicio que se conecta a tu directo y le pasa el chat. Su plan <b>Community</b> es gratis (sin tarjeta) y sobra para tu directo.</p>
@@ -273,7 +273,7 @@
       <li>Los mensajes borrados y los usuarios baneados desaparecen también del chat conjunto.</li>
       <li><b>Ocultar o ver los espectadores:</b> pulsa el total de arriba para ocultarlos o verlos todos, o pulsa una plataforma para ocultar solo la suya (el total se marca con * si falta alguna). Cada uno lo elige en su navegador o panel de OBS y se recuerda. Con <code>?espectadores=0</code> en la URL empiezan ocultos.</li>
       <li>Funciona aunque el delay esté apagado y se activa solo al abrir StreamDelay si lo dejaste activado.</li>
-      <li>Ajustes de la URL (se añaden al final): <code>?size=18</code> tamaño de letra · <code>?eventos=0</code> sin avisos · <code>?ocultar=youtube</code> no mostrar una plataforma · <code>?overlay=1&amp;desvanecer=20</code> segundos que se ve cada mensaje.</li>
+      <li>Ajustes de la URL (se añaden al final): <code>?size=18</code> tamaño de letra · <code>?eventos=0</code> sin avisos · <code>?ocultar=youtube</code> no mostrar una plataforma · <code>?moderar=0</code> sin botones de moderar. El tamaño, la duración y el resto del aspecto se eligen en <b>Personalizar chat</b>.</li>
     </ul>
     <h3 style="margin:18px 0 8px">Follows de Twitch y donaciones</h3>
     <p style="margin-top:0">Pulsa <b>Follows y donaciones</b> en la pestaña Chat:</p>
@@ -315,7 +315,7 @@
       <tr><th>Overlay</th><th>Qué muestra y qué puedes elegir</th></tr>
       <tr><td><b>Delay</b><br><code>…/delay</code></td><td>Arriba a la derecha: <b>“DELAY 30 s”</b> o <b>“EN DIRECTO · Sin delay”</b>, los dos en el mismo formato rojo, muy legible. Tamaño <b>Normal / Grande / Enorme</b> y <b>Ocultar sin delay</b> (si solo quieres que se vea cuando hay delay). Funciona aunque el chat esté apagado.</td></tr>
       <tr><td><b>Espectadores</b><br><code>…/viewers</code></td><td>Los espectadores del momento de <b>Twitch, Kick, YouTube</b> y el <b>Total</b>: marca las que quieras, cualquier combinación, o <b>ninguna</b> para que no salga nada. Una plataforma solo aparece mientras está en directo. Posición (las 4 esquinas; arriba a la derecha se pone justo debajo del de delay), <b>En columna</b> y tamaño. Necesita el <b>chat activado</b> (pestaña Chat) con los nombres de tus canales; se actualiza cada pocos segundos.</td></tr>
-      <tr><td><b>Chat en pantalla</b><br><code>…/?overlay=1&amp;desvanecer=30</code></td><td>Los tres chats juntos con fondo transparente; cada mensaje se ve 30 s. Colócalo donde no tape a los otros dos.</td></tr>
+      <tr><td><b>Chat en pantalla</b><br><code>…/?overlay=1</code></td><td>Todos los chats juntos, apilados abajo como en un directo. Tiene su <b>propio estilo</b>: pulsa <b>Personalizar chat →</b> (más abajo). Colócalo donde no tape a los otros dos. Si lo añadiste con una versión anterior (<code>…&amp;desvanecer=30</code>), sigue valiendo.</td></tr>
     </table>
     <ul style="margin-top:12px">
       <li>Al <b>activar o subir el delay</b> en directo, el de delay muestra “ACTIVANDO DELAY” con una barra que se llena durante esos segundos; al quitarlo, “DELAY QUITADO · En directo” unos segundos. Como el overlay también va con delay, tu público ve la barra justo después de la repetición: así entiende qué ha pasado.</li>
@@ -324,14 +324,27 @@
       <li>Las opciones por URL siguen funcionando y mandan sobre las de la app: delay <code>?escala=1.3</code>, <code>?sin_delay=0</code>, <code>?texto=Retraso</code>; espectadores <code>?pos=bl</code>, <code>?vertical=1</code>, <code>?escala=1.2</code>.</li>
     </ul>
     <h3 style="margin:18px 0 8px">Dales tu estilo <span class="tag">NUEVO</span></h3>
-    <p style="margin-top:0">En cualquiera de los tres recuadros de la pestaña Overlays pulsa <b>Personalizar →</b>. El estilo es el mismo para los tres overlays, para que todo vaya con tu marca, y <b>se ve al momento en OBS</b> mientras lo cambias (con <b>Cancelar</b> vuelve a como estaba).</p>
+    <p style="margin-top:0">En los recuadros de delay y espectadores de la pestaña Overlays pulsa <b>Personalizar →</b>. El estilo es el mismo para los dos, para que todo vaya con tu marca, y <b>se ve al momento en OBS</b> mientras lo cambias (con <b>Cancelar</b> vuelve a como estaba).</p>
     <ul>
       <li><b>Estilos listos:</b> Directo (el rojo de siempre), StreamDelay, Neón, Fuego, Hielo, Minimal, Retro y Claro. Elige uno y retócalo.</li>
       <li><b>Colores:</b> principal y segundo (borde, brillo, punto y barra, con degradado o de un solo color), fondo y texto. Pulsa cada color para cambiarlo.</li>
       <li><b>Fondo</b> (de opaco a transparente), <b>borde</b> (sin borde, fino o grueso) y <b>brillo</b>.</li>
       <li><b>Forma:</b> redondeada, píldora, recta o <b>círculo</b> (el círculo es para el overlay de delay; los espectadores lo muestran en píldora).</li>
       <li><b>Fuente:</b> 12 a elegir (Outfit, Montserrat, Bebas Neue, Orbitron, Press Start…). Se cargan de Google Fonts, así que OBS necesita internet para verlas.</li>
-      <li><b>Texto del overlay de delay</b> (por ejemplo “Retraso”), el <b>punto que late</b> y <b>fondo en cada mensaje</b> del chat en pantalla.</li>
+      <li><b>Texto del overlay de delay</b> (por ejemplo “Retraso”) y el <b>punto que late</b>.</li>
+    </ul>
+    <h3 style="margin:18px 0 8px">Personalizar el chat en pantalla <span class="tag">NUEVO</span></h3>
+    <p style="margin-top:0">Pestaña <b>Overlays</b> → recuadro <b>Chat en pantalla</b> → <b>Personalizar chat →</b>. Como el resto, <b>se ve al momento en OBS</b>; <b>Vista previa</b> abre el chat con mensajes de ejemplo sobre un fondo de cuadros (los cuadros son la parte transparente) y <b>Cancelar</b> lo deja como estaba.</p>
+    <ul>
+      <li><b>Estilos listos:</b> Clásico (el de siempre), Burbujas, Panel, Grande, Claro, Neón, Minimal y Retro. Elige uno y retócalo.</li>
+      <li><b>Fuente</b> (16 a elegir, también la de Windows) y <b>tamaño</b> del texto, de 13 a 40.</li>
+      <li><b>Colores:</b> texto, nombres (cada uno con su color o todos del mismo), la raya de los mensajes y el fondo.</li>
+      <li><b>Fondo:</b> <b>sin fondo</b> (transparente), <b>en cada mensaje</b> o <b>detrás de todo el chat</b>, con su opacidad y esquinas redondeadas, en píldora o rectas.</li>
+      <li><b>Para que se lea sobre el juego</b> sin fondo: <b>sombra</b> o <b>contorno</b> negro en las letras.</li>
+      <li><b>Qué se ve:</b> el icono de cada plataforma, las insignias (mod, sub…), los avisos (subs, regalos…) y si se ocultan los comandos (<code>!delay</code>…).</li>
+      <li><b>Cuánto se ve cada mensaje</b> (siempre, 15 s, 30 s, 1 o 2 min), cómo <b>aparece</b> (deslizando, apareciendo, saltando o de golpe) y si va a la <b>izquierda o a la derecha</b>.</li>
+      <li><b>Usar este estilo también en el panel del chat</b> (el de OBS o el navegador): si no, el panel se queda con su aspecto oscuro de siempre.</li>
+      <li>Las fuentes (menos la de Windows) vienen de Google Fonts: OBS necesita internet para verlas.</li>
     </ul>
   </section>
 
@@ -358,14 +371,40 @@
       <li>Cada comando contesta como mucho una vez cada 20 s por plataforma (así no se llena el chat). Los mensajes antiguos que llegan al conectar el chat no se contestan.</li>
       <li>Hace falta el chat activado y la cuenta de esa plataforma conectada en <b>Título</b>. En YouTube cada respuesta gasta cupo de la API (50 de 10.000 diarias).</li>
     </ul>
-    <h3 style="margin:18px 0 8px">Moderar desde el chat conjunto</h3>
-    <p style="margin-top:0">En la página del chat (navegador o panel de OBS), <b>pulsa un mensaje</b> y elige: <b>🗑 Borrar</b>, <b>⏱ 1 min</b>, <b>⏱ 10 min</b> (expulsión temporal) o <b>⛔ Ban</b> (pide confirmación con un segundo clic). Debajo sale ✓ o el motivo del fallo.</p>
+    <h3 style="margin:18px 0 8px">Moderar desde el chat conjunto <span class="tag">NUEVO</span></h3>
+    <p style="margin-top:0">En la página del chat (navegador o panel de OBS), <b>pulsa un mensaje</b> y elige:</p>
+    <table>
+      <tr><th>Botón</th><th>Qué hace</th></tr>
+      <tr><td>🗑 Borrar</td><td>Borra ese mensaje en la plataforma.</td></tr>
+      <tr><td>⏱ 1 min · 10 min · 1 h · 24 h</td><td>Expulsa a esa persona ese tiempo (no puede escribir).</td></tr>
+      <tr><td>⛔ Ban</td><td>La banea. Pide confirmación con un segundo clic.</td></tr>
+      <tr><td>↩ Deshacer</td><td>Sale después de expulsar o banear: lo quita al momento (por si te equivocas).</td></tr>
+      <tr><td>🙈 Ocultar</td><td>Quita el mensaje <b>solo de tu chat y de la pantalla</b>, sin tocar la plataforma. Vale también para TikTok.</td></tr>
+      <tr><td>🔇 No ver más</td><td>Esa persona ya no sale en tu chat ni en pantalla. Se quita de la lista en Chat → <b>Moderación</b>.</td></tr>
+    </table>
+    <p>Arriba a la derecha del chat, <b>🛡 Moderar</b> abre el panel de todo el chat:</p>
     <ul>
-      <li>Se hace con tu cuenta conectada en <b>Título</b>; tienes que ser el dueño del canal o moderador.</li>
-      <li><b>Twitch:</b> necesita permisos nuevos. Vuelve a conectar Twitch una vez en <b>Título</b> (desconectar y conectar).</li>
-      <li><b>Kick:</b> en tu app de Kick (kick.com → Ajustes → Desarrollador) marca también <code>moderation:ban</code> y <code>moderation:chat_message:manage</code>, guarda y vuelve a conectar Kick en <b>Título</b>.</li>
-      <li><b>YouTube:</b> funciona con la conexión que ya tienes. Para borrar, StreamDelay busca el mensaje entre los últimos del chat; cada acción gasta algo de cupo de la API.</li>
-      <li>No sale en la versión en pantalla (overlay). Para quitarlo también del panel, añade <code>?moderar=0</code> a la URL.</li>
+      <li><b>Modo lento</b> de Twitch (5 s, 10 s, 30 s, 1 o 2 min) y <b>solo seguidores</b>, <b>solo suscriptores</b> o <b>solo emotes</b>. Se ve cuáles están puestos.</li>
+      <li><b>🧹 Borrar el chat</b> (con un segundo clic): lo vacía en tu chat y en pantalla y, con Twitch conectado, en Twitch para todos.</li>
+    </ul>
+    <h3 style="margin:18px 0 8px">Moderación automática <span class="tag">NUEVO</span></h3>
+    <p style="margin-top:0">Pestaña <b>Chat</b> → <b>Moderación</b>. Actúa sola con cada mensaje que llega:</p>
+    <ul>
+      <li><b>Palabras prohibidas</b>, una por línea. Da igual mayúsculas o tildes. Se busca la palabra entera: <code>tonto</code> no salta con “tontorrón”; para eso escribe <code>tonto*</code> (el <code>*</code> vale por lo que sea). También vale una frase entera.</li>
+      <li><b>Spam:</b> enlaces, todo en mayúsculas, el mismo mensaje repetido 3 veces en un minuto y demasiados emotes (12 o más). Cada uno se activa por separado.</li>
+      <li><b>Qué hacer</b> (uno para las palabras y otro para el spam): <b>ocultar</b> (solo en tu chat y en pantalla), <b>borrar</b> el mensaje, expulsar <b>1 o 10 min</b> o <b>banear</b>.</li>
+      <li><b>No salen en el chat:</b> los bots conocidos (Nightbot, StreamElements…) si lo marcas, y la lista de usuarios que pongas (o que añadas con 🔇).</li>
+      <li>Tú y tus moderadores nunca se moderan; los suscriptores y VIP tampoco si dejas marcada esa opción.</li>
+      <li>Lo que se filtra <b>nunca llega a la pantalla</b>, aunque la plataforma tarde en borrarlo. En el Registro queda apuntado quién, por qué y qué se hizo.</li>
+      <li>En TikTok solo se oculta (TikTok no deja moderar desde otros programas).</li>
+    </ul>
+    <h3 style="margin:18px 0 8px">Lo que hace falta para moderar en la plataforma</h3>
+    <ul>
+      <li>Tu cuenta conectada en <b>Título</b>; tienes que ser el dueño del canal o moderador.</li>
+      <li><b>Twitch:</b> desde la 3.5 hay un permiso nuevo para los modos del chat. Vuelve a conectar Twitch una vez en <b>Título</b> (desconectar y conectar).</li>
+      <li><b>Kick:</b> en tu app de Kick (kick.com → Ajustes → Desarrollador) marca también <code>moderation:ban</code> y <code>moderation:chat_message:manage</code>, guarda y vuelve a conectar Kick en <b>Título</b>. Kick no deja cambiar el modo lento ni los modos del chat desde otros programas.</li>
+      <li><b>YouTube:</b> funciona con la conexión que ya tienes. Para borrar, StreamDelay busca el mensaje entre los últimos del chat; cada acción gasta algo de cupo de la API. Solo se pueden deshacer los bans puestos desde StreamDelay mientras está abierto.</li>
+      <li>Los botones no salen en el chat en pantalla. Para quitarlos también del panel, añade <code>?moderar=0</code> a la URL.</li>
     </ul>
   </section>
 
@@ -419,6 +458,8 @@
       <tr><td>Algo no va con el emisor nuevo</td><td>Activa <b>Modo clásico con ffmpeg</b> en Ajustes: envía como la versión anterior (una sola calidad, necesita ffmpeg).</td></tr>
       <tr><td>“Control inteligente de aplicaciones bloqueó…”</td><td>Windows 11 bloquea algunos programas nuevos sin firma digital. Puedes desactivarlo en <i>Seguridad de Windows → Control de aplicaciones y navegador</i>, pero es una decisión de seguridad tuya: en muchas versiones no se puede volver a activar sin reinstalar Windows.</td></tr>
           <tr><td>El chat de TikTok no sale</td><td>Mira la pestaña Chat, columna TIKTOK: “Sin directo” = aún no estás en directo en TikTok (se vuelve a mirar cada 2 min). “Falta la clave” o “la clave no es válida” = pega de nuevo tu API Key de eulerstream.com en <b>Clave Euler Stream</b>. Escribe el @usuario sin espacios.</td></tr>
+      <tr><td>Los modos del chat dicen “vuelve a conectar Twitch”</td><td>Es un permiso nuevo de la 3.5: pestaña Título → desconecta Twitch y vuelve a conectarlo.</td></tr>
+      <tr><td>Un mensaje no sale en el chat</td><td>Puede que lo haya filtrado la moderación automática o que esa persona esté en “No salen en el chat”: mira el Registro y Chat → Moderación.</td></tr>
 </table>
     <p>La pestaña <b>Registro</b> muestra lo que va pasando. <b>Si pides ayuda, copia ese texto</b>: no contiene tu clave.</p>
     <p class="note ok">Antes del primer directo de verdad, haz una prueba corta: en OBS añade <code>?bandwidthtest=true</code> al final de tu clave de Twitch y la prueba no se emitirá en público.</p>

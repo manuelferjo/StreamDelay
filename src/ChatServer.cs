@@ -73,6 +73,9 @@ namespace StreamDelay
 		// Estilo de los overlays (colores, forma, fuente…), lo leen las tres páginas.
 		public Func<string> OnStyleState = () => "{}";
 
+		// Estilo propio del chat (fuente, tamaño, colores, fondo…), lo lee la página del chat.
+		public Func<string> OnChatStyle = () => "{}";
+
 		private readonly string secret = Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N");
 
 		public Func<Dictionary<string, object>> OnInfo = () => new Dictionary<string, object>();
@@ -224,6 +227,11 @@ namespace StreamDelay
 				else if (it.t == "status")
 				{
 					lastStatus = text;
+				}
+				else if (it.t == "clear")
+				{
+					// Chat borrado: las páginas que se abran después tampoco ven lo anterior.
+					recent.Clear();
 				}
 				else
 				{
@@ -428,6 +436,20 @@ namespace StreamDelay
 						style = "{}";
 					}
 					Respond(stream, "200 OK", "application/json; charset=utf-8", style);
+					break;
+				}
+				case "/chatstyle.json":
+				{
+					string cs;
+					try
+					{
+						cs = OnChatStyle();
+					}
+					catch
+					{
+						cs = "{}";
+					}
+					Respond(stream, "200 OK", "application/json; charset=utf-8", cs);
 					break;
 				}
 				case "/delay.json":

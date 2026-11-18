@@ -253,10 +253,13 @@ namespace StreamDelay
 			int y3 = y2 + 230;
 			Card c3 = new Card();
 			c3.Title = "Chat en pantalla";
-			c3.Subtitle = "Twitch, Kick, YouTube y TikTok juntos; cada mensaje dura 30 s.";
+			c3.Subtitle = "Twitch, Kick, YouTube y TikTok juntos, con su propio estilo.";
 			Place(this, c3, 20f, y3, 420f, 100f, 5);
-			UrlButtons(c3, "?overlay=1&desvanecer=30", "chat", 56f);
-			StyleLink(c3);
+			UrlButtons(c3, "?overlay=1", "chat", 56f);
+			// El chat tiene su propio estilo (fuente, tamaño, colores, fondo…).
+			VButton chatLink = new VButton { Kind = ButtonKind.Link, Text = "Personalizar chat →", FontSize = 8.5f };
+			Place(c3, chatLink, 230f, 13f, 170f, 24f);
+			chatLink.Click += delegate { ChatStyleDialog(); };
 
 			Box(this, 22f, y3 + 104, 416f, 18f, delegate(Graphics g, Rectangle r)
 			{

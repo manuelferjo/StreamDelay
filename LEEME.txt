@@ -1,7 +1,24 @@
-STREAM DELAY 3.4 - delay dinámico gratuito para OBS (by Vortexs)
+STREAM DELAY 3.5 - delay dinámico gratuito para OBS (by Vortexs)
 ================================================================
 
 Abre GUIA.html (doble clic) para ver la guía completa.
+
+Novedades de la 3.5
+- Chat con su propio estilo: Overlays -> Chat en pantalla -> "Personalizar
+  chat". 8 estilos listos, 16 fuentes, tamaño de 13 a 40, colores del texto,
+  nombres y fondo, sin fondo / en cada mensaje / detrás de todo el chat,
+  sombra o contorno para leerlo sobre el juego, qué se ve (iconos,
+  insignias, avisos, comandos), cuánto dura cada mensaje, animación y
+  alineación. Se ve al momento en OBS; opcional también en el panel.
+- Más moderación al pulsar un mensaje: expulsar 1 min, 10 min, 1 h o 24 h,
+  "Deshacer" tras expulsar o banear, "Ocultar" (solo en tu chat y en
+  pantalla, también TikTok) y "No ver más" a una persona.
+- Panel "Moderar" en el chat: modo lento, solo seguidores/suscriptores/
+  emotes de Twitch y borrar todo el chat.
+- Moderación automática (Chat -> Moderación): palabras prohibidas, enlaces,
+  mayúsculas, mensajes repetidos, demasiados emotes, bots y usuarios
+  ocultos. Ocultar, borrar, expulsar o banear solo.
+- Twitch: para los modos del chat, vuelve a conectar Twitch una vez en Título.
 
 Novedades de la 3.4
 - Chat de TikTok LIVE en el chat conjunto: mensajes (con sus emotes),
