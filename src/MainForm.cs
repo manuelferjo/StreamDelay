@@ -1,8 +1,8 @@
-// Ventana principal de StreamDelay.
+// Ventana principal de Vortexs Live.
 //
 // La clase MainForm está repartida en varios archivos (partial class), uno por zona:
 //   MainForm.cs     esta parte: variables, arranque de la ventana, cabecera, utilidades de diseño,
-//                   pestaña Registro, atajos de teclado, cierre y StreamDelay.ini
+//                   pestaña Registro, atajos de teclado, cierre y VortexsLive.ini
 //   LiveTab.cs      pestaña Directo (delay, Iniciar/Detener, recuadros de estado)
 //   ChatTab.cs      pestaña Chat (chat conjunto, follows, donaciones) y la página local
 //   Extras.cs       pestaña Overlays, delays guardados y avisos automáticos en el chat
@@ -267,7 +267,7 @@ namespace StreamDelay
 
 		private string slToken = "";
 
-		// Clave de Euler Stream para leer el chat de TikTok (cifrada en StreamDelay.ini).
+		// Clave de Euler Stream para leer el chat de TikTok (cifrada en VortexsLive.ini).
 		private string tkKey = "";
 
 		// ---------- Ventana y pestaña Directo ----------
@@ -275,7 +275,7 @@ namespace StreamDelay
 		// El motor: recibe de OBS, guarda el delay y envía a los destinos.
 		private readonly Engine engine = new Engine();
 
-		private readonly string configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "StreamDelay.ini");
+		private readonly string configPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "VortexsLive.ini");
 
 		// Mensajes del registro que llegan desde otros hilos (los pasa a la ventana RefreshStatus).
 		private readonly Queue<string> pendingLog = new Queue<string>();
@@ -347,7 +347,7 @@ namespace StreamDelay
 
 		private string lastLine = "";
 
-		// Puerto donde StreamDelay espera a OBS.
+		// Puerto donde Vortexs Live espera a OBS.
 		private int port = 1935;
 
 		private DateTime overlayCopiedUntil = DateTime.MinValue;
@@ -356,7 +356,7 @@ namespace StreamDelay
 
 		public MainForm()
 		{
-			Text = "Stream Delay " + Version + " · Vortexs";
+			Text = "Vortexs Live " + Version;
 			Font = Theme.Body(9f);
 			BackColor = Theme.Bg;
 			ForeColor = Theme.Text;
@@ -447,7 +447,7 @@ namespace StreamDelay
 			};
 			timer.Start();
 			RefreshStatus();
-			AppendLog("Stream Delay " + Version + ". Atajos: Ctrl+Alt+D activar/desactivar · Ctrl+Alt+↑/↓ ±5 s · Ctrl+Alt+C guardar clip");
+			AppendLog("Vortexs Live " + Version + ". Atajos: Ctrl+Alt+D activar/desactivar · Ctrl+Alt+↑/↓ ±5 s · Ctrl+Alt+C guardar clip");
 			AppendLog("Para varias calidades: en OBS usa el servicio Twitch con servidor personalizado " + ObsServer + " y activa Transmisión mejorada.");
 		}
 
@@ -640,7 +640,7 @@ namespace StreamDelay
 			}
 			catch
 			{
-				I18n.Show(this, "No encuentro GUIA.html junto a StreamDelay.exe.", "Guía");
+				I18n.Show(this, "No encuentro GUIA.html junto a VortexsLive.exe.", "Guía");
 			}
 		}
 
@@ -730,7 +730,7 @@ namespace StreamDelay
 			}
 		}
 
-		// Cabecera: logo, "Stream Delay", versión y la etiqueta de estado (apagado, en directo…).
+		// Cabecera: logo, "Vortexs Live", versión y la etiqueta de estado (apagado, en directo…).
 		private void PaintHeader(Graphics g, Rectangle r)
 		{
 			float left = S(20f);
@@ -740,17 +740,17 @@ namespace StreamDelay
 			}
 			float textX = left + (float)S(50f);
 			Font font = Theme.Display(16f);
-			float streamWidth = Theme.Measure(g, "Stream", font).Width + (float)S(7f);
-			SizeF delaySize = Theme.Measure(g, "Delay", font);
+			float streamWidth = Theme.Measure(g, "Vortexs", font).Width + (float)S(7f);
+			SizeF delaySize = Theme.Measure(g, "Live", font);
 			using (SolidBrush brush = new SolidBrush(Theme.Text))
 			{
-				g.DrawString("Stream", font, brush, textX, S(10f), StringFormat.GenericTypographic);
+				g.DrawString("Vortexs", font, brush, textX, S(10f), StringFormat.GenericTypographic);
 			}
 			using (LinearGradientBrush brush2 = Theme.Brand(new RectangleF(textX + streamWidth, S(10f), delaySize.Width, delaySize.Height), true))
 			{
-				g.DrawString("Delay", font, brush2, textX + streamWidth, S(10f), StringFormat.GenericTypographic);
+				g.DrawString("Live", font, brush2, textX + streamWidth, S(10f), StringFormat.GenericTypographic);
 			}
-			Theme.DrawText(g, "BY VORTEXS · V" + Version, Theme.Mono(7f), Theme.Muted, new RectangleF(textX + 1f, S(39f), S(200f), S(16f)), StringAlignment.Near, StringAlignment.Center);
+			Theme.DrawText(g, "DELAY · MULTISTREAM · V" + Version, Theme.Mono(7f), Theme.Muted, new RectangleF(textX + 1f, S(39f), S(200f), S(16f)), StringAlignment.Near, StringAlignment.Center);
 			bool filledDot = true;
 			string state;
 			Color color;
@@ -1008,7 +1008,7 @@ namespace StreamDelay
 			base.OnFormClosing(e);
 		}
 
-		// ---------- Configuración (StreamDelay.ini) ----------
+		// ---------- Configuración (VortexsLive.ini) ----------
 		// Una línea "clave=valor" por ajuste. Cada parte de la ventana lee y escribe las suyas:
 		// aquí las generales, y luego LoadDestinations, LoadTitleConfig y LoadChatConfig (que a su
 		// vez llama a las de Overlays, comandos, Mando y actualizaciones). Lo mismo al guardar.
@@ -1021,9 +1021,12 @@ namespace StreamDelay
 			engine.TargetMs = 30000;
 			tgDelay.Checked = true;
 			Dictionary<string, string> raw = new Dictionary<string, string>();
-			if (File.Exists(configPath))
+			// Antes se llamaba StreamDelay: si aún no hay VortexsLive.ini, se leen los ajustes de StreamDelay.ini
+			// (se guardan ya en el nuevo; el viejo se deja como está).
+			string readPath = File.Exists(configPath) ? configPath : Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "StreamDelay.ini");
+			if (File.Exists(readPath))
 			{
-				foreach (string line in File.ReadAllLines(configPath))
+				foreach (string line in File.ReadAllLines(readPath))
 				{
 					int eq = line.IndexOf('=');
 					if (eq < 0)

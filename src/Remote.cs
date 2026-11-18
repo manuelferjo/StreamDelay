@@ -744,7 +744,7 @@ namespace StreamDelay
 			// El Mando es del plan Completo: sin él solo se puede ver el estado.
 			if (plan != Plan.Full && a != "estado" && a != "state")
 			{
-				return RemoteStateJson("El Mando es del plan Completo de StreamDelay");
+				return RemoteStateJson("El Mando es del plan Completo de Vortexs Live");
 			}
 			string msg = null;
 			string sv;
@@ -988,7 +988,7 @@ namespace StreamDelay
 			{
 				return;
 			}
-			fldMandoUrl.Box.Text = chatServer.Running ? (remoteLan ? LanUrl() : LocalMandoUrl()) : I18n.Tr("(se abre al iniciar StreamDelay)");
+			fldMandoUrl.Box.Text = chatServer.Running ? (remoteLan ? LanUrl() : LocalMandoUrl()) : I18n.Tr("(se abre al iniciar Vortexs Live)");
 			if (mandoHint != null)
 			{
 				mandoHint.Invalidate();

@@ -1,7 +1,7 @@
 // Estilo de los overlays (delay, espectadores y chat en pantalla): colores, fondo, forma, borde,
 // brillo, fuente y algunos detalles. Es uno para los tres, así todo va con la misma marca.
 // Las páginas lo leen de /style.json cada 2 s, así que los cambios se ven al momento en OBS.
-// Se guarda en StreamDelay.ini (ov_style=, en Base64).
+// Se guarda en VortexsLive.ini (ov_style=, en Base64).
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -51,7 +51,7 @@ namespace StreamDelay
 			"Orbitron", "Russo One", "Rubik", "Bangers", "Permanent Marker", "Press Start 2P"
 		};
 
-		public static readonly string[] PresetNames = new string[8] { "Directo", "StreamDelay", "Neón", "Fuego", "Hielo", "Minimal", "Retro", "Claro" };
+		public static readonly string[] PresetNames = new string[8] { "Directo", "Vortexs", "Neón", "Fuego", "Hielo", "Minimal", "Retro", "Claro" };
 
 		// Estilos listos para usar.
 		public static OverlayStyle Preset(int i)
@@ -121,7 +121,7 @@ namespace StreamDelay
 			return Web.ToJson(ToDict());
 		}
 
-		// Para StreamDelay.ini (una línea).
+		// Para VortexsLive.ini (una línea).
 		public string Save()
 		{
 			return Convert.ToBase64String(Encoding.UTF8.GetBytes(ToJson()));

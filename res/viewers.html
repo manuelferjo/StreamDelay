@@ -45,11 +45,11 @@
 </div>
 <script src="/overlay-style.js"></script>
 <script>
-  // Qué se muestra se elige en StreamDelay (pestaña Chat → Avisos y overlays) y cambia al momento.
+  // Qué se muestra se elige en Vortexs Live (pestaña Chat → Avisos y overlays) y cambia al momento.
   // Opciones de la URL: ?pos=tr|tl|br|bl (esquina) · ?vertical=1 · ?escala=1.2 · ?texto=Viewers
   var q = new URLSearchParams(location.search);
   var box = document.getElementById('box');
-  // La URL puede forzar las opciones; si no, se usan las de StreamDelay (pestaña Overlays).
+  // La URL puede forzar las opciones; si no, se usan las de Vortexs Live (pestaña Overlays).
   function applyOpts(s) {
     var pos = (q.get('pos') || (s && s.pos) || 'tr').toLowerCase(); if (['tr', 'tl', 'br', 'bl'].indexOf(pos) < 0) pos = 'tr';
     var vert = q.get('vertical') != null ? q.get('vertical') === '1' : !!(s && s.vertical);

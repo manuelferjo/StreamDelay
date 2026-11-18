@@ -1,5 +1,5 @@
 // Kick: inicio de sesión OAuth con PKCE (se abre el navegador y Kick vuelve a
-// http://localhost:17563/callback, donde StreamDelay escucha un momento), título y categoría,
+// http://localhost:17563/callback, donde Vortexs Live escucha un momento), título y categoría,
 // escribir en el chat y moderar.
 using System;
 using System.Collections.Generic;
@@ -172,7 +172,7 @@ namespace StreamDelay
 							}
 							if (gotState != state)
 							{
-								Reply(stream, 400, "Respuesta no válida. Vuelve a intentarlo desde StreamDelay.");
+								Reply(stream, 400, "Respuesta no válida. Vuelve a intentarlo desde Vortexs Live.");
 								continue;
 							}
 							if (query.TryGetValue("code", out code))
@@ -189,7 +189,7 @@ namespace StreamDelay
 						goto done;
 						answer:
 						// Página que ve el usuario en el navegador al terminar.
-						Reply(stream, 200, (error == null) ? "¡Listo! StreamDelay ya está conectado a Kick. Puedes cerrar esta pestaña." : ("Kick no ha dado permiso (" + error + "). Puedes cerrar esta pestaña."));
+						Reply(stream, 200, (error == null) ? "¡Listo! Vortexs Live ya está conectado a Kick. Puedes cerrar esta pestaña." : ("Kick no ha dado permiso (" + error + "). Puedes cerrar esta pestaña."));
 						done:;
 					}
 				}
@@ -248,7 +248,7 @@ namespace StreamDelay
 		// Respuesta HTML sencilla para el navegador.
 		private static void Reply(Stream s, int code, string msg)
 		{
-			string html = "<!doctype html><meta charset=utf-8><title>StreamDelay</title><body style=\"background:#09090C;color:#F4F4F5;font:18px 'Segoe UI',sans-serif;display:grid;place-items:center;height:90vh\"><div style=\"max-width:520px;text-align:center\"><div style=\"font-size:28px;font-weight:700;color:#C09AFD;margin-bottom:12px\">Stream Delay</div>" + WebUtility.HtmlEncode(I18n.Tr(msg)) + "</div>";
+			string html = "<!doctype html><meta charset=utf-8><title>Vortexs Live</title><body style=\"background:#09090C;color:#F4F4F5;font:18px 'Segoe UI',sans-serif;display:grid;place-items:center;height:90vh\"><div style=\"max-width:520px;text-align:center\"><div style=\"font-size:28px;font-weight:700;color:#C09AFD;margin-bottom:12px\">Vortexs Live</div>" + WebUtility.HtmlEncode(I18n.Tr(msg)) + "</div>";
 			byte[] body = Encoding.UTF8.GetBytes(html);
 			string head = "HTTP/1.1 " + code + " OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: " + body.Length + "\r\nConnection: close\r\n\r\n";
 			byte[] headBytes = Encoding.ASCII.GetBytes(head);

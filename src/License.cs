@@ -1,4 +1,4 @@
-// Licencias: qué plan tiene esta copia de StreamDelay.
+// Licencias: qué plan tiene esta copia de Vortexs Live.
 //
 //   Prueba    3 días con todo, desde la primera vez que se abre (no hace falta nada).
 //   Básico    5 €/mes: delay dinámico y multistream (pestañas Directo, Ajustes y Registro).
@@ -84,7 +84,7 @@ namespace StreamDelay
 
 		public const string BuyFullUrl = "https://buy.polar.sh/polar_cl_qSBK218sKDqXJaIQDBLZp9vfAGzlQe129N2eY0xIcfC";
 
-		public const string PricesUrl = "https://manuelferjo.github.io/StreamDelay/#precios";
+		public const string PricesUrl = "https://manuelferjo.github.io/VortexsLive/#precios";
 
 		// Gestionar o cancelar la suscripción (portal de clientes de Polar).
 		public const string ManageUrl = "https://polar.sh/vortexsmc/portal";
@@ -135,7 +135,7 @@ namespace StreamDelay
 		{
 			if (!IsSigned(key))
 			{
-				return LicenseInfo.Bad("no es una clave de StreamDelay");
+				return LicenseInfo.Bad("no es una clave de Vortexs Live");
 			}
 			byte[] all = FromB64(StripSpaces(key.Trim().Substring(Prefix.Length)));
 			if (all == null || all.Length < 8 + 128 || all.Length > 8 + 40 + 128)
@@ -153,7 +153,7 @@ namespace StreamDelay
 			}
 			if (payload[0] != 1 || (payload[1] != 1 && payload[1] != 2))
 			{
-				return LicenseInfo.Bad("esta clave es de una versión más nueva de StreamDelay");
+				return LicenseInfo.Bad("esta clave es de una versión más nueva de Vortexs Live");
 			}
 			int days = (payload[2] << 8) | payload[3];
 			uint serial = (uint)((payload[4] << 24) | (payload[5] << 16) | (payload[6] << 8) | payload[7]);
@@ -275,7 +275,7 @@ namespace StreamDelay
 			}
 			if (info.Plan == Plan.None)
 			{
-				info.Error = "esta clave no es de StreamDelay";
+				info.Error = "esta clave no es de Vortexs Live";
 				return info;
 			}
 			if (Http.Str(r, "status") != "granted")

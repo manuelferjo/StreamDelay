@@ -1,4 +1,4 @@
-// Estilo de los overlays elegido en StreamDelay (pestaña Overlays → Personalizar).
+// Estilo de los overlays elegido en Vortexs Live (pestaña Overlays → Personalizar).
 // Lo usan las tres páginas (delay, espectadores y chat en pantalla). Lee /style.json cada 2 s y lo
 // aplica con variables CSS, así los cambios se ven al momento en OBS:
 //   --a1 --mid --a2  colores del borde y de la cifra (degradado)    --bg --bg2  fondo

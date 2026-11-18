@@ -1,9 +1,9 @@
-FIRMA DIGITAL DE STREAMDELAY.EXE (opciones gratuitas)
+FIRMA DIGITAL DE VORTEXSLIVE.EXE (opciones gratuitas)
 =====================================================
 
 Estado actual (noviembre de 2026)
 ---------------------------------
-StreamDelay NO está firmado. SignPath Foundation rechazó la solicitud porque
+Vortexs Live NO está firmado. SignPath Foundation rechazó la solicitud porque
 su programa gratuito solo admite proyectos que ya son conocidos (estrellas y
 forks en GitHub, artículos, conversaciones en Reddit o YouTube...). Dicen que
 se puede volver a pedir cuando el proyecto sea más conocido.
@@ -27,7 +27,7 @@ SignPath firma gratis programas de CÓDIGO ABIERTO que ya tienen cierta
 visibilidad. Antes de volver a pedirlo conviene tener:
 - Estrellas, forks y, si puede ser, alguien más que contribuya en GitHub.
 - Menciones fuera de GitHub: Reddit (r/obs, r/Twitch), vídeos de YouTube,
-  artículos o foros donde se hable de StreamDelay.
+  artículos o foros donde se hable de Vortexs Live.
 - Actividad continuada (versiones nuevas, issues resueltos).
 Se pide en signpath.org. La firma la haría GitHub al publicar una versión.
 

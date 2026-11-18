@@ -295,7 +295,7 @@ namespace StreamDelay
 					}
 					else
 					{
-						twitch.Ban(twCh, uid, secs, "StreamDelay");
+						twitch.Ban(twCh, uid, secs, "Vortexs Live");
 					}
 				}
 				else if (p == "kick")
@@ -310,7 +310,7 @@ namespace StreamDelay
 					}
 					else
 					{
-						kick.Ban(kcCh, uid, secs, "StreamDelay");
+						kick.Ban(kcCh, uid, secs, "Vortexs Live");
 					}
 				}
 				else if (del)

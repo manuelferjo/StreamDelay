@@ -1,7 +1,8 @@
 // Actualización automática desde las Releases de GitHub.
 // - Al abrirse (y con "Actualizaciones" en la pestaña Registro) mira si hay una versión más nueva.
 // - Si el usuario acepta: descarga el ZIP, comprueba tamaño y huella SHA-256, sustituye el .exe en la
-//   MISMA carpeta (el viejo queda como .old por si algo falla) y se vuelve a abrir. StreamDelay.ini no
+//   MISMA carpeta y con el MISMO nombre (quien venga de StreamDelay sigue con su StreamDelay.exe y sus
+//   accesos directos funcionan; el viejo queda como .old por si algo falla) y se vuelve a abrir. VortexsLive.ini no
 //   se toca: claves y ajustes se conservan, y los permisos de Windows siguen siendo los de esa carpeta.
 // - Nunca actualiza en pleno directo.
 using System;
@@ -19,7 +20,7 @@ namespace StreamDelay
 {
     internal partial class MainForm
     {
-        const string UpdateRepo = "manuelferjo/StreamDelay";
+        const string UpdateRepo = "manuelferjo/VortexsLive";
         string updateSkip = "";   // versión que el usuario decidió saltarse
         volatile bool updateBusy;
 
@@ -41,7 +42,7 @@ namespace StreamDelay
         // Al abrir: borrar el .exe viejo de una actualización anterior y mirar si hay versión nueva.
         void StartUpdateCheck()
         {
-            if (Program.UpdatedTo.Length > 0) AppendLog("StreamDelay actualizado a la versión " + Program.UpdatedTo + ". Tu configuración se ha conservado.");
+            if (Program.UpdatedTo.Length > 0) AppendLog("Vortexs Live actualizado a la versión " + Program.UpdatedTo + ". Tu configuración se ha conservado.");
             ThreadPool.QueueUserWorkItem(delegate
             {
                 string old = Application.ExecutablePath + ".old";
@@ -73,7 +74,7 @@ namespace StreamDelay
                         if (manual) I18n.Show(this, "Tienes la última versión (" + Version + ").", "Actualizaciones", MessageBoxButtons.OK, MessageBoxIcon.Information);
                         return;
                     }
-                    AppendLog("Hay una versión nueva de StreamDelay: " + info.Tag + ".");
+                    AppendLog("Hay una versión nueva de Vortexs Live: " + info.Tag + ".");
                     if (!manual && info.Tag == updateSkip) return;
                     UpdateDialog(info);
                 });
@@ -93,7 +94,9 @@ namespace StreamDelay
             foreach (var a in J.L(o, "assets"))
             {
                 string name = J.S(a, "name");
-                if (!name.StartsWith("StreamDelay", StringComparison.OrdinalIgnoreCase) || !name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)) continue;
+                // El ZIP es VortexsLive-x.y.zip. (Las Releases llevan también StreamDelay-…zip para las
+                // versiones 3.x, que se llamaban StreamDelay y solo buscan ese nombre.)
+                if (!name.StartsWith("VortexsLive", StringComparison.OrdinalIgnoreCase) || !name.EndsWith(".zip", StringComparison.OrdinalIgnoreCase)) continue;
                 info.Url = J.S(a, "browser_download_url");
                 info.Size = J.N(a, 0, "size");
                 string digest = J.S(a, "digest");
@@ -107,7 +110,7 @@ namespace StreamDelay
         void UpdateDialog(UpdateInfo info)
         {
             if (updateBusy) return;
-            Form f = DarkForm("Actualización de StreamDelay", 460, 400);
+            Form f = DarkForm("Actualización de Vortexs Live", 460, 400);
             Card card = new Card { Title = "Hay una versión nueva: " + info.Tag, Subtitle = "Tienes la " + Version + ". Tu configuración y tus claves se conservan." };
             Place(f, card, 20f, 18f, 420f, 290f);
             string notes = info.Notes.Length > 0 ? info.Notes.Replace("\r", "") : "Sin notas de la versión.";
@@ -135,7 +138,7 @@ namespace StreamDelay
             {
                 if (engine.OutputActive)
                 {
-                    I18n.Show(f, "Estás en directo. Termina la transmisión y vuelve a intentarlo: la actualización reinicia StreamDelay.", "Actualizar");
+                    I18n.Show(f, "Estás en directo. Termina la transmisión y vuelve a intentarlo: la actualización reinicia Vortexs Live.", "Actualizar");
                     return;
                 }
                 f.Close();
@@ -149,7 +152,7 @@ namespace StreamDelay
         {
             if (updateBusy) return;
             updateBusy = true;
-            AppendLog("Descargando StreamDelay " + info.Tag + "…");
+            AppendLog("Descargando Vortexs Live " + info.Tag + "…");
             ThreadPool.QueueUserWorkItem(delegate
             {
                 string exe = Application.ExecutablePath;
@@ -168,7 +171,7 @@ namespace StreamDelay
                                 "Actualizar", MessageBoxButtons.YesNo, MessageBoxIcon.Exclamation) == DialogResult.Yes) Http.OpenBrowser(info.Page);
                             return;
                         }
-                        AppendLog("Actualización lista: reiniciando StreamDelay…");
+                        AppendLog("Actualización lista: reiniciando Vortexs Live…");
                         // La versión nueva espera a que esta se cierre del todo (así el Mando conserva su puerto).
                         Process.Start(new ProcessStartInfo(exe, "--esperar=" + Process.GetCurrentProcess().Id + " --actualizado=" + info.Tag.TrimStart('v', 'V'))
                         { UseShellExecute = false, WorkingDirectory = Path.GetDirectoryName(exe) });
@@ -185,13 +188,13 @@ namespace StreamDelay
             // ¿Se puede escribir en la carpeta del programa? (Si está en Archivos de programa, no.)
             string probe = Path.Combine(dir, ".actualizar-prueba");
             try { File.WriteAllText(probe, ""); File.Delete(probe); }
-            catch { throw new Exception("no hay permiso para escribir en la carpeta de StreamDelay (" + dir + "). Muévela a Documentos o al Escritorio."); }
+            catch { throw new Exception("no hay permiso para escribir en la carpeta de Vortexs Live (" + dir + "). Muévela a Documentos o al Escritorio."); }
 
-            string tmp = Path.Combine(Path.GetTempPath(), "StreamDelay-actualizacion-" + Guid.NewGuid().ToString("N").Substring(0, 8));
+            string tmp = Path.Combine(Path.GetTempPath(), "VortexsLive-actualizacion-" + Guid.NewGuid().ToString("N").Substring(0, 8));
             Directory.CreateDirectory(tmp);
             try
             {
-                string zip = Path.Combine(tmp, "StreamDelay.zip");
+                string zip = Path.Combine(tmp, "VortexsLive.zip");
                 Download(info.Url, zip);
                 long len = new FileInfo(zip).Length;
                 if (info.Size > 0 && len != info.Size) throw new Exception("la descarga está incompleta (" + len + " de " + info.Size + " bytes)");
@@ -205,10 +208,11 @@ namespace StreamDelay
                 }
                 string ext = Path.Combine(tmp, "x");
                 ZipFile.ExtractToDirectory(zip, ext);
-                string newExe = Path.Combine(ext, "StreamDelay.exe");
-                if (!File.Exists(newExe)) throw new Exception("el ZIP no contiene StreamDelay.exe");
+                string newExe = Path.Combine(ext, "VortexsLive.exe");
+                if (!File.Exists(newExe)) newExe = Path.Combine(ext, "StreamDelay.exe");
+                if (!File.Exists(newExe)) throw new Exception("el ZIP no contiene VortexsLive.exe");
                 using (var s = File.OpenRead(newExe))
-                    if (s.ReadByte() != 'M' || s.ReadByte() != 'Z') throw new Exception("el StreamDelay.exe descargado no es válido");
+                    if (s.ReadByte() != 'M' || s.ReadByte() != 'Z') throw new Exception("el VortexsLive.exe descargado no es válido");
 
                 // Windows deja renombrar un programa abierto: el viejo pasa a .old y el nuevo ocupa su sitio.
                 string old = exe + ".old";
@@ -217,11 +221,11 @@ namespace StreamDelay
                 try { File.Copy(newExe, exe); }
                 catch { File.Move(old, exe); throw; }
 
-                // Guía, LEEME, licencia… (nunca StreamDelay.ini).
+                // Guía, LEEME, licencia… (nunca VortexsLive.ini).
                 foreach (string f in Directory.GetFiles(ext, "*", SearchOption.AllDirectories))
                 {
                     string rel = f.Substring(ext.Length + 1);
-                    if (rel.Equals("StreamDelay.exe", StringComparison.OrdinalIgnoreCase) || rel.EndsWith(".ini", StringComparison.OrdinalIgnoreCase)) continue;
+                    if (rel.EndsWith(".exe", StringComparison.OrdinalIgnoreCase) || rel.EndsWith(".ini", StringComparison.OrdinalIgnoreCase)) continue;
                     string dest = Path.Combine(dir, rel);
                     try { Directory.CreateDirectory(Path.GetDirectoryName(dest)); File.Copy(f, dest, true); } catch { }
                 }
@@ -233,7 +237,7 @@ namespace StreamDelay
         {
             try { ServicePointManager.SecurityProtocol |= (SecurityProtocolType)3072; } catch { }
             var req = (HttpWebRequest)WebRequest.Create(url);
-            req.UserAgent = "StreamDelay";
+            req.UserAgent = "VortexsLive";
             req.Timeout = 30000;
             req.ReadWriteTimeout = 30000;
             using (var resp = req.GetResponse())

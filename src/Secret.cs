@@ -1,4 +1,4 @@
-// Cifra las claves y tokens que se guardan en StreamDelay.ini con DPAPI de Windows: solo el mismo
+// Cifra las claves y tokens que se guardan en VortexsLive.ini con DPAPI de Windows: solo el mismo
 // usuario de Windows en el mismo PC puede descifrarlos. Si no se puede, devuelve "" (hay que volver a ponerlos).
 using System;
 using System.Security.Cryptography;

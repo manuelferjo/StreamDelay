@@ -1,7 +1,7 @@
-// Banco de pruebas: pasa los mismos datos de ejemplo por las clases del chat de un StreamDelay.exe
+// Banco de pruebas: pasa los mismos datos de ejemplo por las clases del chat de un VortexsLive.exe
 // (cargado por reflexión) e imprime todo lo que producen. Se ejecuta con la 3.0 y con la versión
 // con el código original, y se comparan las salidas: deben ser idénticas.
-// Uso: verifychat.exe StreamDelay.exe [salida.txt]. GitHub compara la salida con pruebas\salida-esperada.txt.
+// Uso: verifychat.exe VortexsLive.exe [salida.txt]. GitHub compara la salida con pruebas\salida-esperada.txt.
 using System;
 using System.Collections;
 using System.Collections.Generic;

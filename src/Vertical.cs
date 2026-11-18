@@ -1,4 +1,4 @@
-// TikTok en vertical: OBS crea una imagen vertical (plugin Aitum Vertical) y la manda a StreamDelay por
+// TikTok en vertical: OBS crea una imagen vertical (plugin Aitum Vertical) y la manda a Vortexs Live por
 // el puerto siguiente al de siempre (1935 → 1936). Un segundo motor, igual que el principal, le pone el
 // mismo delay y la envía solo a TikTok; los demás destinos siguen recibiendo la imagen horizontal.
 // Arranca, se para, se corta y cambia de delay a la vez que el principal (atajos, Mando y chat incluidos).
@@ -13,7 +13,7 @@ namespace StreamDelay
 		// Motor de la imagen vertical (solo TikTok).
 		private readonly Engine engineV = new Engine();
 
-		// TikTok recibe la imagen vertical (StreamDelay.ini: tiktok_vertical=1).
+		// TikTok recibe la imagen vertical (VortexsLive.ini: tiktok_vertical=1).
 		private bool tiktokVertical;
 
 		private bool VerticalOn

@@ -73,7 +73,7 @@
 </div>
 <script src="/overlay-style.js"></script>
 <script>
-  // Las opciones se eligen en StreamDelay (pestaña Overlays) y cambian al momento.
+  // Las opciones se eligen en Vortexs Live (pestaña Overlays) y cambian al momento.
   // La URL puede forzarlas: ?escala=1.2 · ?sin_delay=0 (ocultar cuando no hay delay) · ?texto=Retraso
   var q = new URLSearchParams(location.search);
   var kUrl = parseFloat(q.get('escala') || ''), offUrl = q.get('sin_delay');
@@ -108,7 +108,7 @@
     document.querySelectorAll('.off-only').forEach(function (e) { e.style.display = on ? 'none' : ''; });
   }
   function secs(n) { return n >= 60 && n % 60 === 0 ? (n / 60) + '<small>min</small>' : n + '<small>s</small>'; }
-  // Idioma: lo pone StreamDelay al enviar la página (es / en).
+  // Idioma: lo pone Vortexs Live al enviar la página (es / en).
   var EN = (('__SD_LANG__' === 'en') || q.get('lang') === 'en');
   var TR = EN ? { on: 'Delay going on', up: 'Delay going up', down: 'Delay going down', off: 'Delay removed' }
              : { on: 'Activando delay', up: 'Subiendo delay', down: 'Bajando delay', off: 'Delay quitado' };
@@ -120,7 +120,7 @@
     var key = s ? (t ? 'tr' + t.k + t.to + ':' + Math.round(t.p * 50) : s.on && s.s > 0 ? 'on' + s.s : 'off' + showOff) : 'none';
     if (key === last) return;
     last = key;
-    if (!s) { box.className = ''; return; }            // StreamDelay cerrado: no se muestra nada
+    if (!s) { box.className = ''; return; }            // Vortexs Live cerrado: no se muestra nada
     if (t) {
       // Mientras cambia el delay: qué está pasando y una barra con lo que falta.
       vis(false);

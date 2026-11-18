@@ -1,5 +1,5 @@
-# Crea claves de licencia "SD1-…" de StreamDelay (para regalar o vender a mano).
-# Hace falta la clave privada (clave-privada-StreamDelay.txt), que NO está en GitHub: guárdala tú.
+# Crea claves de licencia "SD1-…" de Vortexs Live (para regalar o vender a mano).
+# Hace falta la clave privada (clave-privada-VortexsLive.txt), que NO está en GitHub: guárdala tú.
 #
 # Ejemplos (clic derecho en la carpeta → Abrir en Terminal):
 #   powershell -ExecutionPolicy Bypass -File crear-clave.ps1 -Nombre "Pepe"
@@ -20,7 +20,11 @@ param(
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Numerics
 
-if (-not $Clave) { $Clave = Join-Path $PSScriptRoot "clave-privada-StreamDelay.txt" }
+if (-not $Clave) {
+  $Clave = Join-Path $PSScriptRoot "clave-privada-VortexsLive.txt"
+  # Con el nombre de antes (StreamDelay) también vale.
+  if (-not (Test-Path $Clave)) { $Clave = Join-Path $PSScriptRoot "clave-privada-StreamDelay.txt" }
+}
 if (-not (Test-Path $Clave)) { throw "No encuentro la clave privada: $Clave (ponla junto a este archivo o usa -Clave ruta)" }
 $n = $null; $d = $null
 foreach ($l in Get-Content $Clave) {

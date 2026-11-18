@@ -614,7 +614,7 @@ namespace StreamDelay
 			{
 				if (p == "/mando")
 				{
-					Respond(s, "403 Forbidden", "text/html; charset=utf-8", "<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width'><body style='background:#09090c;color:#f4f4f5;font:16px system-ui;padding:24px'><h2>Clave del mando incorrecta</h2><p>Copia de nuevo la URL en StreamDelay → pestaña Mando.</p>");
+					Respond(s, "403 Forbidden", "text/html; charset=utf-8", "<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width'><body style='background:#09090c;color:#f4f4f5;font:16px system-ui;padding:24px'><h2>Clave del mando incorrecta</h2><p>Copia de nuevo la URL en Vortexs Live → pestaña Mando.</p>");
 				}
 				else
 				{

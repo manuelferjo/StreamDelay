@@ -62,7 +62,7 @@ namespace StreamDelay
 		{
 			HttpWebRequest request = (HttpWebRequest)WebRequest.Create(url);
 			request.Method = method;
-			request.UserAgent = "StreamDelay";
+			request.UserAgent = "VortexsLive";
 			request.Accept = "application/json";
 			request.Timeout = 20000;
 			request.ReadWriteTimeout = 20000;

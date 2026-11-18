@@ -711,7 +711,7 @@ namespace StreamDelay
 			fSl.Box.Text = slToken;
 			Box(donationsCard, 20f, 190f, 380f, 60f, delegate(Graphics g, Rectangle r)
 			{
-				Theme.DrawWrapped(g, "StreamElements: Cuenta → Canales → \"Mostrar secretos\" → JWT Token. Streamlabs: Ajustes → API Settings → API Tokens → \"Your Socket API Token\". Se guardan cifrados en StreamDelay.ini.", Theme.Body(7.75f), Theme.Muted, r);
+				Theme.DrawWrapped(g, "StreamElements: Cuenta → Canales → \"Mostrar secretos\" → JWT Token. Streamlabs: Ajustes → API Settings → API Tokens → \"Your Socket API Token\". Se guardan cifrados en VortexsLive.ini.", Theme.Body(7.75f), Theme.Muted, r);
 			});
 			VButton cancel = new VButton
 			{
@@ -760,7 +760,7 @@ namespace StreamDelay
 			Place(f, c, 20f, 18f, 420f, 360f);
 			Box(c, 20f, 56f, 380f, 112f, delegate(Graphics g, Rectangle r)
 			{
-				Theme.DrawWrapped(g, "TikTok no deja que otros programas lean el chat de un directo. Euler Stream se conecta a tu directo y se lo pasa a StreamDelay. Necesitas una clave gratuita:\n1. Crea una cuenta en eulerstream.com (sin tarjeta).\n2. En el panel, copia tu API Key.\n3. Pégala aquí y escribe tu @usuario de TikTok en la pestaña Chat.", Theme.Body(8.25f), Theme.Text, r);
+				Theme.DrawWrapped(g, "TikTok no deja que otros programas lean el chat de un directo. Euler Stream se conecta a tu directo y se lo pasa a Vortexs Live. Necesitas una clave gratuita:\n1. Crea una cuenta en eulerstream.com (sin tarjeta).\n2. En el panel, copia tu API Key.\n3. Pégala aquí y escribe tu @usuario de TikTok en la pestaña Chat.", Theme.Body(8.25f), Theme.Text, r);
 			});
 			VButton web = new VButton
 			{
@@ -780,7 +780,7 @@ namespace StreamDelay
 			fKey.Box.Text = tkKey;
 			Box(c, 20f, 282f, 380f, 70f, delegate(Graphics g, Rectangle r)
 			{
-				Theme.DrawWrapped(g, "Llegan los mensajes, regalos, suscripciones, follows y espectadores. TikTok no deja escribir ni moderar desde otros programas. El plan gratis de Euler Stream sobra para tu directo. La clave se guarda cifrada en StreamDelay.ini.", Theme.Body(7.75f), Theme.Muted, r);
+				Theme.DrawWrapped(g, "Llegan los mensajes, regalos, suscripciones, follows y espectadores. TikTok no deja escribir ni moderar desde otros programas. El plan gratis de Euler Stream sobra para tu directo. La clave se guarda cifrada en VortexsLive.ini.", Theme.Body(7.75f), Theme.Muted, r);
 			});
 			VButton cancel = new VButton
 			{
@@ -814,7 +814,7 @@ namespace StreamDelay
 			f.ShowDialog(this);
 		}
 
-		// ---------- Configuración (StreamDelay.ini) ----------
+		// ---------- Configuración (VortexsLive.ini) ----------
 
 		// Además del chat, carga lo de los otros archivos (avisos, comandos, Mando, actualizaciones).
 		private void LoadChatConfig(Dictionary<string, string> raw)

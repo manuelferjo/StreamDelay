@@ -339,7 +339,7 @@ namespace StreamDelay
 			{
 				if (!banIds.TryGetValue(authorChannelId, out id))
 				{
-					throw new ApiException(404, "YouTube solo deja deshacer los bans puestos desde StreamDelay en esta sesión");
+					throw new ApiException(404, "YouTube solo deja deshacer los bans puestos desde Vortexs Live en esta sesión");
 				}
 			}
 			try

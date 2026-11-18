@@ -1,5 +1,5 @@
 // Clips: guarda los últimos 60 s que ha visto el público (con el delay ya aplicado) en
-// Vídeos\StreamDelay. Se pide con el botón Clip de Directo, Ctrl+Alt+C, el Mando, el Stream Deck
+// Vídeos\Vortexs Live. Se pide con el botón Clip de Directo, Ctrl+Alt+C, el Mando, el Stream Deck
 // o !guardar en el chat (solo el dueño del canal). Si hay ffmpeg en el PC, el clip se pasa a MP4
 // (sin volver a codificar); si no, se queda en FLV (se abre con VLC).
 using System;
@@ -28,7 +28,10 @@ namespace StreamDelay
 		{
 			get
 			{
-				return Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.MyVideos), "StreamDelay");
+				// Quien venía de StreamDelay sigue guardando en su carpeta de siempre.
+				string videos = Environment.GetFolderPath(Environment.SpecialFolder.MyVideos);
+				string old = Path.Combine(videos, "StreamDelay");
+				return Directory.Exists(old) ? old : Path.Combine(videos, "Vortexs Live");
 			}
 		}
 
@@ -147,7 +150,7 @@ namespace StreamDelay
 
 		// !guardar en el chat: solo el dueño del canal (en Twitch, Kick o YouTube). Los espectadores no
 		// pueden, para que nadie llene tu PC de vídeos. No contesta en el chat: queda en el Registro.
-		// (!clip no es de StreamDelay: es para el bot que hace clips de Twitch, como StreamElements.)
+		// (!clip no es de Vortexs Live: es para el bot que hace clips de Twitch, como StreamElements.)
 		private void ChatClip(ChatItem it, string plat)
 		{
 			if (it.roles == null || Array.IndexOf(it.roles, "broadcaster") < 0)

@@ -36,7 +36,7 @@ namespace StreamDelay
 
 		public abstract string Name { get; }
 
-		// Prefijo de sus ajustes en StreamDelay.ini ("twitch", "kick"…).
+		// Prefijo de sus ajustes en VortexsLive.ini ("twitch", "kick"…).
 		public abstract string Key { get; }
 
 		public abstract bool NeedsSecret { get; }
@@ -185,7 +185,7 @@ namespace StreamDelay
 			LoadAccount();
 		}
 
-		// ---------- StreamDelay.ini ----------
+		// ---------- VortexsLive.ini ----------
 		// Los tokens van juntos (acceso, renovación y caducidad) y cifrados, igual que el secreto.
 
 		public void Load(Func<string, string> get)

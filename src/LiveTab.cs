@@ -465,7 +465,7 @@ namespace StreamDelay
 			{
 				engine.Stop();
 				StopVertical();
-				I18n.Show(this, ex.Message + "\n\nPuede que otro programa use ese puerto (otro servidor RTMP u otra copia de StreamDelay).\nCambia el puerto en Ajustes → OBS (por ejemplo a 1936) y copia de nuevo el servidor en OBS.", "No se puede iniciar", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+				I18n.Show(this, ex.Message + "\n\nPuede que otro programa use ese puerto (otro servidor RTMP u otra copia de Vortexs Live).\nCambia el puerto en Ajustes → OBS (por ejemplo a 1936) y copia de nuevo el servidor en OBS.", "No se puede iniciar", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 				return;
 			}
 			SaveConfig();
@@ -484,7 +484,7 @@ namespace StreamDelay
 		// Ofrece instalar ffmpeg con winget (solo hace falta en el modo clásico).
 		private void OfferFfmpegInstall(string reason)
 		{
-			DialogResult answer = I18n.Show(this, reason + "\n\n¿Quieres instalar ffmpeg ahora con winget? Se abrirá una ventana; acepta lo que pida y, cuando termine, vuelve a pulsar \"Iniciar servicio\".\n\n(También puedes desactivar el modo clásico: StreamDelay ya no necesita ffmpeg.)", "Falta ffmpeg", MessageBoxButtons.YesNo, MessageBoxIcon.Asterisk);
+			DialogResult answer = I18n.Show(this, reason + "\n\n¿Quieres instalar ffmpeg ahora con winget? Se abrirá una ventana; acepta lo que pida y, cuando termine, vuelve a pulsar \"Iniciar servicio\".\n\n(También puedes desactivar el modo clásico: Vortexs Live ya no necesita ffmpeg.)", "Falta ffmpeg", MessageBoxButtons.YesNo, MessageBoxIcon.Asterisk);
 			if (answer != DialogResult.Yes)
 			{
 				return;
@@ -498,7 +498,7 @@ namespace StreamDelay
 			}
 			catch (Exception ex)
 			{
-				I18n.Show(this, "No se pudo abrir winget (" + ex.Message + ").\n\nDescarga ffmpeg de gyan.dev/ffmpeg/builds y copia ffmpeg.exe junto a StreamDelay.exe.", "Falta ffmpeg");
+				I18n.Show(this, "No se pudo abrir winget (" + ex.Message + ").\n\nDescarga ffmpeg de gyan.dev/ffmpeg/builds y copia ffmpeg.exe junto a VortexsLive.exe.", "Falta ffmpeg");
 			}
 		}
 
