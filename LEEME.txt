@@ -1,7 +1,13 @@
-VORTEXS LIVE 4.0 - delay dinámico y multistream para OBS (by Vortexs)
+VORTEXS LIVE 4.1 - delay dinámico y multistream para OBS (by Vortexs)
 =====================================================================
 
 Abre GUIA.html (doble clic) para ver la guía completa.
+
+Novedades de la 4.1
+- La prueba gratis de 3 días se apunta también en vortexs.es, una vez por
+  PC: reinstalar, borrar ajustes o usar otro usuario de Windows ya no da
+  otra prueba. La primera vez hace falta internet para empezarla (luego
+  ya no). Los planes de pago no cambian.
 
 Novedades de la 4.0
 - StreamDelay cambia de nombre: ahora es Vortexs Live (VortexsLive.exe).
