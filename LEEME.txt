@@ -1,7 +1,11 @@
-VORTEXS LIVE 4.1 - delay dinámico y multistream para OBS (by Vortexs)
+VORTEXS LIVE 4.2 - delay dinámico y multistream para OBS (by Vortexs)
 =====================================================================
 
 Abre GUIA.html (doble clic) para ver la guía completa.
+
+Novedades de la 4.2
+- Overlays: «En columna» ya no tapa el botón Copiar URL y los botones de
+  Delay y Espectadores tienen más separación.
 
 Novedades de la 4.1
 - La prueba gratis de 3 días se apunta también en vortexs.es, una vez por

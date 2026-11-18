@@ -60,7 +60,7 @@ namespace StreamDelay
 				Text = "Recientes",
 				FontSize = 8f
 			};
-			Place(titleCard, btnRecent, 196f, 41f, 110f, 22f);
+			Place(titleCard, btnRecent, 196f, 39f, 110f, 22f);
 			btnRecent.Click += delegate
 			{
 				ShowRecent();
