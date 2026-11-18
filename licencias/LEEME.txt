@@ -56,6 +56,16 @@ anular una: añade su número a "Revoked" en src/License.cs y saca versión.
 
 
 3. SUSCRIPCIONES (Polar)
+
+Renovación: cada mes Polar cobra solo y la clave del cliente sigue siendo
+la MISMA (no tiene que meter nada). Si cancela, la clave vale hasta el
+final del mes pagado y luego se anula. Si falla el cobro, la clave se
+anula hasta que se cobre; entonces vuelve a valer la misma.
+
+Cambio de plan (el cliente puede hacerlo en su cuenta de Polar): Polar
+anula la clave del plan viejo y le da una nueva del plan nuevo (VLB- o
+VLC-), con el precio prorrateado. El programa avisa y el cliente pega la
+clave nueva. Con la de Básico solo tiene lo del Básico.
 ------------------------
 Para cobrar los 5 €/mes y 8 €/mes se usa Polar (polar.sh). Polar es el
 vendedor oficial: cobra con tarjeta, PayPal, etc., pone y declara el IVA
