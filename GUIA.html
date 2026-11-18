@@ -59,10 +59,10 @@
     <img src="res/logo.png" alt="">
     <div>
       <h1>Stream <span>Delay</span></h1>
-      <div class="by">by Vortexs · v3.5</div>
+      <div class="by">by Vortexs · v4.0</div>
     </div>
   </header>
-  <p class="sub">Delay dinámico y gratuito para tus directos con OBS: cámbialo, actívalo o desactívalo sin cortar el stream. Ahora conserva todas las calidades de la <b>Transmisión mejorada</b> de Twitch.</p>
+  <p class="sub">Delay dinámico y multistream para tus directos con OBS: cámbialo, actívalo o desactívalo sin cortar el stream. Ahora conserva todas las calidades de la <b>Transmisión mejorada</b> de Twitch.</p>
 
   <section>
     <h2>Cómo funciona</h2>
@@ -93,6 +93,23 @@
     </ol>
     <p class="note ok"><b>Plan B, 1080p garantizado:</b> si Twitch sigue sin darte 1080p, desactiva la Transmisión mejorada. En OBS → Salida → Emisión usa tu codificador de vídeo (NVENC H.264, por ejemplo), control de tasa <b>CBR 6000 kbps</b>, intervalo de fotogramas clave <b>2 s</b> y resolución de salida 1920x1080. Así Twitch y Kick reciben siempre 1080p60. A cambio, en Twitch las calidades más bajas solo existen si Twitch transcodifica tu canal.</p>
     <p class="opt">Si una plataforma se cae, StreamDelay reconecta solo esa plataforma sin cortar la otra. Antes del primer directo importante haz una prueba: en OBS añade <code>?bandwidthtest=true</code> al final de la clave de Twitch y la prueba no se emitirá en público.</p>
+  </section>
+
+  <section class="hl" id="planes">
+    <h2>Planes y licencia <span class="tag">NUEVO EN 4.0</span></h2>
+    <p style="margin-top:0">Al abrir StreamDelay por primera vez tienes <b>3 días de prueba gratis con todo</b>, sin tarjeta. Después hay dos planes, que se pagan <b>mes a mes</b> y se cancelan cuando quieras:</p>
+    <table>
+      <tr><th>Plan</th><th>Precio</th><th>Qué incluye</th></tr>
+      <tr><td><b>Básico</b></td><td>5 €/mes</td><td>Delay dinámico y multistream: pestañas <b>Directo</b>, <b>Ajustes</b> y <b>Registro</b>, clips, atajos de teclado y el overlay del delay.</td></tr>
+      <tr><td><b>Completo</b></td><td>8 €/mes</td><td>Todo: además <b>Chat</b> conjunto con moderación, <b>Overlays</b>, <b>Mando</b> (móvil, Stream Deck, panel de OBS) y <b>Título</b> y categoría.</td></tr>
+    </table>
+    <ol>
+      <li>Arriba, debajo de <b>English</b>, está el botón del plan: pone <b>Prueba · N días</b>, <b>Plan Básico</b>, <b>Plan Completo</b> o <b>Activar licencia</b>. Púlsalo para abrir la ventana <b>Licencia</b>.</li>
+      <li><b>Suscribirme</b> abre la página de pago del plan. Al pagar recibes una <b>clave de licencia</b> por correo.</li>
+      <li>Pega la clave en <b>Activar una clave</b> y pulsa <b>Activar</b>. Si te han regalado una clave (empieza por <code>SD1-</code>), se pega en el mismo sitio.</li>
+    </ol>
+    <p class="note">Las suscripciones se comprueban por internet al abrir StreamDelay y cada 6 horas; sin internet siguen valiendo 7 días. Las claves de regalo no necesitan internet. Si la licencia se acaba <b>en pleno directo no se corta nada</b>: el cambio espera a que termines.</p>
+    <p class="opt">¿Cambias de PC? En el PC viejo, Licencia → <b>Quitar clave</b>, y pégala en el nuevo. Para cancelar la suscripción: Licencia → <b>Gestionar o cancelar mi suscripción</b>.</p>
   </section>
 
   <section>
@@ -460,6 +477,9 @@
           <tr><td>El chat de TikTok no sale</td><td>Mira la pestaña Chat, columna TIKTOK: “Sin directo” = aún no estás en directo en TikTok (se vuelve a mirar cada 2 min). “Falta la clave” o “la clave no es válida” = pega de nuevo tu API Key de eulerstream.com en <b>Clave Euler Stream</b>. Escribe el @usuario sin espacios.</td></tr>
       <tr><td>Los modos del chat dicen “vuelve a conectar Twitch”</td><td>Es un permiso nuevo de la 3.5: pestaña Título → desconecta Twitch y vuelve a conectarlo.</td></tr>
       <tr><td>Un mensaje no sale en el chat</td><td>Puede que lo haya filtrado la moderación automática o que esa persona esté en “No salen en el chat”: mira el Registro y Chat → Moderación.</td></tr>
+      <tr><td>“No hay ningún plan activo” al pulsar Iniciar</td><td>La prueba de 3 días ha terminado o la clave ya no vale. Pulsa el botón del plan (arriba) y suscríbete o pega tu clave.</td></tr>
+      <tr><td>La clave no se activa</td><td>Cópiala entera, sin espacios. Las de suscripción necesitan internet la primera vez. Si dice que está en el máximo de equipos, quítala del otro PC (Licencia → Quitar clave).</td></tr>
+      <tr><td>Chat, Overlays, Mando o Título salen bloqueados</td><td>Son del plan Completo. Con el Básico tienes el delay y el multistream.</td></tr>
 </table>
     <p>La pestaña <b>Registro</b> muestra lo que va pasando. <b>Si pides ayuda, copia ese texto</b>: no contiene tu clave.</p>
     <p class="note ok">Antes del primer directo de verdad, haz una prueba corta: en OBS añade <code>?bandwidthtest=true</code> al final de tu clave de Twitch y la prueba no se emitirá en público.</p>

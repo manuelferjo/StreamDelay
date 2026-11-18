@@ -1,6 +1,6 @@
 # StreamDelay
 
-**Delay dinámico y gratuito para tus directos con OBS** · *Free dynamic stream delay for OBS*
+**Delay dinámico y multistream para tus directos con OBS** · *Dynamic stream delay and multistreaming for OBS*
 
 OBS envía el directo a StreamDelay, que lo retrasa los segundos que elijas y lo reenvía a Twitch, Kick, YouTube o cualquier servidor RTMP. El delay se puede cambiar, activar o quitar **en pleno directo**, sin cortar el stream.
 
@@ -11,6 +11,17 @@ OBS envía el directo a StreamDelay, que lo retrasa los segundos que elijas y lo
   <img src="web/img/chat.png" width="300" alt="Pestaña Chat: chat conjunto de Twitch, Kick y YouTube">
   <img src="web/img/mando.png" width="300" alt="Pestaña Mando: control desde el móvil, delays guardados y avisos">
 </p>
+
+## Precios
+
+**3 días de prueba gratis con todo**, sin tarjeta. Después, mes a mes (se cancela cuando quieras):
+
+| Plan | Precio | Qué incluye |
+|---|---|---|
+| **Básico** | 5 €/mes | Delay dinámico y multistream (pestañas Directo y Ajustes), clips y overlay del delay |
+| **Completo** | 8 €/mes | Todo: además chat conjunto con moderación, overlays, Mando y título y categoría |
+
+La licencia se activa en el programa: botón del plan, arriba (debajo de «English»). Las versiones hasta la 3.5 eran gratuitas y siguen funcionando igual.
 
 ## Funciones
 
@@ -39,9 +50,9 @@ No hace falta instalar nada: `build.bat` usa el compilador de C# (.NET Framework
 build.bat
 ```
 
-Crea `StreamDelay.exe` en la misma carpeta. El código está en `src/` y los recursos (página del chat, overlays, fuentes, icono) en `res/`.
+Crea `StreamDelay.exe` en la misma carpeta (con la misma prueba y licencia que el de la descarga). El código está en `src/` y los recursos (página del chat, overlays, fuentes, icono) en `res/`.
 
-La ventana principal (`MainForm`) está repartida en un archivo por pestaña: `LiveTab.cs` (Directo), `ChatTab.cs`, `Extras.cs` (Overlays), `Remote.cs` (Mando), `TitleTab.cs`, `SettingsTab.cs` y, en `MainForm.cs`, lo común (Registro, atajos y `StreamDelay.ini`). El resumen está al principio de `MainForm.cs`.
+La ventana principal (`MainForm`) está repartida en un archivo por pestaña: `LiveTab.cs` (Directo), `ChatTab.cs`, `Extras.cs` (Overlays), `Remote.cs` (Mando), `TitleTab.cs`, `SettingsTab.cs`, `LicenseUi.cs` (plan y licencia, con las reglas en `License.cs`) y, en `MainForm.cs`, lo común (Registro, atajos y `StreamDelay.ini`). El resumen está al principio de `MainForm.cs`.
 
 GitHub compila el programa y pasa las pruebas del chat con cada cambio (pestaña **Actions**). Para comprobar que un cambio de limpieza no altera nada, `pruebas/ILDiff.cs` compara dos `.exe` instrucción por instrucción (ver `pruebas/LEEME.txt`).
 
@@ -49,15 +60,15 @@ La web está en `web/` y se publica sola en GitHub Pages al subir cambios (`.git
 
 ## Publicar una versión
 
-1. Cambia `Version` en `src/MainForm.cs` (por ejemplo a `3.1`) y añade las novedades al `LEEME.txt`.
+1. Cambia `Version` en `src/MainForm.cs` (por ejemplo a `4.1`) y añade las novedades al `LEEME.txt`.
 2. Sube los cambios a GitHub.
-3. En **Releases → Draft a new release**, crea la etiqueta `v3.1` (la misma versión con una `v` delante) y pulsa **Publish release**.
+3. En **Releases → Draft a new release**, crea la etiqueta `v4.1` (la misma versión con una `v` delante) y pulsa **Publish release**.
 
 GitHub compila, comprueba que la versión coincide con la etiqueta y **adjunta el ZIP de descarga a la Release** él solo.
 
 ## Firma digital
 
-StreamDelay **todavía no está firmado digitalmente**: los certificados de firma de código son de pago, y el programa gratuito de SignPath para código abierto solo admite proyectos más conocidos (se volverá a pedir más adelante).
+StreamDelay **todavía no está firmado digitalmente**: los certificados de firma de código son de pago (se valorará más adelante).
 
 Por eso Windows puede avisar la primera vez que abres el `.exe` descargado («Windows protegió su PC» → **Más información → Ejecutar de todas formas**). Para que puedas fiarte igualmente:
 
@@ -69,12 +80,12 @@ Por eso Windows puede avisar la primera vez que abres el `.exe` descargado («Wi
 
 ## Privacy policy
 
-This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it. StreamDelay only connects to the streaming platforms and services that the user configures (Twitch, Kick, YouTube, StreamElements, Streamlabs, and emote providers 7TV, BetterTTV and FrankerFaceZ). Keys and tokens are stored locally, encrypted with Windows DPAPI for the current Windows user; nothing is sent to the developer.
+This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it. StreamDelay only connects to the streaming platforms and services that the user configures (Twitch, Kick, YouTube, TikTok via Euler Stream, StreamElements, Streamlabs, and emote providers 7TV, BetterTTV and FrankerFaceZ), to GitHub to check for updates, and, if the user activates a subscription licence key, to Polar (api.polar.sh) to check that the key is valid (the key and the computer name are sent). Keys and tokens are stored locally, encrypted with Windows DPAPI for the current Windows user; nothing is sent to the developer.
 
 ## English summary
 
-StreamDelay is a free Windows tool for streamers. OBS sends the stream to StreamDelay, which delays it by a configurable number of seconds (changeable live, without restarting the stream) and forwards it to Twitch, Kick, YouTube or any RTMP server at the same time. It also includes a unified chat for Twitch, Kick and YouTube with 7TV/BTTV/FFZ emotes, a phone remote control and OBS overlays. The user interface is in Spanish.
+StreamDelay is a Windows tool for streamers (3-day free trial, then a Basic plan at €5/month or a Full plan at €8/month). OBS sends the stream to StreamDelay, which delays it by a configurable number of seconds (changeable live, without restarting the stream) and forwards it to Twitch, Kick, YouTube or any RTMP server at the same time. It also includes (Full plan) a unified chat for Twitch, Kick, YouTube and TikTok with 7TV/BTTV/FFZ emotes, a phone remote control and OBS overlays. The user interface is in Spanish.
 
 ## Licencia
 
-[MIT](LICENSE) · Las fuentes incluidas (Outfit, Plus Jakarta Sans y JetBrains Mono) usan la licencia SIL Open Font License 1.1 (`res/OFL-*.txt`).
+Programa de pago desde la 4.0: ver [LICENSE](LICENSE) (las versiones hasta la 3.5 se publicaron con licencia MIT). El código se publica para que se pueda revisar y compilar para uso propio. · Las fuentes incluidas (Outfit, Plus Jakarta Sans y JetBrains Mono) usan la licencia SIL Open Font License 1.1 (`res/OFL-*.txt`).

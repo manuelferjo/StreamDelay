@@ -1,7 +1,27 @@
-STREAM DELAY 3.5 - delay dinámico gratuito para OBS (by Vortexs)
-================================================================
+STREAM DELAY 4.0 - delay dinámico y multistream para OBS (by Vortexs)
+=====================================================================
 
 Abre GUIA.html (doble clic) para ver la guía completa.
+
+Novedades de la 4.0
+- StreamDelay pasa a ser de pago, mes a mes y con 3 días de prueba gratis
+  con todo (sin tarjeta):
+    Básico    5 €/mes  delay dinámico y multistream (Directo, Ajustes,
+                       clips y overlay del delay).
+    Completo  8 €/mes  todo: además chat conjunto con moderación,
+                       overlays, Mando y título y categoría.
+  Se cancela cuando quieras.
+- Botón del plan arriba, debajo de "English": enseña tu plan (o los días
+  de prueba que quedan) y abre la ventana Licencia, donde se elige el
+  plan y se pega la clave (la de tu compra o una que te hayan regalado).
+- Sin el plan Completo, las pestañas Chat, Overlays, Mando y Título
+  enseñan qué incluyen y cómo activarlas. Si la licencia se acaba en
+  pleno directo, no se corta nada: el cambio espera al final.
+- Las suscripciones se comprueban por internet al abrir y cada 6 horas;
+  sin internet siguen valiendo 7 días. Las claves de regalo (SD1-...)
+  no necesitan internet.
+- ¿Vienes de la 3.x? Tus ajustes se conservan y la prueba de 3 días
+  empieza al abrir la 4.0.
 
 Novedades de la 3.5
 - Chat con su propio estilo: Overlays -> Chat en pantalla -> "Personalizar

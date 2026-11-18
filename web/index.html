@@ -3,9 +3,9 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>StreamDelay · Delay dinámico gratis para OBS</title>
-<meta name="description" content="Programa gratuito para Windows: retrasa tu directo de OBS los segundos que quieras, cambia el delay en pleno directo y emite a Twitch, Kick y YouTube a la vez. Con chat conjunto, mando desde el móvil y overlays.">
-<meta property="og:title" content="StreamDelay · Delay dinámico gratis para OBS">
+<title>StreamDelay · Delay dinámico y multistream para OBS</title>
+<meta name="description" content="Programa para Windows (3 días de prueba gratis): retrasa tu directo de OBS los segundos que quieras, cambia el delay en pleno directo y emite a Twitch, Kick y YouTube a la vez. Con chat conjunto, mando desde el móvil y overlays.">
+<meta property="og:title" content="StreamDelay · Delay dinámico y multistream para OBS">
 <meta property="og:description" content="Retrasa tu directo los segundos que quieras y cámbialo sin cortar. Twitch, Kick y YouTube a la vez.">
 <meta property="og:image" content="img/directo.png">
 <meta name="theme-color" content="#09090c">
@@ -121,6 +121,15 @@
   .card p { margin: 0; color: var(--muted); font-size: 15px; }
   .card .ico { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; margin-bottom: 16px; background: rgba(192,154,253,.12); border: 1px solid rgba(192,154,253,.3); color: var(--violet-pale); }
   .card .ico svg { width: 20px; height: 20px; }
+  .prices { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; max-width: 820px; }
+  .price { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 28px; display: flex; flex-direction: column; }
+  .price.top { border-color: rgba(192,154,253,.55); box-shadow: 0 0 0 1px rgba(192,154,253,.25), 0 20px 60px -30px rgba(192,154,253,.5); }
+  .price h3 { font: 700 22px/1.2 var(--display); margin: 0 0 6px; }
+  .price .amount { font: 700 44px/1 var(--display); margin: 10px 0 4px; }
+  .price .amount small { font: 500 15px/1 "Jakarta", sans-serif; color: var(--muted); }
+  .price ul { margin: 16px 0 24px; padding-left: 20px; color: var(--muted); font-size: 15px; flex: 1; }
+  .price li { margin: 6px 0; }
+  .price .btn { width: 100%; }
 
   /* Galería de pestañas */
   .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
@@ -170,7 +179,7 @@
   @media (max-width: 620px) {
     .wrap { padding: 0 16px; }
     nav a:not(.nav-gh) { display: none; }
-    .grid, .steps, .trust { grid-template-columns: 1fr; }
+    .grid, .steps, .trust, .prices { grid-template-columns: 1fr; }
     .hero .actions .btn { width: 100%; }
     section { padding: 48px 0; }
   }
@@ -185,6 +194,7 @@
     <nav>
       <a href="#como">Cómo funciona</a>
       <a href="#funciones">Funciones</a>
+      <a href="#precios">Precios</a>
       <a href="#instalar">Instalar</a>
       <a href="guia.html">Guía</a>
       <a class="nav-gh" href="https://github.com/manuelferjo/StreamDelay">GitHub</a>
@@ -196,11 +206,11 @@
   <div class="wrap">
     <section class="hero">
       <div>
-        <span class="pill"><i></i>Gratis · Código abierto · Windows</span>
+        <span class="pill"><i></i>3 días gratis · Desde 5 €/mes · Windows</span>
         <h1>El delay de tu directo, <span class="grad">cuando tú quieras</span></h1>
         <p class="lead">StreamDelay retrasa lo que envía OBS los segundos que elijas y lo manda a Twitch, Kick y YouTube a la vez. Sube, baja o quita el delay en pleno directo, sin cortar el stream.</p>
         <div class="actions">
-          <a class="btn btn-primary js-descarga" href="https://github.com/manuelferjo/StreamDelay/releases/latest">Descargar gratis <small class="js-version"></small></a>
+          <a class="btn btn-primary js-descarga" href="https://github.com/manuelferjo/StreamDelay/releases/latest">Probar 3 días gratis <small class="js-version"></small></a>
           <a class="btn btn-ghost" href="guia.html">Ver la guía</a>
         </div>
         <p class="req">Windows 10 u 11 y OBS Studio. Sin instalar nada: descomprime y ábrelo.</p>
@@ -245,6 +255,44 @@
     </div>
   </section>
 
+  <section id="precios">
+    <div class="wrap">
+      <span class="label">Precios</span>
+      <h2>Prueba 3 días con todo. Luego, mes a mes</h2>
+      <p class="intro">Descárgalo y úsalo completo durante 3 días, sin tarjeta. Después elige plan: se paga cada mes y se cancela cuando quieras.</p>
+      <div class="prices">
+        <div class="price">
+          <h3>Básico</h3>
+          <p class="intro" style="margin:0">Para emitir con delay en varias plataformas.</p>
+          <div class="amount">5 €<small> /mes</small></div>
+          <ul>
+            <li>Delay dinámico de hasta 10 minutos, cambiable en directo</li>
+            <li>Multistream: Twitch, Kick, YouTube, TikTok y otro servidor a la vez</li>
+            <li>Varias calidades en Twitch, clips y atajos de teclado</li>
+            <li>Overlay del delay para OBS</li>
+          </ul>
+          <!-- Cuando exista la tienda (Polar), cambia este enlace por el Checkout link del Básico. -->
+          <a class="btn btn-ghost" href="https://github.com/manuelferjo/StreamDelay/releases/latest">Empezar la prueba</a>
+        </div>
+        <div class="price top">
+          <h3>Completo</h3>
+          <p class="intro" style="margin:0">Todo StreamDelay.</p>
+          <div class="amount">8 €<small> /mes</small></div>
+          <ul>
+            <li>Todo lo del Básico</li>
+            <li>Chat conjunto de Twitch, Kick, YouTube y TikTok, con moderación y comandos</li>
+            <li>Overlays: chat en pantalla, espectadores y avisos, con estilos</li>
+            <li>Mando desde el móvil, el Stream Deck o OBS</li>
+            <li>Título y categoría en todas las plataformas a la vez</li>
+          </ul>
+          <!-- Cuando exista la tienda (Polar), cambia este enlace por el Checkout link del Completo. -->
+          <a class="btn btn-primary" href="https://github.com/manuelferjo/StreamDelay/releases/latest">Empezar la prueba</a>
+        </div>
+      </div>
+      <p class="intro" style="margin-top:20px;font-size:14px">Precios con IVA incluido. La licencia se activa en el programa, con el botón del plan (arriba). Las versiones hasta la 3.5 eran gratuitas y siguen funcionando.</p>
+    </div>
+  </section>
+
   <section id="pestanas">
     <div class="wrap">
       <span class="label">Por dentro</span>
@@ -271,7 +319,7 @@
     <div class="wrap">
       <span class="label">Instalar</span>
       <h2>Listo en tres pasos</h2>
-      <p class="intro">No hace falta instalar nada ni crear cuentas. Tus claves de emisión se guardan cifradas en tu PC.</p>
+      <p class="intro">No hace falta instalar nada ni crear cuentas para la prueba. Tus claves de emisión se guardan cifradas en tu PC.</p>
       <div class="steps">
         <div class="step"><h3>Descarga y descomprime</h3><p>Baja el ZIP, descomprímelo en una carpeta (por ejemplo, Documentos) y abre <code>StreamDelay.exe</code>. Si Windows avisa, pulsa <b>Más información → Ejecutar de todas formas</b>.</p></div>
         <div class="step"><h3>Pon tu destino</h3><p>En Ajustes → Destinos, activa tus plataformas y pega la clave de emisión de cada una.</p></div>
@@ -289,10 +337,10 @@
   <section>
     <div class="wrap">
       <div class="trust">
-        <div><strong>Gratis de verdad</strong><span>Sin anuncios, sin versión de pago y sin límites.</span></div>
+        <div><strong>3 días gratis</strong><span>Pruébalo completo sin tarjeta. Luego, desde 5 €/mes y sin permanencia.</span></div>
         <div><strong>Tus claves, en tu PC</strong><span>Cifradas con tu usuario de Windows. No se envían a nadie.</span></div>
         <div><strong>Se actualiza solo</strong><span>Al abrirlo te avisa si hay versión nueva, y la instala sin perder tu configuración.</span></div>
-        <div><strong>Código abierto</strong><span>Todo el código está en GitHub, con licencia MIT.</span></div>
+        <div><strong>Código a la vista</strong><span>El código está en GitHub para que se pueda revisar y compilar.</span></div>
       </div>
     </div>
   </section>
@@ -301,9 +349,9 @@
     <div class="wrap">
       <div class="cta">
         <h2>Ponle delay a tu próximo directo</h2>
-        <p class="intro" style="margin:0 auto 28px">Descárgalo, ábrelo y en dos minutos estás emitiendo.</p>
+        <p class="intro" style="margin:0 auto 28px">Descárgalo, ábrelo y en dos minutos estás emitiendo. 3 días gratis con todo.</p>
         <div class="actions">
-          <a class="btn btn-primary js-descarga" href="https://github.com/manuelferjo/StreamDelay/releases/latest">Descargar gratis <small class="js-version"></small></a>
+          <a class="btn btn-primary js-descarga" href="https://github.com/manuelferjo/StreamDelay/releases/latest">Probar 3 días gratis <small class="js-version"></small></a>
           <a class="btn btn-ghost" href="https://github.com/manuelferjo/StreamDelay">Ver el código</a>
         </div>
       </div>
@@ -313,7 +361,7 @@
 
 <footer>
   <div class="wrap">
-    <span>StreamDelay · by Vortexs · <a href="https://github.com/manuelferjo/StreamDelay/blob/main/LICENSE">Licencia MIT</a></span>
+    <span>StreamDelay · by Vortexs · <a href="https://github.com/manuelferjo/StreamDelay/blob/main/LICENSE">Licencia</a></span>
     <span><a href="https://github.com/manuelferjo/StreamDelay/releases">Todas las versiones</a> · <a href="https://github.com/manuelferjo/StreamDelay/issues">¿Algún problema?</a></span>
   </div>
 </footer>

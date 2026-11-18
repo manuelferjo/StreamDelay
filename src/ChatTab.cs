@@ -394,6 +394,15 @@ namespace StreamDelay
 
 		private void StartChat(bool userAction)
 		{
+			// El chat conjunto es del plan Completo.
+			if (plan != Plan.Full)
+			{
+				loading = true;
+				tgChat.Checked = false;
+				loading = false;
+				AppendLog("Chat conjunto: es del plan Completo (" + License.PriceFull + "). Botón del plan, arriba.");
+				return;
+			}
 			string tw = fldChatTw.Box.Text.Trim();
 			string kc = fldChatKick.Box.Text.Trim();
 			string yt = fldChatYt.Box.Text.Trim();

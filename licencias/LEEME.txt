@@ -1,0 +1,77 @@
+LICENCIAS DE STREAMDELAY (solo para Vortexs)
+============================================
+
+Desde la 4.0, StreamDelay tiene 3 días de prueba con todo y luego dos planes
+mes a mes:
+  - Básico    5 €/mes: delay dinámico y multistream (Directo, Ajustes, Registro).
+  - Completo  8 €/mes: todo (además Chat, Overlays, Mando y Título).
+
+Las claves se pegan en el programa: botón del plan (arriba, debajo de
+"English") -> "Activar una clave". Hay dos tipos:
+
+
+1. CLAVES PARA REGALAR (SD1-...)
+--------------------------------
+Las creas tú con crear-clave.ps1 y tu clave privada. Valen sin internet.
+Pueden ser del plan Completo o Básico, para siempre o hasta una fecha.
+
+La clave privada (clave-privada-StreamDelay.txt) NO está en GitHub y no debe
+estarlo nunca: quien la tenga puede crear claves. Guárdala en un sitio seguro
+(y una copia, por ejemplo en un pendrive). Si la pierdes no podrás crear más
+claves SD1- (las que ya diste siguen valiendo).
+
+Crear claves (pon clave-privada-StreamDelay.txt en esta carpeta, clic
+derecho en la carpeta -> Abrir en Terminal):
+
+  Una clave del plan Completo para siempre, a nombre de Pepe:
+    powershell -ExecutionPolicy Bypass -File crear-clave.ps1 -Nombre "Pepe"
+
+  5 claves del plan Básico que caducan a los 30 días:
+    powershell -ExecutionPolicy Bypass -File crear-clave.ps1 -Nombre "Sorteo" -Cantidad 5 -Plan Basico -Dias 30
+
+  Hasta una fecha concreta:
+    powershell -ExecutionPolicy Bypass -File crear-clave.ps1 -Nombre "Ana" -Hasta 2027-06-30
+
+El nombre sale en el programa ("Clave a nombre de Pepe"): así, si alguien
+la comparte, se sabe de quién era. Máximo 40 letras.
+
+Cada clave creada se apunta en claves-creadas.csv (junto a la clave
+privada) con su número. Si una clave se filtra, añade su número a
+"Revoked" en src/License.cs (por ejemplo: new uint[] { 3475160000u }) y
+saca una versión nueva: con ella esa clave deja de valer.
+
+
+2. SUSCRIPCIONES (Polar)
+------------------------
+Para cobrar los 5 €/mes y 8 €/mes se usa Polar (polar.sh). Polar es el
+vendedor oficial: cobra con tarjeta, PayPal, etc., pone y declara el IVA
+de cada país y te paga a ti. Se queda alrededor del 5 % + 0,50 € por pago.
+Al pagar, Polar le da al cliente una clave de licencia; si cancela o deja
+de pagar, Polar la anula y StreamDelay la deja de aceptar (se comprueba
+al abrir y cada 6 horas; sin internet sigue valiendo 7 días).
+
+Pasos (una sola vez; los nombres de los menús de Polar pueden cambiar un poco):
+  1. Crea la cuenta en polar.sh y la organización "StreamDelay" (o Vortexs).
+     Completa los datos para cobrar (Finance -> Payout account).
+  2. Products -> New product:
+       "StreamDelay Básico"   - Subscription, mensual, 5 EUR
+       "StreamDelay Completo" - Subscription, mensual, 8 EUR
+     En cada uno, Benefits -> License key. Recomendado: "Activation limit" = 2
+     (la misma clave vale en 2 PCs; el cliente puede liberar uno con
+     "Quitar clave").
+  3. Pásame (o pon tú en src/License.cs):
+       PolarOrg           el id de la organización (Settings -> General)
+       PolarBenefitBasic  el id de la ventaja License key del Básico
+       PolarBenefitFull   el id de la ventaja License key del Completo
+       BuyBasicUrl        el Checkout link del Básico
+       BuyFullUrl         el Checkout link del Completo
+     (No son secretos: se pueden ver en el programa.)
+  4. Pon los mismos enlaces en web/index.html (sección #precios).
+  5. Saca la versión.
+
+Mientras PolarOrg esté vacío, el programa solo acepta claves SD1- y los
+botones "Suscribirme" abren la web con los precios.
+
+La prueba de 3 días empieza la primera vez que se abre la 4.0 en cada PC
+(también para quien actualiza desde la 3.x). Se guarda también en el
+registro de Windows, así que reinstalar no da otra prueba.
