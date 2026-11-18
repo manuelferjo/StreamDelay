@@ -53,6 +53,9 @@ namespace StreamDelay
 		// Polar: hay que activar la clave en este PC (la licencia tiene límite de equipos).
 		public bool NeedsActivation;
 
+		// Polar: licencia de regalo (código de un solo uso), del plan Completo y para siempre.
+		public bool Gift;
+
 		public static LicenseInfo Bad(string why)
 		{
 			return new LicenseInfo { Error = why };
@@ -77,6 +80,10 @@ namespace StreamDelay
 
 		public const string PolarBenefitFull = "3346c6b5-e14c-4fd1-8412-7b47ff344101";
 
+		// Regalos: producto privado "Vortexs Live Completo · Regalo" que se canjea gratis con un código
+		// de descuento de un solo uso. Da el plan Completo para siempre; claves VLR-, 1 PC.
+		public const string PolarBenefitGift = "b96352a3-f89d-43a9-b129-3708a34e538a";
+
 		public const string PolarApi = "https://api.polar.sh";
 
 		// Enlaces de compra (Checkout links de Polar). Vacíos: se abre la web con los precios.
@@ -100,7 +107,13 @@ namespace StreamDelay
 		private const string Modulus = "df65358edd3f54ca6da1d399782b3fc74d06f85d5e7529393d11480583996311e0afe23259f57b3d0d9dc2a142b2bb02237758da64e329e363e4a960b0305fbff40991882b20afc70e7418d397cf6a844bd59cf38c6a02f8860ab607fb1b60dcc6c6567f84a7d3c37ed1194bebf78b849a827f4d6508f83636eec005be448235";
 
 		// Números de claves SD1- que ya no valen (filtradas o devueltas).
-		private static readonly uint[] Revoked = new uint[0];
+		private static readonly uint[] Revoked = new uint[]
+		{
+			// Las 10 primeras claves de regalo (18/11/2026): valían en cualquier PC. Los regalos se
+			// hacen ahora con códigos de Polar de un solo uso (ver licencias/LEEME.txt).
+			4090557839u, 4141078507u, 3514884666u, 2616762506u, 523401616u,
+			2728505509u, 470992271u, 598531470u, 3499124289u, 3403950286u
+		};
 
 		// Las fechas de caducidad van como días desde aquí.
 		private static readonly DateTime Epoch = new DateTime(2026, 1, 1, 0, 0, 0, DateTimeKind.Utc);
@@ -245,7 +258,7 @@ namespace StreamDelay
 			{
 				return Plan.None;
 			}
-			if (benefitId == PolarBenefitFull)
+			if (benefitId == PolarBenefitFull || benefitId == PolarBenefitGift)
 			{
 				return Plan.Full;
 			}
@@ -266,7 +279,8 @@ namespace StreamDelay
 			LicenseInfo info = new LicenseInfo
 			{
 				Source = "polar",
-				Plan = PlanForBenefit(Http.Str(r, "benefit_id"))
+				Plan = PlanForBenefit(Http.Str(r, "benefit_id")),
+				Gift = Http.Str(r, "benefit_id") == PolarBenefitGift
 			};
 			Dictionary<string, object> customer = Http.Obj(r, "customer");
 			if (customer != null)

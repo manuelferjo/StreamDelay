@@ -53,6 +53,9 @@ namespace StreamDelay
 
 		private bool licNoticeOpen;
 
+		// Ya se ha leído la licencia (antes no se escribe en el registro, para no borrarla).
+		private bool licLoaded;
+
 		private VButton btnPlan;
 
 		private PaintBox lockBox;
@@ -69,6 +72,27 @@ namespace StreamDelay
 			licActivation = raw.TryGetValue("lic_act", out v) ? v.Trim() : "";
 			licCache = raw.TryGetValue("lic_ok", out v) ? Secret.Unprotect(v) : "";
 			licSeen = raw.TryGetValue("lic_avisos", out v) ? v.Trim() : "";
+			// La licencia también se guarda en el registro de Windows de este PC: así sigue activada
+			// aunque se borre el .ini o se reinstale el programa en otra carpeta.
+			if (licKey.Length == 0)
+			{
+				try
+				{
+					using (RegistryKey k = Registry.CurrentUser.OpenSubKey(RegPath))
+					{
+						if (k != null)
+						{
+							licKey = Secret.Unprotect(k.GetValue("k") as string);
+							licActivation = (k.GetValue("a") as string) ?? "";
+							licCache = Secret.Unprotect(k.GetValue("c") as string);
+						}
+					}
+				}
+				catch
+				{
+				}
+			}
+			licLoaded = true;
 			// Inicio de la prueba: el más antiguo entre el .ini y el registro de Windows.
 			DateTime now = DateTime.UtcNow;
 			DateTime start = now;
@@ -109,6 +133,67 @@ namespace StreamDelay
 			lines.Add("lic_ok=" + Secret.Protect(licCache));
 			lines.Add("t0=" + Secret.Protect(trialStart.Ticks.ToString(CultureInfo.InvariantCulture)));
 			lines.Add("lic_avisos=" + licSeen);
+			if (!licLoaded)
+			{
+				return;
+			}
+			try
+			{
+				using (RegistryKey k = Registry.CurrentUser.CreateSubKey(RegPath))
+				{
+					k.SetValue("k", Secret.Protect(licKey));
+					k.SetValue("a", licActivation);
+					k.SetValue("c", Secret.Protect(licCache));
+				}
+			}
+			catch
+			{
+			}
+		}
+
+		// Huella de este PC para atar la activación de Polar: no se puede copiar a otro equipo.
+		// Es el identificador de la instalación de Windows (MachineGuid), resumido; si no se puede leer,
+		// el nombre del equipo.
+		private static string machineId;
+
+		private static string MachineId()
+		{
+			if (machineId != null)
+			{
+				return machineId;
+			}
+			string raw = null;
+			try
+			{
+				using (RegistryKey hklm = RegistryKey.OpenBaseKey(RegistryHive.LocalMachine, RegistryView.Registry64))
+				{
+					using (RegistryKey k = hklm.OpenSubKey("SOFTWARE\\Microsoft\\Cryptography"))
+					{
+						if (k != null)
+						{
+							raw = k.GetValue("MachineGuid") as string;
+						}
+					}
+				}
+			}
+			catch
+			{
+			}
+			if (string.IsNullOrEmpty(raw))
+			{
+				raw = Environment.MachineName;
+			}
+			using (System.Security.Cryptography.SHA256 sha = new System.Security.Cryptography.SHA256Managed())
+			{
+				byte[] h = sha.ComputeHash(System.Text.Encoding.UTF8.GetBytes("VortexsLive|" + raw.ToLowerInvariant()));
+				machineId = BitConverter.ToString(h, 0, 12).Replace("-", "").ToLowerInvariant();
+			}
+			return machineId;
+		}
+
+		private static Dictionary<string, object> MachineConditions()
+		{
+			return new Dictionary<string, object> { { "equipo", MachineId() } };
 		}
 
 		private static bool TryTicks(string s, out DateTime t)
@@ -146,6 +231,7 @@ namespace StreamDelay
 			{
 				Source = "polar",
 				Name = c[2],
+				Gift = c.Length > 3 && c[3] == "r",
 				Plan = (Plan)Math.Max(0, Math.Min(2, (int)(c[0][0] - '0')))
 			};
 			if (now - when > TimeSpan.FromDays(7.0))
@@ -390,7 +476,9 @@ namespace StreamDelay
 					{
 						{ "key", key },
 						{ "organization_id", License.PolarOrg },
-						{ "label", Environment.MachineName }
+						{ "label", Environment.MachineName },
+						{ "conditions", MachineConditions() },
+						{ "meta", new Dictionary<string, object> { { "programa", "Vortexs Live " + Version } } }
 					};
 					Dictionary<string, object> a;
 					try
@@ -415,7 +503,7 @@ namespace StreamDelay
 				}
 				else
 				{
-					newCache = (int)info.Plan + "|" + DateTime.UtcNow.Ticks.ToString(CultureInfo.InvariantCulture) + "|" + info.Name.Replace("|", "");
+					newCache = (int)info.Plan + "|" + DateTime.UtcNow.Ticks.ToString(CultureInfo.InvariantCulture) + "|" + info.Name.Replace("|", "") + "|" + (info.Gift ? "r" : "s");
 				}
 			}, delegate(Exception err)
 			{
@@ -476,6 +564,8 @@ namespace StreamDelay
 			if (activation.Length > 0)
 			{
 				body["activation_id"] = activation;
+				// La activación es de este PC: con la huella de otro equipo, Polar dice que no existe.
+				body["conditions"] = MachineConditions();
 			}
 			Dictionary<string, object> r = Http.Send("POST", License.PolarApi + "/v1/customer-portal/license-keys/validate", null, null, "application/json", Http.ToJson(body));
 			return License.FromPolar(r, DateTime.UtcNow);
@@ -754,7 +844,7 @@ namespace StreamDelay
 			}
 			else
 			{
-				s = "Suscripción mensual" + ((planInfo.Name.Length > 0) ? (" (" + planInfo.Name + ")") : "") + ". Se comprueba por internet.";
+				s = (planInfo.Gift ? "Licencia de regalo, para siempre" : "Suscripción mensual") + ((planInfo.Name.Length > 0) ? (" (" + planInfo.Name + ")") : "") + ". Activada en este PC.";
 			}
 			if (licProblem.Length > 0 && planInfo.Source == "prueba")
 			{

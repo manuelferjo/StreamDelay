@@ -7,42 +7,55 @@ mes a mes:
   - Completo  8 €/mes: todo (además Chat, Overlays, Mando y Título).
 
 Las claves se pegan en el programa: botón del plan (arriba, debajo de
-"English") -> "Activar una clave". Hay dos tipos:
+"English") -> "Activar una clave". Cada clave vale en UN SOLO PC: al
+activarla queda atada a ese equipo (Polar guarda la activación y el
+programa la guarda cifrada en el .ini y en el registro de Windows de ese
+PC). En otro PC dice "ya está activada en otro PC". Para cambiar de PC:
+"Quitar clave" en el viejo, o el cliente la libera desde su cuenta de Polar.
 
 
-1. CLAVES PARA REGALAR (SD1-...)
---------------------------------
-Las creas tú con crear-clave.ps1 y tu clave privada. Valen sin internet.
-Pueden ser del plan Completo o Básico, para siempre o hasta una fecha.
+1. REGALOS (códigos de un solo uso)
+-----------------------------------
+Producto privado en Polar: "Vortexs Live Completo · Regalo" (99 €, no sale
+en ninguna parte). Cada amigo recibe un código de descuento del 100 % que
+solo se puede usar UNA vez. Con él consigue gratis su clave (VLR-...),
+plan Completo para siempre, válida en un solo PC.
+
+Lo que le mandas a cada persona (un código distinto a cada una):
+  https://buy.polar.sh/polar_cl_qRsj2tTWXzLD4yz6NQ3277wEirNpvnHy2ntjE0b6RQO?discount_code=CODIGO
+Abre el enlace, pone su correo, pulsa "Get for free" y le llega la clave.
+
+Crear más códigos: Polar -> Products -> Discounts -> New Discount
+  Name: Regalo Vortexs Live 11 (el que quieras)
+  Code: solo letras y números, por ejemplo VORTEXSPEPE01
+  Percentage: 100
+  Restrictions -> Products: Vortexs Live Completo · Regalo
+  Restrictions -> Maximum number of redemptions: 1
+En Discounts ves qué códigos se han usado (Redemptions 1/1) y en
+Customers quién. Para quitarle la licencia a alguien: Benefits ->
+Licencia Vortexs Live Regalo -> License Keys -> revocar.
+
+
+2. CLAVES SIN INTERNET (SD1-...) - ya no se usan para regalar
+------------------------------------------------------------
+crear-clave.ps1 crea claves que se comprueban sin internet. OJO: no se
+pueden limitar a un PC (no hay ningún servidor que lo apunte), así que
+cualquiera que tenga la clave la puede usar en varios equipos. Las 10
+primeras que se crearon están anuladas desde la 4.0 (lista Revoked de
+src/License.cs). Úsalas solo para pruebas o casos especiales.
 
 La clave privada (clave-privada-VortexsLive.txt; vale también con su nombre
 anterior, clave-privada-StreamDelay.txt) NO está en GitHub y no debe
-estarlo nunca: quien la tenga puede crear claves. Guárdala en un sitio seguro
-(y una copia, por ejemplo en un pendrive). Si la pierdes no podrás crear más
-claves SD1- (las que ya diste siguen valiendo).
+estarlo nunca: quien la tenga puede crear claves. Guárdala en un sitio seguro.
 
-Crear claves (pon clave-privada-VortexsLive.txt en esta carpeta, clic
-derecho en la carpeta -> Abrir en Terminal):
+  powershell -ExecutionPolicy Bypass -File crear-clave.ps1 -Nombre "Pepe"
+  powershell -ExecutionPolicy Bypass -File crear-clave.ps1 -Nombre "Prueba" -Plan Basico -Dias 7
 
-  Una clave del plan Completo para siempre, a nombre de Pepe:
-    powershell -ExecutionPolicy Bypass -File crear-clave.ps1 -Nombre "Pepe"
-
-  5 claves del plan Básico que caducan a los 30 días:
-    powershell -ExecutionPolicy Bypass -File crear-clave.ps1 -Nombre "Sorteo" -Cantidad 5 -Plan Basico -Dias 30
-
-  Hasta una fecha concreta:
-    powershell -ExecutionPolicy Bypass -File crear-clave.ps1 -Nombre "Ana" -Hasta 2027-06-30
-
-El nombre sale en el programa ("Clave a nombre de Pepe"): así, si alguien
-la comparte, se sabe de quién era. Máximo 40 letras.
-
-Cada clave creada se apunta en claves-creadas.csv (junto a la clave
-privada) con su número. Si una clave se filtra, añade su número a
-"Revoked" en src/License.cs (por ejemplo: new uint[] { 3475160000u }) y
-saca una versión nueva: con ella esa clave deja de valer.
+Cada clave creada se apunta en claves-creadas.csv con su número. Para
+anular una: añade su número a "Revoked" en src/License.cs y saca versión.
 
 
-2. SUSCRIPCIONES (Polar)
+3. SUSCRIPCIONES (Polar)
 ------------------------
 Para cobrar los 5 €/mes y 8 €/mes se usa Polar (polar.sh). Polar es el
 vendedor oficial: cobra con tarjeta, PayPal, etc., pone y declara el IVA
