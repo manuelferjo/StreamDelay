@@ -8,6 +8,8 @@ Novedades de la 4.0
   Si vienes de StreamDelay, tus ajustes de StreamDelay.ini se cargan
   solos y la actualización automática conserva tu StreamDelay.exe y tus
   accesos directos. Los clips siguen en Vídeos\StreamDelay.
+- Clips en la carpeta que quieras: Registro -> Clips -> "Elegir dónde se
+  guardan los clips…" (y volver a la de siempre cuando quieras).
 - Vortexs Live pasa a ser de pago, mes a mes y con 3 días de prueba gratis
   con todo (sin tarjeta):
     Básico    5 €/mes  delay dinámico y multistream (Directo, Ajustes,

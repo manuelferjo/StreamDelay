@@ -885,7 +885,7 @@ namespace StreamDelay
 			Place(this, clips, 234f, y0 + 452, 99f, 40f, PageLog);
 			clips.Click += delegate
 			{
-				OpenClipFolder();
+				ShowClipMenu(clips);
 			};
 			VButton upd = new VButton
 			{
@@ -1019,6 +1019,7 @@ namespace StreamDelay
 			I18n.English = I18n.DefaultEnglish;
 			slider.Value = 30;
 			engine.TargetMs = 30000;
+			clipDirCustom = "";
 			tgDelay.Checked = true;
 			Dictionary<string, string> raw = new Dictionary<string, string>();
 			// Antes se llamaba StreamDelay: si aún no hay VortexsLive.ini, se leen los ajustes de StreamDelay.ini
@@ -1073,6 +1074,9 @@ namespace StreamDelay
 						case "tiktok_vertical":
 							tiktokVertical = value == "1";
 							break;
+						case "clip_dir":
+							clipDirCustom = value.Trim();
+							break;
 						}
 					}
 					catch
@@ -1103,7 +1107,8 @@ namespace StreamDelay
 					"lan=" + (tgLan.Checked ? "1" : "0"),
 					"ffmpeg=" + (tgFfmpeg.Checked ? "1" : "0"),
 					"lang=" + I18n.Lang,
-					"tiktok_vertical=" + (tiktokVertical ? "1" : "0")
+					"tiktok_vertical=" + (tiktokVertical ? "1" : "0"),
+					"clip_dir=" + clipDirCustom
 				};
 				SaveDestinations(lines);
 				SaveTitleConfig(lines);
