@@ -70,7 +70,7 @@ namespace StreamDelay
 		// ---------- Tienda (Polar) ----------
 		// Tienda Vortexs_MC en polar.sh: id de la organización (Settings) y de la ventaja "License key"
 		// de cada producto (Products → Benefits). Si PolarOrg estuviera vacío, solo valdrían las claves SD1-.
-		// Las claves de Polar empiezan por SDB- (Básico) o SDC- (Completo).
+		// Las claves de Polar empiezan por VLB- (Básico) o VLC- (Completo).
 		public const string PolarOrg = "f3c396f8-63db-4249-8b17-ca08b303c282";
 
 		public const string PolarBenefitBasic = "fbce853e-32ae-4d4e-acce-558838710977";
