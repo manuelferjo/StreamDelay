@@ -206,22 +206,22 @@ namespace StreamDelay
 			Card c1 = new Card();
 			c1.Title = "Delay";
 			c1.Subtitle = "Arriba a la derecha: «DELAY 30 s» o «EN DIRECTO · Sin delay».";
-			Place(this, c1, 20f, y0, 420f, 146f, 5);
+			Place(this, c1, 20f, y0, 420f, 152f, 5);
 			Label(c1, "TAMAÑO", 20f, 54f, 120f);
 			int ks = Array.IndexOf(scales, ovDelayScale);
 			Choice(c1, new string[3] { "Normal", "Grande", "Enorme" }, (ks < 0) ? 0 : ks, 20f, 72f, 78f, delegate(int i) { ovDelayScale = scales[i]; });
 			Toggle tHide = new Toggle { Text = "Ocultar sin delay", Checked = ovDelayHideOff };
 			Place(c1, tHide, 270f, 70f, 140f, 30f);
 			tHide.CheckedChanged += delegate { ovDelayHideOff = tHide.Checked; SaveConfig(); };
-			UrlButtons(c1, "delay", "delay", 102f);
+			UrlButtons(c1, "delay", "delay", 108f);
 			StyleLink(c1);
 
 			// --- Espectadores ---
-			int y2 = y0 + 154;
+			int y2 = y0 + 160;
 			Card c2 = new Card();
 			c2.Title = "Espectadores";
 			c2.Subtitle = "De cada plataforma y el total. Necesita el chat activado.";
-			Place(this, c2, 20f, y2, 420f, 222f, 5);
+			Place(this, c2, 20f, y2, 420f, 236f, 5);
 			Label(c2, "QUÉ MOSTRAR (NINGUNO = NO SE VE NADA)", 20f, 54f, 380f);
 			// Orden en pantalla; el número es la posición en vwShow (TikTok se añadió al final).
 			string[] vnames = new string[5] { "Twitch", "Kick", "YouTube", "TikTok", "Total" };
@@ -243,14 +243,14 @@ namespace StreamDelay
 			string[] posIds = new string[4] { "tr", "tl", "br", "bl" };
 			Choice(c2, new string[4] { "Arriba dcha.", "Arriba izq.", "Abajo dcha.", "Abajo izq." }, Math.Max(0, Array.IndexOf(posIds, vwPos)), 20f, 120f, 90f, delegate(int i) { vwPos = posIds[i]; });
 			Toggle tVert = new Toggle { Text = "En columna", Checked = vwVertical };
-			Place(c2, tVert, 20f, 150f, 130f, 30f);
+			Place(c2, tVert, 20f, 154f, 130f, 30f);
 			tVert.CheckedChanged += delegate { vwVertical = tVert.Checked; SaveConfig(); };
-			Choice(c2, new string[2] { "Normal", "Grande" }, (vwScale > 1.1f) ? 1 : 0, 212f, 152f, 90f, delegate(int i) { vwScale = (i == 1) ? 1.3f : 1f; });
-			UrlButtons(c2, "viewers", "espectadores", 178f);
+			Choice(c2, new string[2] { "Normal", "Grande" }, (vwScale > 1.1f) ? 1 : 0, 212f, 156f, 90f, delegate(int i) { vwScale = (i == 1) ? 1.3f : 1f; });
+			UrlButtons(c2, "viewers", "espectadores", 192f);
 			StyleLink(c2);
 
 			// --- Chat en pantalla ---
-			int y3 = y2 + 230;
+			int y3 = y2 + 244;
 			Card c3 = new Card();
 			c3.Title = "Chat en pantalla";
 			c3.Subtitle = "Twitch, Kick, YouTube y TikTok juntos, con su propio estilo.";

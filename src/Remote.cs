@@ -961,7 +961,7 @@ namespace StreamDelay
 			c3.Subtitle = "Si se cae una plataforma o tu subida no da para todo.";
 			Place(this, c3, 20f, y3, 420f, 160f, 6);
 			Toggle tS = new Toggle { Text = "Sonar un aviso", Checked = hlSound };
-			Place(c3, tS, 18f, 54f, 200f, 28f);
+			Place(c3, tS, 18f, 54f, 190f, 28f);
 			tS.CheckedChanged += delegate { hlSound = tS.Checked; SaveConfig(); };
 			Toggle tF = new Toggle { Text = "Parpadear en la barra", Checked = hlFlash };
 			Place(c3, tF, 214f, 54f, 190f, 28f);
