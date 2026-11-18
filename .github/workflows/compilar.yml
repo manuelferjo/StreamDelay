@@ -1,4 +1,4 @@
-# Compila StreamDelay en GitHub con cada cambio y pasa las pruebas del chat.
+# Compila Vortexs Live en GitHub con cada cambio y pasa las pruebas del chat.
 # Al publicar una versión (Release con etiqueta v3.1, v4.0…), adjunta el ZIP de descarga a la Release.
 name: Compilar
 
@@ -26,22 +26,22 @@ jobs:
       - name: Descargar el código
         uses: actions/checkout@v7
 
-      - name: Compilar StreamDelay.exe
+      - name: Compilar VortexsLive.exe
         shell: cmd
         run: build.bat < NUL
 
       - name: Comprobar que se ha creado el programa
         shell: pwsh
         run: |
-          if (-not (Test-Path StreamDelay.exe)) { throw "No se ha creado StreamDelay.exe (mira el paso anterior)" }
-          "StreamDelay.exe: $([math]::Round((Get-Item StreamDelay.exe).Length / 1KB)) KB"
+          if (-not (Test-Path VortexsLive.exe)) { throw "No se ha creado VortexsLive.exe (mira el paso anterior)" }
+          "VortexsLive.exe: $([math]::Round((Get-Item VortexsLive.exe).Length / 1KB)) KB"
 
       - name: Pruebas del chat
         shell: pwsh
         run: |
           & "$env:WINDIR\Microsoft.NET\Framework64\v4.0.30319\csc.exe" /nologo /out:verifychat.exe /r:System.Web.Extensions.dll pruebas\VerifyChat.cs
           if ($LASTEXITCODE -ne 0) { throw "No se pudieron compilar las pruebas" }
-          .\verifychat.exe StreamDelay.exe salida.txt
+          .\verifychat.exe VortexsLive.exe salida.txt
           $esperada = Get-Content pruebas\salida-esperada.txt -Encoding utf8
           $salida = Get-Content salida.txt -Encoding utf8
           $dif = Compare-Object $esperada $salida -SyncWindow 0
@@ -68,7 +68,7 @@ jobs:
       - name: Guardar el ZIP (descargable desde la página de esta ejecución)
         uses: actions/upload-artifact@v7
         with:
-          name: StreamDelay
+          name: VortexsLive
           path: dist/*.zip
 
       - name: Adjuntar el ZIP a la Release
@@ -78,7 +78,8 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           ETIQUETA: ${{ github.event.release.tag_name || inputs.etiqueta }}
         run: |
-          $zip = (Get-Item dist\*.zip).FullName
-          gh release upload $env:ETIQUETA $zip --clobber --repo $env:GITHUB_REPOSITORY
-          if ($LASTEXITCODE -ne 0) { throw "No se pudo adjuntar el ZIP a la Release" }
-          "Adjuntado $(Split-Path $zip -Leaf) a la Release $env:ETIQUETA"
+          foreach ($zip in (Get-Item dist\*.zip)) {
+            gh release upload $env:ETIQUETA $zip.FullName --clobber --repo $env:GITHUB_REPOSITORY
+            if ($LASTEXITCODE -ne 0) { throw "No se pudo adjuntar $($zip.Name) a la Release" }
+            "Adjuntado $($zip.Name) a la Release $env:ETIQUETA"
+          }

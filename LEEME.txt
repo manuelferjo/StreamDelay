@@ -1,10 +1,14 @@
-STREAM DELAY 4.0 - delay dinámico y multistream para OBS (by Vortexs)
+VORTEXS LIVE 4.0 - delay dinámico y multistream para OBS (by Vortexs)
 =====================================================================
 
 Abre GUIA.html (doble clic) para ver la guía completa.
 
 Novedades de la 4.0
-- StreamDelay pasa a ser de pago, mes a mes y con 3 días de prueba gratis
+- StreamDelay cambia de nombre: ahora es Vortexs Live (VortexsLive.exe).
+  Si vienes de StreamDelay, tus ajustes de StreamDelay.ini se cargan
+  solos y la actualización automática conserva tu StreamDelay.exe y tus
+  accesos directos. Los clips siguen en Vídeos\StreamDelay.
+- Vortexs Live pasa a ser de pago, mes a mes y con 3 días de prueba gratis
   con todo (sin tarjeta):
     Básico    5 €/mes  delay dinámico y multistream (Directo, Ajustes,
                        clips y overlay del delay).
@@ -53,12 +57,12 @@ Novedades de la 3.4
 
 Novedades de la 3.3
 - Overlays personalizables: pestaña Overlays -> "Personalizar ->".
-  Estilos listos (Directo, StreamDelay, Neón, Fuego, Hielo, Minimal,
+  Estilos listos (Directo, Vortexs Live, Neón, Fuego, Hielo, Minimal,
   Retro, Claro), colores, fondo, borde, brillo, forma (redondeada,
   píldora, recta o círculo), 12 fuentes, el texto del overlay de delay
   y fondo en los mensajes del chat en pantalla. Se ve al momento en OBS.
 - TikTok en vertical: con el plugin Aitum Vertical, OBS manda una imagen
-  vertical por el puerto siguiente (1936) y StreamDelay la envía solo a
+  vertical por el puerto siguiente (1936) y Vortexs Live la envía solo a
   TikTok con el mismo delay que el resto. Ajustes -> Destinos -> TikTok
   -> Editar -> "Imagen vertical". Pasos en la guía.
 
@@ -69,7 +73,7 @@ Novedades de la 3.2.1
 
 Novedades de la 3.2
 - Clips: guarda los últimos 60 s que ha visto el público (con el delay
-  ya aplicado) en Vídeos\StreamDelay. Con el botón Clip de Directo,
+  ya aplicado) en Vídeos\Vortexs Live. Con el botón Clip de Directo,
   Ctrl+Alt+C, el Mando o el Stream Deck. En MP4 si tienes ffmpeg; si no, en FLV (VLC).
   Registro -> Clips abre la carpeta.
 - TikTok como destino (Ajustes -> Destinos), si tu cuenta tiene clave
@@ -79,10 +83,10 @@ Novedades de la 3.2
   idioma de Windows.
 
 Novedades de la 3.1
-- Actualización automática: al abrirse, StreamDelay mira si hay una
+- Actualización automática: al abrirse, Vortexs Live mira si hay una
   versión nueva y te la ofrece. Con "Actualizar ahora" la descarga,
   sustituye el programa en la misma carpeta y se vuelve a abrir. Tus
-  claves y ajustes (StreamDelay.ini) se conservan. Nunca actualiza en
+  claves y ajustes (VortexsLive.ini) se conservan. Nunca actualiza en
   pleno directo. También desde Registro -> "Actualizaciones".
 - El QR del Mando se genera dentro del programa: funciona sin internet.
 - El título de la ventana muestra la versión correcta.
@@ -160,7 +164,7 @@ Novedades de la 2.3
 - Multistream: emite a la vez en Twitch, Kick, YouTube y otro destino
   (Ajustes -> Destinos). En Directo ves dónde estás en directo y el
   estado de cada plataforma; el botón muestra "Iniciar · Twitch + Kick".
-  Tu StreamDelay.ini anterior se conserva (el destino que tenías queda activado).
+  Tu VortexsLive.ini anterior se conserva (el destino que tenías queda activado).
 
 Novedades de la 2.2
 -------------------
@@ -171,23 +175,23 @@ Novedades de la 2.2
 
 Novedades de la 2.1
 -------------------
-- 1080p asegurado: StreamDelay muestra la calidad que envía OBS y, si no
+- 1080p asegurado: Vortexs Live muestra la calidad que envía OBS y, si no
   llega a 1080p, avisa al conectar (antes de que acabe el delay).
 - Kick/YouTube: se envía solo la calidad más alta con la clave escrita en
-  StreamDelay; la plataforma crea el resto.
+  Vortexs Live; la plataforma crea el resto.
 
 Novedades de la 2.0
 -------------------
-- Varias calidades en Twitch: StreamDelay deja pasar la "Transmisión mejorada"
+- Varias calidades en Twitch: Vortexs Live deja pasar la "Transmisión mejorada"
   de OBS (1080p, 720p, 480p...). Antes solo llegaba la calidad original.
 - Emisor propio: ya no hace falta ffmpeg (queda como "Modo clásico" opcional).
 - Interfaz nueva con los colores y tipografías de vortexs.es.
 
 Resumen rápido
 --------------
-1. Ejecuta build.bat y abre StreamDelay.exe.
+1. Ejecuta build.bat y abre VortexsLive.exe.
    (Si SmartScreen avisa: "Más información" -> "Ejecutar de todas formas".)
-2. En StreamDelay -> Ajustes -> Destinos: activa Twitch y Kick (Editar -> URL y clave de Kick).
+2. En Vortexs Live -> Ajustes -> Destinos: activa Twitch y Kick (Editar -> URL y clave de Kick).
 3. En OBS -> Ajustes -> Emisión:
      Servicio: Twitch
      Servidor: "Especifica un servidor personalizado..." -> rtmp://127.0.0.1:1935/app
@@ -207,7 +211,7 @@ imagen si desactivas la opción). Al BAJARLO, el stream salta hacia adelante.
 
 ¿OBS en otro PC? Activa "OBS en otro PC de la red" en Ajustes.
 
-No compartas StreamDelay.ini: contiene tu clave (cifrada para tu usuario).
+No compartas VortexsLive.ini: contiene tu clave (cifrada para tu usuario).
 Si pides ayuda, copia el texto de la pestaña Registro.
 
 Compilar

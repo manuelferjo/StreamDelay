@@ -3,7 +3,7 @@
 // se enseña, cuánto dura cada mensaje y su animación. Es aparte del estilo de los demás overlays.
 // La página del chat lo lee de /chatstyle.json cada 2 s, así que los cambios se ven al momento en OBS.
 // Se aplica al chat en pantalla y, si se elige, también al panel del chat (OBS o navegador).
-// Se guarda en StreamDelay.ini (chat_style=, en Base64).
+// Se guarda en VortexsLive.ini (chat_style=, en Base64).
 using System;
 using System.Collections.Generic;
 using System.Text;

@@ -1,9 +1,9 @@
 # Tu configuración: lleva tus claves (cifradas, pero no se comparten nunca).
-StreamDelay.ini
+VortexsLive.ini
 # Configuración de la firma digital de este PC.
 firma.cfg
 # Lo que se genera al compilar o publicar.
-StreamDelay.exe
+VortexsLive.exe
 dist/
 *.zip
 # Clave privada de licencias y la lista de claves creadas: nunca se suben.

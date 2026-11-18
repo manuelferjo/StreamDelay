@@ -1,10 +1,12 @@
-# StreamDelay
+# Vortexs Live
 
 **Delay dinámico y multistream para tus directos con OBS** · *Dynamic stream delay and multistreaming for OBS*
 
-OBS envía el directo a StreamDelay, que lo retrasa los segundos que elijas y lo reenvía a Twitch, Kick, YouTube o cualquier servidor RTMP. El delay se puede cambiar, activar o quitar **en pleno directo**, sin cortar el stream.
+> Antes se llamaba **StreamDelay**. Si vienes de la 3.x, la actualización automática conserva tus ajustes.
 
-**Web:** [manuelferjo.github.io/StreamDelay](https://manuelferjo.github.io/StreamDelay/) · **Descarga:** [última versión](https://github.com/manuelferjo/StreamDelay/releases/latest)
+OBS envía el directo a Vortexs Live, que lo retrasa los segundos que elijas y lo reenvía a Twitch, Kick, YouTube o cualquier servidor RTMP. El delay se puede cambiar, activar o quitar **en pleno directo**, sin cortar el stream.
+
+**Web:** [manuelferjo.github.io/VortexsLive](https://manuelferjo.github.io/VortexsLive/) · **Descarga:** [última versión](https://github.com/manuelferjo/VortexsLive/releases/latest)
 
 <p align="center">
   <img src="web/img/directo.png" width="300" alt="Pestaña Directo: delay de 30 segundos activado">
@@ -36,11 +38,11 @@ La licencia se activa en el programa: botón del plan, arriba (debajo de «Engli
 
 ## Descarga
 
-Descarga la última versión en **[Releases](https://github.com/manuelferjo/StreamDelay/releases)**, descomprime el ZIP y abre `StreamDelay.exe`. La guía completa está en `GUIA.html`, dentro del ZIP.
+Descarga la última versión en **[Releases](https://github.com/manuelferjo/VortexsLive/releases)**, descomprime el ZIP y abre `VortexsLive.exe`. La guía completa está en `GUIA.html`, dentro del ZIP.
 
 Requisitos: Windows 10 u 11 y OBS Studio.
 
-> **Aviso de Windows:** StreamDelay todavía no tiene firma digital, así que la primera vez que lo abras Windows puede mostrar «Windows protegió su PC». Pulsa **Más información → Ejecutar de todas formas**. Solo pasa con la primera descarga: las actualizaciones automáticas no lo muestran. Más detalles en [Firma digital](#firma-digital).
+> **Aviso de Windows:** Vortexs Live todavía no tiene firma digital, así que la primera vez que lo abras Windows puede mostrar «Windows protegió su PC». Pulsa **Más información → Ejecutar de todas formas**. Solo pasa con la primera descarga: las actualizaciones automáticas no lo muestran. Más detalles en [Firma digital](#firma-digital).
 
 ## Compilar desde el código
 
@@ -50,9 +52,9 @@ No hace falta instalar nada: `build.bat` usa el compilador de C# (.NET Framework
 build.bat
 ```
 
-Crea `StreamDelay.exe` en la misma carpeta (con la misma prueba y licencia que el de la descarga). El código está en `src/` y los recursos (página del chat, overlays, fuentes, icono) en `res/`.
+Crea `VortexsLive.exe` en la misma carpeta (con la misma prueba y licencia que el de la descarga). El código está en `src/` y los recursos (página del chat, overlays, fuentes, icono) en `res/`.
 
-La ventana principal (`MainForm`) está repartida en un archivo por pestaña: `LiveTab.cs` (Directo), `ChatTab.cs`, `Extras.cs` (Overlays), `Remote.cs` (Mando), `TitleTab.cs`, `SettingsTab.cs`, `LicenseUi.cs` (plan y licencia, con las reglas en `License.cs`) y, en `MainForm.cs`, lo común (Registro, atajos y `StreamDelay.ini`). El resumen está al principio de `MainForm.cs`.
+La ventana principal (`MainForm`) está repartida en un archivo por pestaña: `LiveTab.cs` (Directo), `ChatTab.cs`, `Extras.cs` (Overlays), `Remote.cs` (Mando), `TitleTab.cs`, `SettingsTab.cs`, `LicenseUi.cs` (plan y licencia, con las reglas en `License.cs`) y, en `MainForm.cs`, lo común (Registro, atajos y `VortexsLive.ini`). El resumen está al principio de `MainForm.cs`.
 
 GitHub compila el programa y pasa las pruebas del chat con cada cambio (pestaña **Actions**). Para comprobar que un cambio de limpieza no altera nada, `pruebas/ILDiff.cs` compara dos `.exe` instrucción por instrucción (ver `pruebas/LEEME.txt`).
 
@@ -68,23 +70,23 @@ GitHub compila, comprueba que la versión coincide con la etiqueta y **adjunta e
 
 ## Firma digital
 
-StreamDelay **todavía no está firmado digitalmente**: los certificados de firma de código son de pago (se valorará más adelante).
+Vortexs Live **todavía no está firmado digitalmente**: los certificados de firma de código son de pago (se valorará más adelante).
 
 Por eso Windows puede avisar la primera vez que abres el `.exe` descargado («Windows protegió su PC» → **Más información → Ejecutar de todas formas**). Para que puedas fiarte igualmente:
 
-- Todo el código está en este repositorio, y el ZIP de cada [Release](https://github.com/manuelferjo/StreamDelay/releases) lo compila **GitHub Actions** a partir de él (puedes ver cada compilación en la pestaña **Actions**).
+- Todo el código está en este repositorio, y el ZIP de cada [Release](https://github.com/manuelferjo/VortexsLive/releases) lo compila **GitHub Actions** a partir de él (puedes ver cada compilación en la pestaña **Actions**).
 - Cada ZIP tiene su huella **SHA-256** en la página de la Release. El actualizador automático la comprueba antes de instalar nada.
 - Si lo prefieres, puedes compilarlo tú mismo con `build.bat` (ver arriba).
 
-*English:* StreamDelay isn't code-signed yet, so Windows SmartScreen may warn the first time you run the downloaded `.exe` (click **More info → Run anyway**). Every release ZIP is built from this repository's source by GitHub Actions and has its SHA-256 shown on the release page; automatic updates don't show the warning.
+*English:* Vortexs Live isn't code-signed yet, so Windows SmartScreen may warn the first time you run the downloaded `.exe` (click **More info → Run anyway**). Every release ZIP is built from this repository's source by GitHub Actions and has its SHA-256 shown on the release page; automatic updates don't show the warning.
 
 ## Privacy policy
 
-This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it. StreamDelay only connects to the streaming platforms and services that the user configures (Twitch, Kick, YouTube, TikTok via Euler Stream, StreamElements, Streamlabs, and emote providers 7TV, BetterTTV and FrankerFaceZ), to GitHub to check for updates, and, if the user activates a subscription licence key, to Polar (api.polar.sh) to check that the key is valid (the key and the computer name are sent). Keys and tokens are stored locally, encrypted with Windows DPAPI for the current Windows user; nothing is sent to the developer.
+This program will not transfer any information to other networked systems unless specifically requested by the user or the person installing or operating it. Vortexs Live only connects to the streaming platforms and services that the user configures (Twitch, Kick, YouTube, TikTok via Euler Stream, StreamElements, Streamlabs, and emote providers 7TV, BetterTTV and FrankerFaceZ), to GitHub to check for updates, and, if the user activates a subscription licence key, to Polar (api.polar.sh) to check that the key is valid (the key and the computer name are sent). Keys and tokens are stored locally, encrypted with Windows DPAPI for the current Windows user; nothing is sent to the developer.
 
 ## English summary
 
-StreamDelay is a Windows tool for streamers (3-day free trial, then a Basic plan at €5/month or a Full plan at €8/month). OBS sends the stream to StreamDelay, which delays it by a configurable number of seconds (changeable live, without restarting the stream) and forwards it to Twitch, Kick, YouTube or any RTMP server at the same time. It also includes (Full plan) a unified chat for Twitch, Kick, YouTube and TikTok with 7TV/BTTV/FFZ emotes, a phone remote control and OBS overlays. The user interface is in Spanish.
+Vortexs Live is a Windows tool for streamers (3-day free trial, then a Basic plan at €5/month or a Full plan at €8/month). OBS sends the stream to Vortexs Live, which delays it by a configurable number of seconds (changeable live, without restarting the stream) and forwards it to Twitch, Kick, YouTube or any RTMP server at the same time. It also includes (Full plan) a unified chat for Twitch, Kick, YouTube and TikTok with 7TV/BTTV/FFZ emotes, a phone remote control and OBS overlays. The user interface is in Spanish.
 
 ## Licencia
 

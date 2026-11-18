@@ -398,7 +398,7 @@ namespace StreamDelay
 			};
 			Box(card, 20f, 190f, 360f, 90f, delegate(Graphics g, Rectangle r)
 			{
-				Theme.DrawWrapped(g, note + " La clave se guarda cifrada en StreamDelay.ini.", Theme.Body(8f), Theme.Muted, r);
+				Theme.DrawWrapped(g, note + " La clave se guarda cifrada en VortexsLive.ini.", Theme.Body(8f), Theme.Muted, r);
 			});
 			Toggle tVertical = null;
 			if (isTikTok)
@@ -580,7 +580,7 @@ namespace StreamDelay
 			}
 		}
 
-		// ---------- Configuración (StreamDelay.ini) ----------
+		// ---------- Configuración (VortexsLive.ini) ----------
 
 		private void LoadDestinations(Dictionary<string, string> raw)
 		{

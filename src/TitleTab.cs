@@ -625,7 +625,7 @@ namespace StreamDelay
 		{
 			if (p is TwitchPlatform)
 			{
-				return new string[3] { "1. Abre el panel de desarrolladores de Twitch (botón de abajo) e inicia sesión. Twitch exige tener activada la verificación en dos pasos.", "2. Pulsa \"Registrar tu aplicación\" y rellena: Nombre: StreamDelay-tucanal · URL de redirección OAuth: http://localhost · Categoría: Application Integration · Tipo de cliente: Público.", "3. Pulsa Crear, después Administrar, y copia aquí el \"ID de cliente\"." };
+				return new string[3] { "1. Abre el panel de desarrolladores de Twitch (botón de abajo) e inicia sesión. Twitch exige tener activada la verificación en dos pasos.", "2. Pulsa \"Registrar tu aplicación\" y rellena: Nombre: Vortexs Live-tucanal · URL de redirección OAuth: http://localhost · Categoría: Application Integration · Tipo de cliente: Público.", "3. Pulsa Crear, después Administrar, y copia aquí el \"ID de cliente\"." };
 			}
 			if (p is KickPlatform)
 			{
@@ -636,7 +636,7 @@ namespace StreamDelay
 					"3. Guarda la app y copia aquí el Client ID y el Client Secret."
 				};
 			}
-			return new string[3] { "1. Abre Google Cloud (botón de abajo), crea un proyecto \"StreamDelay\" y en Biblioteca habilita \"YouTube Data API v3\".", "2. Pantalla de consentimiento / Google Auth Platform: tipo Externo, pon un nombre y tu correo. En Público, pulsa \"Publicar aplicación\" (si no, Google te desconecta cada 7 días).", "3. Credenciales → Crear credenciales → ID de cliente OAuth → tipo \"TVs y dispositivos de entrada limitada\". Copia aquí el ID de cliente y el secreto." };
+			return new string[3] { "1. Abre Google Cloud (botón de abajo), crea un proyecto \"Vortexs Live\" y en Biblioteca habilita \"YouTube Data API v3\".", "2. Pantalla de consentimiento / Google Auth Platform: tipo Externo, pon un nombre y tu correo. En Público, pulsa \"Publicar aplicación\" (si no, Google te desconecta cada 7 días).", "3. Credenciales → Crear credenciales → ID de cliente OAuth → tipo \"TVs y dispositivos de entrada limitada\". Copia aquí el ID de cliente y el secreto." };
 		}
 
 		// Ventana "Configurar": explica cómo crear la app y pide el ID (y el secreto) de cliente.
@@ -709,7 +709,7 @@ namespace StreamDelay
 			}
 			Box(f, 22f, top, 416f, 34f, delegate(Graphics g, Rectangle r)
 			{
-				Theme.DrawWrapped(g, "Se guardan cifrados en StreamDelay.ini (solo tu usuario de Windows puede leerlos). No compartas ese archivo.", Theme.Body(7.75f), Theme.Muted, r);
+				Theme.DrawWrapped(g, "Se guardan cifrados en VortexsLive.ini (solo tu usuario de Windows puede leerlos). No compartas ese archivo.", Theme.Body(7.75f), Theme.Muted, r);
 			});
 			VButton save = new VButton
 			{
@@ -917,7 +917,7 @@ namespace StreamDelay
 			}
 		}
 
-		// ---------- Configuración (StreamDelay.ini) ----------
+		// ---------- Configuración (VortexsLive.ini) ----------
 
 		private void LoadTitleConfig(Dictionary<string, string> raw)
 		{

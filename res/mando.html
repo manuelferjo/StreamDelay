@@ -6,7 +6,7 @@
 <meta name="theme-color" content="#09090c">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<title>Mando · StreamDelay</title>
+<title>Mando · Vortexs Live</title>
 <style>
   :root {
     --bg: #09090c; --surface: #111116; --elev: #171720; --border: #26262e; --border-hi: #38364a;
@@ -85,7 +85,7 @@
 <body>
 <div class="wrap">
   <header>
-    <span class="brand"><b>StreamDelay</b> · Mando</span>
+    <span class="brand"><b>Vortexs Live</b> · Mando</span>
     <span class="conn" id="conn"><i></i><span id="connTxt">Conectando…</span></span>
   </header>
 
@@ -129,10 +129,10 @@
 <script>
 (function () {
   var q = new URLSearchParams(location.search);
-  // Idioma: lo pone StreamDelay al enviar la página ('es' o 'en').
+  // Idioma: lo pone Vortexs Live al enviar la página ('es' o 'en').
   var LANG = ('__SD_LANG__' === 'en' || q.get('lang') === 'en') ? 'en' : 'es';
   var EN_TXT = {
-    'Mando · StreamDelay': 'Remote · StreamDelay',
+    'Mando · Vortexs Live': 'Remote · Vortexs Live',
     'Mando': 'Remote',
     '· Mando': '· Remote',
     'Conectando…': 'Connecting…',
@@ -148,13 +148,13 @@
     'Todo en orden.': 'All good.',
     'Mantén pulsado para CORTAR YA': 'Hold to CUT NOW',
     'Sonido de aviso en este dispositivo': 'Alert sound on this device',
-    'Primero activa <b>Permitir desde el móvil</b> en StreamDelay → pestaña Mando, y vuelve a pulsar «Código QR».': 'First turn on <b>Allow from phone</b> in StreamDelay → Remote tab, and click «QR code» again.',
+    'Primero activa <b>Permitir desde el móvil</b> en Vortexs Live → pestaña Mando, y vuelve a pulsar «Código QR».': 'First turn on <b>Allow from phone</b> in Vortexs Live → Remote tab, and click «QR code» again.',
     'No se pudo dibujar el QR: escribe la dirección de arriba en el navegador del móvil.': "Couldn't draw the QR: type the address above in your phone's browser.",
     'En directo': 'Live', 'Reintentando': 'Retrying', 'Conectando': 'Connecting', 'Esperando': 'Waiting', 'Preparado': 'Ready', 'Sin clave': 'No key', 'Parado': 'Stopped',
     'Activando delay': 'Delay going on', 'Subiendo delay': 'Delay going up', 'Bajando delay': 'Delay going down', 'Delay quitado': 'Delay removed',
     'Delay activado': 'Delay on',
     'Sin delay': 'No delay',
-    'Servicio parado en StreamDelay': 'Service stopped in StreamDelay',
+    'Servicio parado en Vortexs Live': 'Service stopped in Vortexs Live',
     'Esperando a OBS…': 'Waiting for OBS…',
     ' en ': ' on ',
     ' plataforma': ' platform',
@@ -164,8 +164,8 @@
     'OBS conectado · llenando el delay': 'OBS connected · filling the delay',
     'No hay destinos activados.': 'No destinations turned on.',
     'Conectado': 'Connected',
-    'Sin conexión con StreamDelay': 'No connection to StreamDelay',
-    'No se pudo contactar con StreamDelay': "Couldn't reach StreamDelay",
+    'Sin conexión con Vortexs Live': 'No connection to Vortexs Live',
+    'No se pudo contactar con Vortexs Live': "Couldn't reach Vortexs Live",
     'Clave incorrecta: copia de nuevo la URL': 'Wrong key: copy the URL again'
   };
   function T(s) { return (LANG === 'en' && EN_TXT[s]) || s; }
@@ -351,7 +351,7 @@
     fetch(API + 'estado', { cache: 'no-store' }).then(function (r) { return r.json(); }).then(function (s) {
       if (!s.lan) {
         $('qrurl').textContent = '';
-        $('qrnote').innerHTML = T('Primero activa <b>Permitir desde el móvil</b> en StreamDelay → pestaña Mando, y vuelve a pulsar «Código QR».');
+        $('qrnote').innerHTML = T('Primero activa <b>Permitir desde el móvil</b> en Vortexs Live → pestaña Mando, y vuelve a pulsar «Código QR».');
         $('qr').style.display = 'none';
         return;
       }
@@ -396,7 +396,7 @@
     $('state').innerHTML = s.on ? secs(s.s) : T('Sin delay');
     $('bar').style.width = t ? Math.round(t.p * 100) + '%' : '0';
     var nLive = (s.dests || []).filter(function (d) { return d.st === 'live'; }).length;
-    $('sub').innerHTML = !s.running ? T('Servicio parado en StreamDelay') : !s.input ? T('Esperando a OBS…') :
+    $('sub').innerHTML = !s.running ? T('Servicio parado en Vortexs Live') : !s.input ? T('Esperando a OBS…') :
       nLive ? '<span class="live">● ' + (LANG === 'en' ? 'LIVE' : 'EN DIRECTO') + '</span>' + T(' en ') + nLive + (nLive === 1 ? T(' plataforma') : T(' plataformas')) + (s.on ? T(' · tu público va ') + s.s + T(' s por detrás') : '') :
       T('OBS conectado · llenando el delay');
     var tg = $('toggle');
@@ -430,13 +430,13 @@
     $('ver').textContent = 'v' + s.ver;
   }
 
-  function setConn(ok) { $('conn').className = 'conn ' + (ok ? 'ok' : 'bad'); $('connTxt').textContent = ok ? T('Conectado') : T('Sin conexión con StreamDelay'); }
+  function setConn(ok) { $('conn').className = 'conn ' + (ok ? 'ok' : 'bad'); $('connTxt').textContent = ok ? T('Conectado') : T('Sin conexión con Vortexs Live'); }
   function act(a) {
     unlock();
     if (navigator.vibrate) navigator.vibrate(15);
     return fetch(API + a, { cache: 'no-store' }).then(function (r) { return r.json(); })
       .then(function (s) { setConn(true); render(s); if (s.msg) toast(s.msg); })
-      .catch(function () { setConn(false); toast(T('No se pudo contactar con StreamDelay')); });
+      .catch(function () { setConn(false); toast(T('No se pudo contactar con Vortexs Live')); });
   }
   function poll() {
     fetch(API + 'estado', { cache: 'no-store' }).then(function (r) { if (r.status === 403) throw 'k'; return r.json(); })

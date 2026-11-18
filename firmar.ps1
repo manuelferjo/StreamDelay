@@ -1,4 +1,4 @@
-# Firma digital de StreamDelay.exe (Authenticode) con tu certificado de firma de código.
+# Firma digital de VortexsLive.exe (Authenticode) con tu certificado de firma de código.
 # No hay que instalar nada: usa lo que ya trae Windows.
 #
 # Uso:
@@ -9,7 +9,7 @@
 #   3. A partir de ahí build.bat firma solo al compilar (si existe firma.cfg).
 #
 # Opciones:
-#   -Exe <ruta>        archivo a firmar (por defecto StreamDelay.exe junto a este script)
+#   -Exe <ruta>        archivo a firmar (por defecto VortexsLive.exe junto a este script)
 #   -Elegir            elegir el certificado y guardarlo en firma.cfg
 #   -Prueba            prueba sin certificado real: firma una COPIA con un certificado temporal
 #                      (solo para ver que el proceso funciona; esa firma no es de confianza)
@@ -17,7 +17,7 @@ param([string]$Exe = "", [switch]$Elegir, [switch]$Prueba)
 
 $ErrorActionPreference = 'Stop'
 $dir = Split-Path -Parent $MyInvocation.MyCommand.Path
-if ($Exe -eq "") { $Exe = Join-Path $dir "StreamDelay.exe" }
+if ($Exe -eq "") { $Exe = Join-Path $dir "VortexsLive.exe" }
 $cfg = Join-Path $dir "firma.cfg"
 # Servidores de sello de tiempo: la firma sigue siendo válida aunque el certificado caduque después.
 $timestamps = @("http://time.certum.pl", "http://timestamp.digicert.com", "http://timestamp.sectigo.com")
@@ -42,13 +42,13 @@ function Firmar($archivo, $cert) {
 if ($Prueba) {
     # Certificado temporal en memoria (no se instala en Windows ni se guarda en ningún sitio).
     $rsa = [System.Security.Cryptography.RSA]::Create(2048)
-    $req = New-Object System.Security.Cryptography.X509Certificates.CertificateRequest("CN=StreamDelay PRUEBA", $rsa, [System.Security.Cryptography.HashAlgorithmName]::SHA256, [System.Security.Cryptography.RSASignaturePadding]::Pkcs1)
+    $req = New-Object System.Security.Cryptography.X509Certificates.CertificateRequest("CN=Vortexs Live PRUEBA", $rsa, [System.Security.Cryptography.HashAlgorithmName]::SHA256, [System.Security.Cryptography.RSASignaturePadding]::Pkcs1)
     $oid = New-Object System.Security.Cryptography.OidCollection
     [void]$oid.Add((New-Object System.Security.Cryptography.Oid "1.3.6.1.5.5.7.3.3")) # firma de código
     $req.CertificateExtensions.Add((New-Object System.Security.Cryptography.X509Certificates.X509EnhancedKeyUsageExtension($oid, $false)))
     $tmp = $req.CreateSelfSigned((Get-Date).AddDays(-1), (Get-Date).AddDays(1))
     $cert = New-Object System.Security.Cryptography.X509Certificates.X509Certificate2($tmp.Export('Pfx', 'x'), 'x', 'Exportable')
-    $copia = Join-Path ([IO.Path]::GetTempPath()) ("StreamDelay-prueba-firma-" + [guid]::NewGuid().ToString('N').Substring(0, 8) + ".exe")
+    $copia = Join-Path ([IO.Path]::GetTempPath()) ("VortexsLive-prueba-firma-" + [guid]::NewGuid().ToString('N').Substring(0, 8) + ".exe")
     Copy-Item $Exe $copia
     $r = Firmar $copia $cert
     $s = Get-AuthenticodeSignature $copia
@@ -73,7 +73,7 @@ if ($Elegir) {
     $n = Read-Host "Número del certificado"
     $c = $lista[[int]$n - 1]
     "huella=" + $c.Thumbprint | Set-Content -Encoding ASCII $cfg
-    Write-Host "Guardado en firma.cfg. A partir de ahora build.bat firmará StreamDelay.exe al compilar."
+    Write-Host "Guardado en firma.cfg. A partir de ahora build.bat firmará VortexsLive.exe al compilar."
     exit 0
 }
 

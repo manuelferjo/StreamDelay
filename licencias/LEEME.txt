@@ -1,7 +1,7 @@
-LICENCIAS DE STREAMDELAY (solo para Vortexs)
+LICENCIAS DE VORTEXS LIVE (solo para Vortexs)
 ============================================
 
-Desde la 4.0, StreamDelay tiene 3 días de prueba con todo y luego dos planes
+Desde la 4.0, Vortexs Live tiene 3 días de prueba con todo y luego dos planes
 mes a mes:
   - Básico    5 €/mes: delay dinámico y multistream (Directo, Ajustes, Registro).
   - Completo  8 €/mes: todo (además Chat, Overlays, Mando y Título).
@@ -15,12 +15,13 @@ Las claves se pegan en el programa: botón del plan (arriba, debajo de
 Las creas tú con crear-clave.ps1 y tu clave privada. Valen sin internet.
 Pueden ser del plan Completo o Básico, para siempre o hasta una fecha.
 
-La clave privada (clave-privada-StreamDelay.txt) NO está en GitHub y no debe
+La clave privada (clave-privada-VortexsLive.txt; vale también con su nombre
+anterior, clave-privada-StreamDelay.txt) NO está en GitHub y no debe
 estarlo nunca: quien la tenga puede crear claves. Guárdala en un sitio seguro
 (y una copia, por ejemplo en un pendrive). Si la pierdes no podrás crear más
 claves SD1- (las que ya diste siguen valiendo).
 
-Crear claves (pon clave-privada-StreamDelay.txt en esta carpeta, clic
+Crear claves (pon clave-privada-VortexsLive.txt en esta carpeta, clic
 derecho en la carpeta -> Abrir en Terminal):
 
   Una clave del plan Completo para siempre, a nombre de Pepe:
@@ -47,13 +48,13 @@ Para cobrar los 5 €/mes y 8 €/mes se usa Polar (polar.sh). Polar es el
 vendedor oficial: cobra con tarjeta, PayPal, etc., pone y declara el IVA
 de cada país y te paga a ti. Se queda alrededor del 5 % + 0,50 € por pago.
 Al pagar, Polar le da al cliente una clave de licencia; si cancela o deja
-de pagar, Polar la anula y StreamDelay la deja de aceptar (se comprueba
+de pagar, Polar la anula y Vortexs Live la deja de aceptar (se comprueba
 al abrir y cada 6 horas; sin internet sigue valiendo 7 días).
 
 YA CONFIGURADO (18/11/2026) en la tienda Vortexs_MC de Polar:
-  - StreamDelay Básico   5 €/mes, ventaja "Licencia StreamDelay Básico"
+  - Vortexs Live Básico   5 €/mes, ventaja "Licencia Vortexs Live Básico"
     (claves SDB-..., 1 PC).
-  - StreamDelay Completo 8 €/mes, ventaja "Licencia StreamDelay Completo"
+  - Vortexs Live Completo 8 €/mes, ventaja "Licencia Vortexs Live Completo"
     (claves SDC-..., 1 PC).
   - Checkout links "Web y app - Básico" y "Web y app - Completo".
   - Los ids y enlaces ya están en src/License.cs y en web/index.html.
@@ -65,11 +66,11 @@ YA CONFIGURADO (18/11/2026) en la tienda Vortexs_MC de Polar:
 
 Pasos que se siguieron (por si hay que repetirlos; los nombres de los menús
 de Polar pueden cambiar un poco):
-  1. Crea la cuenta en polar.sh y la organización "StreamDelay" (o Vortexs).
+  1. Crea la cuenta en polar.sh y la organización "Vortexs Live" (o Vortexs).
      Completa los datos para cobrar (Finance -> Payout account).
   2. Products -> New product:
-       "StreamDelay Básico"   - Subscription, mensual, 5 EUR
-       "StreamDelay Completo" - Subscription, mensual, 8 EUR
+       "Vortexs Live Básico"   - Subscription, mensual, 5 EUR
+       "Vortexs Live Completo" - Subscription, mensual, 8 EUR
      En cada uno, Benefits -> License key. "Limit Activations" = 1
      (cada clave vale en un solo PC; para cambiar de PC, el cliente la
      libera con "Quitar clave" o desde el portal de clientes).

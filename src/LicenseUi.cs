@@ -2,9 +2,9 @@
 // pestañas que son del plan Completo y lo que se guarda. Las reglas están en License.cs.
 //
 // Qué se guarda:
-//   StreamDelay.ini   lic= (la clave, cifrada), lic_act= (activación de Polar en este PC),
+//   VortexsLive.ini   lic= (la clave, cifrada), lic_act= (activación de Polar en este PC),
 //                     lic_ok= (última comprobación de Polar, cifrada), t0= (inicio de la prueba)
-//   Registro de Windows (HKCU\Software\Vortexs\StreamDelay): inicio de la prueba y la última vez
+//   Registro de Windows (HKCU\Software\Vortexs\Vortexs Live): inicio de la prueba y la última vez
 //                     que se abrió, para que reinstalar o borrar el .ini no dé otra prueba.
 using System;
 using System.Collections.Generic;
@@ -19,6 +19,7 @@ namespace StreamDelay
 	{
 		private const int PageLocked = 7;
 
+		// Se mantiene el nombre antiguo (StreamDelay) para que actualizar no dé otra prueba.
 		private const string RegPath = "Software\\Vortexs\\StreamDelay";
 
 		// Plan con el que funciona ahora el programa.
@@ -256,7 +257,7 @@ namespace StreamDelay
 
 		// ---------- Avisos de la prueba ----------
 		// Cada uno sale una sola vez, nunca en pleno directo, ni encima de otra ventana o aviso, ni si
-		// StreamDelay no es la ventana activa: si no se puede, espera al minuto siguiente.
+		// Vortexs Live no es la ventana activa: si no se puede, espera al minuto siguiente.
 
 		private void LicenseNotices()
 		{
@@ -268,8 +269,8 @@ namespace StreamDelay
 			if (plan == Plan.Full && licSeen.IndexOf('h') < 0)
 			{
 				MarkSeen("h");
-				if (Notice("Bienvenido a StreamDelay", "3 días gratis con todo",
-					"Durante 3 días puedes usar StreamDelay completo: delay dinámico, multistream, chat conjunto, overlays, Mando y título.\n\nDespués elige un plan, mes a mes y sin permanencia:\n•  Básico, " + License.PriceBasic + ": delay dinámico y multistream.\n•  Completo, " + License.PriceFull + ": todo.\n\nLos días que te quedan se ven arriba, debajo de «English». Si ya tienes una clave, pégala en «Ver planes o activar una clave».",
+				if (Notice("Bienvenido a Vortexs Live", "3 días gratis con todo",
+					"Durante 3 días puedes usar Vortexs Live completo: delay dinámico, multistream, chat conjunto, overlays, Mando y título.\n\nDespués elige un plan, mes a mes y sin permanencia:\n•  Básico, " + License.PriceBasic + ": delay dinámico y multistream.\n•  Completo, " + License.PriceFull + ": todo.\n\nLos días que te quedan se ven arriba, debajo de «English». Si ya tienes una clave, pégala en «Ver planes o activar una clave».",
 					"Empezar la prueba", "Ver planes o activar una clave"))
 				{
 					return;
@@ -293,7 +294,7 @@ namespace StreamDelay
 			{
 				MarkSeen("f");
 				if (!Notice("Prueba", "La prueba de 3 días ha terminado",
-					"Gracias por probar StreamDelay. Para seguir usándolo elige un plan, mes a mes y sin permanencia:\n•  Básico, " + License.PriceBasic + ": delay dinámico y multistream.\n•  Completo, " + License.PriceFull + ": todo, también chat, overlays, Mando y título.\n\nTus ajustes se quedan guardados.",
+					"Gracias por probar Vortexs Live. Para seguir usándolo elige un plan, mes a mes y sin permanencia:\n•  Básico, " + License.PriceBasic + ": delay dinámico y multistream.\n•  Completo, " + License.PriceFull + ": todo, también chat, overlays, Mando y título.\n\nTus ajustes se quedan guardados.",
 					"Ver planes", "Ahora no"))
 				{
 					return;
@@ -322,7 +323,7 @@ namespace StreamDelay
 				Box(f, 24f, 20f, 392f, 280f, delegate(Graphics g, Rectangle r)
 				{
 					Card.Glow(g, new RectangleF(-r.Width * 0.2f, -r.Height * 0.4f, r.Width * 0.9f, r.Height * 0.8f), Color.FromArgb(40, Theme.Violet));
-					Theme.DrawText(g, "STREAMDELAY 4.0", Theme.Mono(7.5f), Theme.Violet, new RectangleF(0f, 0f, r.Width, S(18f)), StringAlignment.Near, StringAlignment.Center);
+					Theme.DrawText(g, "VORTEXS LIVE 4.0", Theme.Mono(7.5f), Theme.Violet, new RectangleF(0f, 0f, r.Width, S(18f)), StringAlignment.Near, StringAlignment.Center);
 					Theme.DrawText(g, heading, Theme.Display(16f), Theme.Text, new RectangleF(0f, S(20f), r.Width, S(34f)), StringAlignment.Near, StringAlignment.Center);
 					Theme.DrawWrapped(g, text, Theme.Body(9f), Theme.Muted, new RectangleF(0f, S(64f), r.Width, r.Height - S(64f)));
 				});
@@ -661,7 +662,7 @@ namespace StreamDelay
 				}
 				if (!License.PolarReady)
 				{
-					I18n.Show(f, "Esa clave no es de StreamDelay. Las claves empiezan por SD1-: cópiala entera, sin espacios.", "Licencia", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
+					I18n.Show(f, "Esa clave no es de Vortexs Live. Las claves empiezan por SD1-: cópiala entera, sin espacios.", "Licencia", MessageBoxButtons.OK, MessageBoxIcon.Exclamation);
 					return;
 				}
 				string oldKey = licKey;

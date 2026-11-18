@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Chat conjunto · StreamDelay</title>
+<title>Chat conjunto · Vortexs Live</title>
 <style>
   :root {
     --bg: #09090c; --surface: #111116; --elev: #171720; --border: #26262e;
@@ -22,7 +22,7 @@
   body.overlay #list { flex: 0 1 auto; min-height: 0; margin-top: auto; overflow-y: hidden; }
   body.overlay.demo { background: repeating-conic-gradient(#3a3a44 0 25%, #2b2b33 0 50%) 0 0 / 24px 24px; }
 
-  /* ---------- Estilo del chat (StreamDelay → Overlays → Personalizar chat) ---------- */
+  /* ---------- Estilo del chat (Vortexs Live → Overlays → Personalizar chat) ---------- */
   /* Variables: --cfont --csize --ctx --clbl --cname --cacc --cbg --ccr. Clases cs-… en <body>. */
   body.cs { font-family: var(--cfont); font-size: var(--csize); }
   body.cs .msg, body.cs .ev { color: var(--ctx); }
@@ -154,7 +154,7 @@
   <div class="mrow"><span class="mlbl">Todo el chat</span><button id="clearchat" class="danger">🧹 Borrar el chat</button></div>
   <div id="modstate"></div>
 </div>
-<div id="list"><div id="empty">Esperando mensajes…<br><small>Activa el chat en StreamDelay → pestaña Chat.</small></div></div>
+<div id="list"><div id="empty">Esperando mensajes…<br><small>Activa el chat en Vortexs Live → pestaña Chat.</small></div></div>
 <div id="composer">
   <div id="targets"><span>Enviar a:</span><span id="tgts"></span><span id="count"></span></div>
   <div class="row">
@@ -164,23 +164,23 @@
   <div id="result"></div>
 </div>
 <button id="more">↓ Nuevos mensajes</button>
-<div id="conn">Sin conexión con StreamDelay…</div>
+<div id="conn">Sin conexión con Vortexs Live…</div>
 
 <script>
 (function () {
   var q = new URLSearchParams(location.search);
-  // Idioma: lo pone StreamDelay al enviar la página ('es' o 'en').
+  // Idioma: lo pone Vortexs Live al enviar la página ('es' o 'en').
   var LANG = ('__SD_LANG__' === 'en' || q.get('lang') === 'en') ? 'en' : 'es';
   var LOC = LANG === 'en' ? 'en-US' : 'es-ES';
   var EN_TXT = {
-    'Chat conjunto · StreamDelay': 'Combined chat · StreamDelay',
+    'Chat conjunto · Vortexs Live': 'Combined chat · Vortexs Live',
     'Esperando mensajes…': 'Waiting for messages…',
-    'Activa el chat en StreamDelay → pestaña Chat.': 'Turn on the chat in StreamDelay → Chat tab.',
+    'Activa el chat en Vortexs Live → pestaña Chat.': 'Turn on the chat in Vortexs Live → Chat tab.',
     'Enviar a:': 'Send to:',
     'Escribe en el chat de todas tus plataformas…': 'Write in the chat of all your platforms…',
     'Enviar': 'Send',
     '↓ Nuevos mensajes': '↓ New messages',
-    'Sin conexión con StreamDelay…': 'No connection to StreamDelay…',
+    'Sin conexión con Vortexs Live…': 'No connection to Vortexs Live…',
     'no configurado': 'not set up',
     'pulsa para ': 'click to ',
     'ver': 'show',
@@ -193,10 +193,10 @@
     'Pulsa para ocultar los espectadores': 'Click to hide the viewers',
     ' (* sin contar las plataformas ocultas)': ' (* not counting hidden platforms)',
     'Pulsa para incluir o quitar ': 'Click to include or remove ',
-    'conecta tus cuentas en StreamDelay → pestaña Título para poder escribir': 'connect your accounts in StreamDelay → Title tab to be able to write',
+    'conecta tus cuentas en Vortexs Live → pestaña Título para poder escribir': 'connect your accounts in Vortexs Live → Title tab to be able to write',
     'Enviando…': 'Sending…',
-    'No se pudo contactar con StreamDelay.': "Couldn't reach StreamDelay.",
-    '✗ No se pudo contactar con StreamDelay': "✗ Couldn't reach StreamDelay",
+    'No se pudo contactar con Vortexs Live.': "Couldn't reach Vortexs Live.",
+    '✗ No se pudo contactar con Vortexs Live': "✗ Couldn't reach Vortexs Live",
     '🗑 Borrar': '🗑 Delete',
     'Hecho': 'Done',
     '¿Seguro? Banear a ': 'Sure? Ban ',
@@ -282,7 +282,7 @@
     if (document.body.classList.contains('overlay')) fade = st.fade || 0;
   }
   // El chat se conecta después de leer el estilo, para que los mensajes que ya había también
-  // usen la duración elegida (o al segundo y medio, si StreamDelay no contesta).
+  // usen la duración elegida (o al segundo y medio, si Vortexs Live no contesta).
   var started = false;
   function start() { if (!started) { started = true; connect(); } }
   function styleTick() {
@@ -451,7 +451,7 @@
       b.onclick = function () { chosen[p] = chosen[p] === false; try { localStorage.setItem('sd-enviar-a', JSON.stringify(chosen)); } catch (x) {} renderTargets(); };
       tgts.appendChild(b);
     });
-    if (!any) tgts.innerHTML = '<span>' + T('conecta tus cuentas en StreamDelay → pestaña Título para poder escribir') + '</span>';
+    if (!any) tgts.innerHTML = '<span>' + T('conecta tus cuentas en Vortexs Live → pestaña Título para poder escribir') + '</span>';
     input.disabled = !any;
     updateCount();
   }
@@ -475,7 +475,7 @@
         }).join(' &nbsp; ');
         if (anyOk) input.value = '';
       })
-      .catch(function () { result.innerHTML = '<span class="bad">' + T('No se pudo contactar con StreamDelay.') + '</span>'; })
+      .catch(function () { result.innerHTML = '<span class="bad">' + T('No se pudo contactar con Vortexs Live.') + '</span>'; })
       .then(function () { input.disabled = false; input.focus(); updateCount(); });
   }
   input.addEventListener('input', updateCount);
@@ -511,7 +511,7 @@
         else if (r.ok) { res.className = 'mres ok'; res.textContent = '✓ ' + (r.msg || T('Hecho')); setTimeout(function () { closeBars(null); }, 1500); }
         else { res.className = 'mres bad'; res.textContent = '✗ ' + (r.error || 'error'); Array.prototype.forEach.call(bar.querySelectorAll('button'), function (b) { b.disabled = false; }); }
       })
-      .catch(function () { res.className = 'mres bad'; res.textContent = T('✗ No se pudo contactar con StreamDelay'); });
+      .catch(function () { res.className = 'mres bad'; res.textContent = T('✗ No se pudo contactar con Vortexs Live'); });
   }
   list.addEventListener('click', function (e) {
     if (document.body.classList.contains('overlay') || document.body.classList.contains('nomod')) return;

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Guía StreamDelay</title>
+<title>Guía Vortexs Live</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Outfit:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -58,46 +58,46 @@
   <header>
     <img src="res/logo.png" alt="">
     <div>
-      <h1>Stream <span>Delay</span></h1>
+      <h1>Vortexs <span>Live</span></h1>
       <div class="by">by Vortexs · v4.0</div>
     </div>
   </header>
-  <p class="sub">Delay dinámico y multistream para tus directos con OBS: cámbialo, actívalo o desactívalo sin cortar el stream. Ahora conserva todas las calidades de la <b>Transmisión mejorada</b> de Twitch.</p>
+  <p class="sub"><b>Antes se llamaba StreamDelay.</b> Delay dinámico y multistream para tus directos con OBS: cámbialo, actívalo o desactívalo sin cortar el stream. Ahora conserva todas las calidades de la <b>Transmisión mejorada</b> de Twitch.</p>
 
   <section>
     <h2>Cómo funciona</h2>
-    <div class="flow"><span>OBS</span>→<span class="on">StreamDelay (guarda X segundos)</span>→<span>Twitch / YouTube / Kick…</span></div>
-    <p>StreamDelay incluye su propio servidor: OBS le envía el directo, el programa lo guarda X segundos y lo reenvía a tu plataforma tal cual, sin volver a codificar (casi no usa CPU).</p>
-    <p>Si en OBS activas la <b>Transmisión mejorada</b>, OBS crea en tu PC varias calidades a la vez (por ejemplo 1080p60, 720p, 480p, 360p). StreamDelay las retrasa todas juntas y las manda a Twitch, así tus espectadores pueden elegir calidad en el reproductor.</p>
+    <div class="flow"><span>OBS</span>→<span class="on">Vortexs Live (guarda X segundos)</span>→<span>Twitch / YouTube / Kick…</span></div>
+    <p>Vortexs Live incluye su propio servidor: OBS le envía el directo, el programa lo guarda X segundos y lo reenvía a tu plataforma tal cual, sin volver a codificar (casi no usa CPU).</p>
+    <p>Si en OBS activas la <b>Transmisión mejorada</b>, OBS crea en tu PC varias calidades a la vez (por ejemplo 1080p60, 720p, 480p, 360p). Vortexs Live las retrasa todas juntas y las manda a Twitch, así tus espectadores pueden elegir calidad en el reproductor.</p>
     <p><b>Requisitos:</b> Windows 10 u 11 y OBS Studio 30.2 o posterior. Ya no hace falta ffmpeg.</p>
     <p class="opt">Memoria: unos 25 MB el programa y unos 22 MB por cada 30 s de delay a 6000 kbps (con Transmisión mejorada se suma el bitrate de todas las calidades).</p>
   </section>
 
   <section class="hl" id="1080p">
     <h2>1080p en Twitch y Kick a la vez: lo que hace falta <span class="tag">IMPORTANTE</span></h2>
-    <p style="margin-top:0">StreamDelay no cambia la imagen: reenvía lo que le manda OBS. <b>Twitch recibe todas las calidades</b> de la Transmisión mejorada y <b>Kick recibe siempre la de más resolución</b> (desde la 2.7, aunque no sea la primera). Para que esa calidad sea 1080p tiene que cumplirse todo esto:</p>
+    <p style="margin-top:0">Vortexs Live no cambia la imagen: reenvía lo que le manda OBS. <b>Twitch recibe todas las calidades</b> de la Transmisión mejorada y <b>Kick recibe siempre la de más resolución</b> (desde la 2.7, aunque no sea la primera). Para que esa calidad sea 1080p tiene que cumplirse todo esto:</p>
     <table style="margin-top:12px">
       <tr><th>Dónde</th><th>Qué poner</th></tr>
       <tr><td>OBS → Ajustes → Vídeo</td><td>Resolución base <code>1920x1080</code> · Resolución de salida (escalada) <code>1920x1080</code> · FPS <code>60</code> (o 30).</td></tr>
       <tr><td>OBS → Ajustes → Emisión</td><td>Servicio <b>Twitch</b> · Servidor: <b>Especifica un servidor personalizado…</b> → <code>rtmp://127.0.0.1:1935/app</code> · tu cuenta o clave de Twitch · <b>Habilitar Transmisión mejorada</b> ✓ · <b>Ancho de banda máximo: Auto</b> (o 10000 kbps o más) · Máximas pistas de vídeo: Auto.</td></tr>
       <tr><td>OBS → Ajustes → Avanzado</td><td>“Retraso de transmisión” <b>desactivado</b>.</td></tr>
-      <tr><td>StreamDelay → Ajustes → Destinos</td><td><b>Twitch</b> activado (la clave la pone OBS). <b>Kick</b> activado con su <b>Stream URL</b> y <b>Stream Key</b> (Editar).</td></tr>
+      <tr><td>Vortexs Live → Ajustes → Destinos</td><td><b>Twitch</b> activado (la clave la pone OBS). <b>Kick</b> activado con su <b>Stream URL</b> y <b>Stream Key</b> (Editar).</td></tr>
       <tr><td>Tu conexión</td><td>Subida estable de <b>20 Mbps o más</b>: Twitch con Transmisión mejorada usa hasta ~10,5 Mbps y Kick otros 6–8 Mbps, y se envían a la vez.</td></tr>
     </table>
     <p class="note"><b>Por qué “Auto” en el ancho de banda:</b> con la Transmisión mejorada es <b>Twitch quien decide</b> las calidades cada vez que empiezas a emitir, según tu tarjeta gráfica, tu conexión y ese límite. La calidad más alta puede ir de 1080p60 a 480p. Con un límite bajo (por ejemplo 7000 kbps) Twitch puede quitar el 1080p.</p>
     <h3 style="margin:18px 0 8px">Comprobarlo en cada directo (antes de que te vea nadie)</h3>
     <ol>
-      <li>Pulsa <b>Iniciar</b> en StreamDelay y <b>Iniciar transmisión</b> en OBS. Durante el delay todavía no se emite nada.</li>
+      <li>Pulsa <b>Iniciar</b> en Vortexs Live y <b>Iniciar transmisión</b> en OBS. Durante el delay todavía no se emite nada.</li>
       <li>Nada más conectar OBS, en la pestaña <b>Directo</b> el recuadro <b>Calidades</b> debe empezar por <b>1080p60</b> (si no, salta el aviso). Al terminar el delay, la píldora de Kick debe poner <b>EN DIRECTO · 1080P60</b> y la de Twitch <b>EN DIRECTO · N CAL.</b></li>
       <li>Si sale el aviso <b>“Sin 1080p”</b>, detén la transmisión en OBS, revisa la tabla de arriba y vuelve a empezar: Twitch recalcula las calidades en cada inicio.</li>
     </ol>
     <p class="note ok"><b>Plan B, 1080p garantizado:</b> si Twitch sigue sin darte 1080p, desactiva la Transmisión mejorada. En OBS → Salida → Emisión usa tu codificador de vídeo (NVENC H.264, por ejemplo), control de tasa <b>CBR 6000 kbps</b>, intervalo de fotogramas clave <b>2 s</b> y resolución de salida 1920x1080. Así Twitch y Kick reciben siempre 1080p60. A cambio, en Twitch las calidades más bajas solo existen si Twitch transcodifica tu canal.</p>
-    <p class="opt">Si una plataforma se cae, StreamDelay reconecta solo esa plataforma sin cortar la otra. Antes del primer directo importante haz una prueba: en OBS añade <code>?bandwidthtest=true</code> al final de la clave de Twitch y la prueba no se emitirá en público.</p>
+    <p class="opt">Si una plataforma se cae, Vortexs Live reconecta solo esa plataforma sin cortar la otra. Antes del primer directo importante haz una prueba: en OBS añade <code>?bandwidthtest=true</code> al final de la clave de Twitch y la prueba no se emitirá en público.</p>
   </section>
 
   <section class="hl" id="planes">
     <h2>Planes y licencia <span class="tag">NUEVO EN 4.0</span></h2>
-    <p style="margin-top:0">Al abrir StreamDelay por primera vez tienes <b>3 días de prueba gratis con todo</b>, sin tarjeta, y una ventana de bienvenida te lo explica. Te avisa también cuando queda menos de 1 día y cuando la prueba termina (nunca en pleno directo). Después hay dos planes, que se pagan <b>mes a mes</b> y se cancelan cuando quieras:</p>
+    <p style="margin-top:0">Al abrir Vortexs Live por primera vez tienes <b>3 días de prueba gratis con todo</b>, sin tarjeta, y una ventana de bienvenida te lo explica. Te avisa también cuando queda menos de 1 día y cuando la prueba termina (nunca en pleno directo). Después hay dos planes, que se pagan <b>mes a mes</b> y se cancelan cuando quieras:</p>
     <table>
       <tr><th>Plan</th><th>Precio</th><th>Qué incluye</th></tr>
       <tr><td><b>Básico</b></td><td>5 €/mes</td><td>Delay dinámico y multistream: pestañas <b>Directo</b>, <b>Ajustes</b> y <b>Registro</b>, clips, atajos de teclado y el overlay del delay.</td></tr>
@@ -108,17 +108,17 @@
       <li><b>Suscribirme</b> abre la página de pago del plan. Al pagar recibes una <b>clave de licencia</b> por correo.</li>
       <li>Pega la clave en <b>Activar una clave</b> y pulsa <b>Activar</b>. Si te han regalado una clave (empieza por <code>SD1-</code>), se pega en el mismo sitio.</li>
     </ol>
-    <p class="note">Las suscripciones se comprueban por internet al abrir StreamDelay y cada 6 horas; sin internet siguen valiendo 7 días. Las claves de regalo no necesitan internet. Si la licencia se acaba <b>en pleno directo no se corta nada</b>: el cambio espera a que termines.</p>
+    <p class="note">Las suscripciones se comprueban por internet al abrir Vortexs Live y cada 6 horas; sin internet siguen valiendo 7 días. Las claves de regalo no necesitan internet. Si la licencia se acaba <b>en pleno directo no se corta nada</b>: el cambio espera a que termines.</p>
     <p class="opt">Cada licencia vale en <b>un solo PC</b>. ¿Cambias de PC? En el PC viejo, Licencia → <b>Quitar clave</b>, y pégala en el nuevo. Para cancelar la suscripción: Licencia → <b>Gestionar o cancelar mi suscripción</b>.</p>
   </section>
 
   <section>
     <h2><span class="n">1</span>Instalar</h2>
     <ol>
-      <li>Descomprime el ZIP en una carpeta fija, por ejemplo <code>Documentos\StreamDelay</code>. No lo ejecutes desde dentro del ZIP.</li>
-      <li>Haz doble clic en <code>build.bat</code>. Cuando diga “Listo”, pulsa una tecla. Aparecerá <code>StreamDelay.exe</code>.</li>
-      <li>Abre <code>StreamDelay.exe</code>. Si aparece <b>“Windows protegió su PC”</b> (SmartScreen), pulsa <b>Más información → Ejecutar de todas formas</b>.</li>
-      <li>Si ya tenías la versión anterior, puedes copiar tu <code>StreamDelay.ini</code> a la nueva carpeta: se conservan el delay, el servidor y la clave.</li>
+      <li>Descomprime el ZIP en una carpeta fija, por ejemplo <code>Documentos\Vortexs Live</code>. No lo ejecutes desde dentro del ZIP.</li>
+      <li>Haz doble clic en <code>build.bat</code>. Cuando diga “Listo”, pulsa una tecla. Aparecerá <code>VortexsLive.exe</code>.</li>
+      <li>Abre <code>VortexsLive.exe</code>. Si aparece <b>“Windows protegió su PC”</b> (SmartScreen), pulsa <b>Más información → Ejecutar de todas formas</b>.</li>
+      <li>Si ya tenías la versión anterior (también si se llamaba <b>StreamDelay</b>), copia tu <code>VortexsLive.ini</code> o <code>StreamDelay.ini</code> a la nueva carpeta: se conservan el delay, el servidor y la clave.</li>
     </ol>
   </section>
 
@@ -129,20 +129,20 @@
       <tr><th>Campo</th><th>Valor</th></tr>
       <tr><td>Servicio</td><td><b>Twitch</b> (no “Personalizado”)</td></tr>
       <tr><td>Servidor</td><td><b>Especifica un servidor personalizado…</b></td></tr>
-      <tr><td>Servidor personalizado</td><td><code>rtmp://127.0.0.1:1935/app</code> <span class="opt">(botón “Copiar” en StreamDelay → Configuración → OBS)</span></td></tr>
+      <tr><td>Servidor personalizado</td><td><code>rtmp://127.0.0.1:1935/app</code> <span class="opt">(botón “Copiar” en Vortexs Live → Configuración → OBS)</span></td></tr>
       <tr><td>Clave de retransmisión</td><td>Tu clave de Twitch, o pulsa “Conectar cuenta”</td></tr>
       <tr><td>Transmisión mejorada</td><td><b>Activada</b> (“Habilitar Transmisión mejorada”)</td></tr>
     </table>
-    <p>En <b>Ajustes → Avanzado</b> <b>desactiva</b> “Retraso de transmisión” (el delay lo pone StreamDelay).</p>
-    <p class="note ok">Con esto OBS pide a Twitch la configuración de calidades con tu clave y envía todas las calidades a StreamDelay. En el panel <b>Directo</b> verás <b>Calidades: 4 · Mejorada</b> (o el número que te asigne Twitch).</p>
-    <p class="note">Twitch genera una clave especial para cada sesión de Transmisión mejorada y StreamDelay la recibe de OBS automáticamente. Por eso en este modo <b>no hace falta</b> poner la clave en StreamDelay, y si la pones se ignora.</p>
+    <p>En <b>Ajustes → Avanzado</b> <b>desactiva</b> “Retraso de transmisión” (el delay lo pone Vortexs Live).</p>
+    <p class="note ok">Con esto OBS pide a Twitch la configuración de calidades con tu clave y envía todas las calidades a Vortexs Live. En el panel <b>Directo</b> verás <b>Calidades: 4 · Mejorada</b> (o el número que te asigne Twitch).</p>
+    <p class="note">Twitch genera una clave especial para cada sesión de Transmisión mejorada y Vortexs Live la recibe de OBS automáticamente. Por eso en este modo <b>no hace falta</b> poner la clave en Vortexs Live, y si la pones se ignora.</p>
   </section>
 
   <section>
-    <h2><span class="n">3</span>Configurar StreamDelay</h2>
+    <h2><span class="n">3</span>Configurar Vortexs Live</h2>
     <ol>
       <li>Pestaña <b>Ajustes → Destinos</b>: activa Twitch (y las demás plataformas donde quieras emitir) y pulsa <b>Editar</b> para revisar servidor y clave.</li>
-      <li><b>Clave de transmisión:</b> opcional si la pones en OBS como en el paso 2. Rellénala solo si en OBS usas “Personalizado” con la clave <code>stream</code>. Se guarda cifrada con tu usuario de Windows en <code>StreamDelay.ini</code>. <b>No compartas ese archivo.</b></li>
+      <li><b>Clave de transmisión:</b> opcional si la pones en OBS como en el paso 2. Rellénala solo si en OBS usas “Personalizado” con la clave <code>stream</code>. Se guarda cifrada con tu usuario de Windows en <code>VortexsLive.ini</code>. <b>No compartas ese archivo.</b></li>
     </ol>
     <table style="margin-top:12px">
       <tr><th>Plataforma</th><th>Servidor</th></tr>
@@ -151,7 +151,7 @@
       <tr><td>Kick</td><td>El “Stream URL” de tu panel de Kick (empieza por <code>rtmps://</code>)</td></tr>
       <tr><td>Otras</td><td>La URL de servidor que te dé la plataforma</td></tr>
     </table>
-    <p class="note"><b>Kick y YouTube:</b> escribe su clave en StreamDelay (la de OBS suele ser la de Twitch y se ignora). A estas plataformas StreamDelay envía la calidad de más resolución y ellas crean el resto (720p, 480p…). Para que sea 1080p mira el apartado <a href="#1080p" style="color:var(--violet-light)">“1080p en Twitch y Kick a la vez”</a>.</p>
+    <p class="note"><b>Kick y YouTube:</b> escribe su clave en Vortexs Live (la de OBS suele ser la de Twitch y se ignora). A estas plataformas Vortexs Live envía la calidad de más resolución y ellas crean el resto (720p, 480p…). Para que sea 1080p mira el apartado <a href="#1080p" style="color:var(--violet-light)">“1080p en Twitch y Kick a la vez”</a>.</p>
   </section>
 
   <section id="multistream">
@@ -164,12 +164,12 @@
       <li>Cada destino va por su cuenta: si una plataforma se cae o va lenta, se reconecta sola sin cortar las demás.</li>
       <li>Con varias plataformas se sube el mismo vídeo varias veces: tu conexión tiene que aguantar la suma (por ejemplo, Twitch con 3 calidades ≈ 8 Mbps + Kick 6 Mbps ≈ 14 Mbps de subida).</li>
     </ul>
-    <p class="note">La clave de Twitch la puede poner OBS (servicio Twitch + Transmisión mejorada). Las de Kick, YouTube, TikTok y Otro tienen que estar guardadas en StreamDelay.</p>
+    <p class="note">La clave de Twitch la puede poner OBS (servicio Twitch + Transmisión mejorada). Las de Kick, YouTube, TikTok y Otro tienen que estar guardadas en Vortexs Live.</p>
     <p class="note"><b>TikTok:</b> solo algunas cuentas tienen clave de emisión. Si la tuya la tiene, está en <b>TikTok LIVE Producer</b> (en la web): copia el “Server URL” y la “Stream Key” en Ajustes → Destinos → TikTok → Editar. TikTok suele dar una clave nueva en cada directo, así que revísala antes de empezar.</p>
   </section>
   <section id="tiktok-vertical">
     <h2>TikTok en vertical (con delay) <span class="tag">NUEVO</span></h2>
-    <p style="margin-top:0">Si activas TikTok en Destinos sin más, TikTok recibe <b>la misma imagen horizontal</b> que Twitch, Kick y YouTube (y la enseña con bandas negras), porque StreamDelay no vuelve a codificar el vídeo. Para que TikTok tenga <b>su propia versión vertical (9:16)</b>, OBS crea esa imagen con el plugin <b>Aitum Vertical</b> y la manda a StreamDelay por un <b>segundo puerto</b>. StreamDelay le pone <b>el mismo delay</b> y la envía solo a TikTok; los demás siguen recibiendo la horizontal.</p>
+    <p style="margin-top:0">Si activas TikTok en Destinos sin más, TikTok recibe <b>la misma imagen horizontal</b> que Twitch, Kick y YouTube (y la enseña con bandas negras), porque Vortexs Live no vuelve a codificar el vídeo. Para que TikTok tenga <b>su propia versión vertical (9:16)</b>, OBS crea esa imagen con el plugin <b>Aitum Vertical</b> y la manda a Vortexs Live por un <b>segundo puerto</b>. Vortexs Live le pone <b>el mismo delay</b> y la envía solo a TikTok; los demás siguen recibiendo la horizontal.</p>
     <h3 style="margin:16px 0 8px">Lo que hace falta</h3>
     <ul>
       <li><b>Cuenta de TikTok con clave de emisión.</b> Normalmente hace falta tener 18 años o más y al menos 1.000 seguidores, y aun así TikTok no se la da a todo el mundo. La clave está en <b>TikTok LIVE Producer</b> (en la web, livecenter.tiktok.com/producer). Si ahí no aparece, la cuenta todavía no la tiene.</li>
@@ -179,16 +179,16 @@
     <h3 style="margin:16px 0 8px">Pasos</h3>
     <ol>
       <li><b>Instala Aitum Vertical</b> y reinicia OBS. En <b>Docks</b> activa <b>Vertical Scenes</b> y <b>Vertical Sources</b>, pon el lienzo vertical a <b>1080x1920</b> y monta tus escenas verticales (cámara arriba, juego abajo, chat…).</li>
-      <li>En StreamDelay: <b>Ajustes → Destinos → TikTok → Editar</b>. Pega el <b>Server URL</b> y la <b>Stream Key</b> de TikTok LIVE Producer y activa <b>Imagen vertical (Aitum Vertical)</b>. Debajo verás la dirección para Aitum (con el puerto de siempre es <code>rtmp://127.0.0.1:1936/app</code>). Guarda y deja TikTok activado.</li>
+      <li>En Vortexs Live: <b>Ajustes → Destinos → TikTok → Editar</b>. Pega el <b>Server URL</b> y la <b>Stream Key</b> de TikTok LIVE Producer y activa <b>Imagen vertical (Aitum Vertical)</b>. Debajo verás la dirección para Aitum (con el puerto de siempre es <code>rtmp://127.0.0.1:1936/app</code>). Guarda y deja TikTok activado.</li>
       <li>En <b>Aitum Vertical → Settings</b> añade una salida de emisión con ese servidor y como clave <code>tiktok</code>.</li>
       <li>La emisión normal de OBS sigue igual: <code>rtmp://127.0.0.1:1935/app</code>.</li>
-      <li>En StreamDelay pulsa <b>Iniciar</b> (arranca las dos entradas a la vez) y en OBS inicia la emisión normal y la de Aitum Vertical (su botón está en el dock vertical).</li>
+      <li>En Vortexs Live pulsa <b>Iniciar</b> (arranca las dos entradas a la vez) y en OBS inicia la emisión normal y la de Aitum Vertical (su botón está en el dock vertical).</li>
     </ol>
     <h3 style="margin:16px 0 8px">Ten en cuenta</h3>
     <ul>
       <li>TikTok lleva <b>siempre el mismo delay</b> que el resto: el interruptor, la barra, los delays guardados, los atajos <kbd>Ctrl</kbd>+<kbd>Alt</kbd>, el Mando, los comandos del chat y <b>Cortar ya</b> funcionan para los dos a la vez.</li>
       <li>En <b>Directo</b>, TikTok sale en la franja de destinos con su estado. Si pone “ESPERANDO A OBS”, la salida de Aitum Vertical no está emitiendo o va a otro puerto.</li>
-      <li>La clave de TikTok <b>cambia en cada directo</b> (y caduca si tardas en empezar): genérala en LIVE Producer justo antes y pégala en StreamDelay.</li>
+      <li>La clave de TikTok <b>cambia en cada directo</b> (y caduca si tardas en empezar): genérala en LIVE Producer justo antes y pégala en Vortexs Live.</li>
       <li>Si cambias el puerto en Ajustes → OBS (por ejemplo a 1940), el de la imagen vertical es el siguiente (1941): mira la dirección en la ventana de TikTok.</li>
       <li>Si TikTok sale en negro o recortado, el lienzo vertical no es 1080x1920.</li>
       <li>Si te vale la misma imagen horizontal en TikTok, no actives “Imagen vertical” y no hace falta Aitum.</li>
@@ -198,12 +198,12 @@
   <section>
     <h2><span class="n">4</span>Cada vez que transmitas</h2>
     <ol>
-      <li>Abre StreamDelay y pulsa <b>▶ Iniciar servicio</b>. Arriba verás <b>ESPERANDO A OBS</b>.</li>
+      <li>Abre Vortexs Live y pulsa <b>▶ Iniciar servicio</b>. Arriba verás <b>ESPERANDO A OBS</b>.</li>
       <li>En OBS pulsa <b>Iniciar transmisión</b>. Pasará a <b>CARGANDO DELAY</b>.</li>
       <li>Pasado el delay elegido verás <b>EN DIRECTO</b> y empezará el stream.</li>
-      <li>Para terminar, detén la transmisión en OBS. StreamDelay envía lo que queda en el búfer y cierra el directo. Para cortar al momento, pulsa <b>Cortar ya</b>.</li>
+      <li>Para terminar, detén la transmisión en OBS. Vortexs Live envía lo que queda en el búfer y cierra el directo. Para cortar al momento, pulsa <b>Cortar ya</b>.</li>
     </ol>
-    <p class="note ok">Si OBS se desconecta y se reconecta con la misma clave, el directo sigue sin cortarse. Con Transmisión mejorada, cada vez que OBS vuelve a empezar Twitch le da una clave nueva: StreamDelay reconecta con ella automáticamente (el público verá un corte de un par de segundos). Si es la plataforma la que se cae, StreamDelay reintenta solo.</p>
+    <p class="note ok">Si OBS se desconecta y se reconecta con la misma clave, el directo sigue sin cortarse. Con Transmisión mejorada, cada vez que OBS vuelve a empezar Twitch le da una clave nueva: Vortexs Live reconecta con ella automáticamente (el público verá un corte de un par de segundos). Si es la plataforma la que se cae, Vortexs Live reintenta solo.</p>
   </section>
 
   <section>
@@ -214,7 +214,7 @@
       <tr><td>Otro valor</td><td>Barra y después <b>Aplicar</b></td></tr>
       <tr><td>Activar / desactivar</td><td>Interruptor “Activado”, o <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>D</kbd></td></tr>
       <tr><td>Sumar / restar 5 s</td><td><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>↑</kbd> / <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>↓</kbd></td></tr>
-      <tr><td>Guardar un clip</td><td>Botón <b>Clip</b> de Directo, <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>C</kbd>, el Mando o <code>!guardar</code> en el chat (solo tú). Guarda los <b>últimos 60 s que ha visto el público</b> (con el delay ya aplicado) en <b>Vídeos\StreamDelay</b>, en MP4 si tienes ffmpeg y si no en FLV (se abre con VLC). Registro → <b>Clips</b> abre la carpeta.</td></tr>
+      <tr><td>Guardar un clip</td><td>Botón <b>Clip</b> de Directo, <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>C</kbd>, el Mando o <code>!guardar</code> en el chat (solo tú). Guarda los <b>últimos 60 s que ha visto el público</b> (con el delay ya aplicado) en <b>Vídeos\Vortexs Live</b>, en MP4 si tienes ffmpeg y si no en FLV (se abre con VLC). Registro → <b>Clips</b> abre la carpeta.</td></tr>
       <tr><td>Ventana encima del juego</td><td>Ajustes → “Ventana siempre visible”</td></tr>
       <tr><td>Desde el móvil o el Stream Deck</td><td>Pestaña <b>Mando</b> (apartado 11)</td></tr>
     </table>
@@ -244,18 +244,18 @@
       <li>Las píldoras muestran la categoría elegida en cada plataforma. Si no es la buena, pulsa la píldora y elige otra de la lista.</li>
       <li><b>YouTube</b> solo deja elegir su categoría general (Videojuegos, Gente y blogs…). El juego concreto lo detecta YouTube solo.</li>
       <li>En YouTube se cambia el directo en curso o, si aún no has empezado, el próximo programado. El título se recorta a 100 caracteres (Twitch admite 140).</li>
-      <li><b>TikTok no permite</b> que otros programas cambien el título de un LIVE. StreamDelay te copia el título para que lo pegues en TikTok LIVE Studio.</li>
+      <li><b>TikTok no permite</b> que otros programas cambien el título de un LIVE. Vortexs Live te copia el título para que lo pegues en TikTok LIVE Studio.</li>
       <li>“Recientes” guarda tus últimos 10 títulos.</li>
     </ul>
-    <p class="note">La primera vez tienes que crear una <b>app de desarrollador</b> gratuita en cada plataforma. Es la forma oficial de que un programa pueda cambiar tu título. Al pulsar <b>Conectar</b>, StreamDelay te enseña los pasos. Resumen:</p>
+    <p class="note">La primera vez tienes que crear una <b>app de desarrollador</b> gratuita en cada plataforma. Es la forma oficial de que un programa pueda cambiar tu título. Al pulsar <b>Conectar</b>, Vortexs Live te enseña los pasos. Resumen:</p>
     <table style="margin-top:12px">
       <tr><th>Plataforma</th><th>Qué crear</th></tr>
       <tr><td>Twitch</td><td><code>dev.twitch.tv/console</code> → Registrar aplicación. Redirección OAuth: <code>http://localhost</code> · Categoría: Application Integration · Tipo de cliente: <b>Público</b>. Copia el <b>ID de cliente</b>. (Twitch pide la verificación en dos pasos.)</td></tr>
       <tr><td>Kick</td><td>Kick → Ajustes → <b>Developer</b> → Create App. Redirect URL: <code>http://localhost:17563/callback</code> · Permisos: leer usuario, leer canal y <b>escribir canal</b>. Copia <b>Client ID</b> y <b>Client Secret</b>.</td></tr>
       <tr><td>YouTube</td><td><code>console.cloud.google.com</code> → proyecto nuevo → habilita <b>YouTube Data API v3</b> → pantalla de consentimiento (Externo, tu correo) y pulsa <b>Publicar aplicación</b> → Credenciales → ID de cliente OAuth de tipo <b>“TVs y dispositivos de entrada limitada”</b>. Copia ID y secreto.</td></tr>
     </table>
-    <p class="opt">Al conectar, Twitch y YouTube te muestran un código que hay que escribir en su web (StreamDelay lo copia y abre la página). Kick abre el navegador para que pulses “Permitir”. Las claves y los accesos se guardan cifrados en <code>StreamDelay.ini</code>.</p>
-    <p class="opt">Si Google muestra “Google no ha verificado esta aplicación”, pulsa <b>Configuración avanzada → Ir a StreamDelay</b>: es tu propia app. Si no la publicas, Google te desconecta cada 7 días.</p>
+    <p class="opt">Al conectar, Twitch y YouTube te muestran un código que hay que escribir en su web (Vortexs Live lo copia y abre la página). Kick abre el navegador para que pulses “Permitir”. Las claves y los accesos se guardan cifrados en <code>VortexsLive.ini</code>.</p>
+    <p class="opt">Si Google muestra “Google no ha verificado esta aplicación”, pulsa <b>Configuración avanzada → Ir a Vortexs Live</b>: es tu propia app. Si no la publicas, Google te desconecta cada 7 días.</p>
   </section>
 
   <section id="chat">
@@ -272,24 +272,24 @@
       <tr><td>En pantalla, en el directo</td><td>Pestaña <b>Overlays</b> → tarjeta <b>Chat en pantalla</b> → <b>Copiar URL</b>. En OBS añade una fuente <b>Navegador</b> con esa URL, ancho <code>500</code> y alto <code>700</code> por ejemplo, y colócala donde quieras. Su aspecto (fuente, tamaño, colores, con o sin fondo…) se cambia en <b>Personalizar chat →</b> (ver apartado 9).</td></tr>
     </table>
     <h3 style="margin:18px 0 8px">Chat de TikTok <span class="tag">NUEVO</span></h3>
-    <p style="margin-top:0">TikTok no deja que otros programas lean el chat de un directo. Por eso StreamDelay usa <b>Euler Stream</b>, un servicio que se conecta a tu directo y le pasa el chat. Su plan <b>Community</b> es gratis (sin tarjeta) y sobra para tu directo.</p>
+    <p style="margin-top:0">TikTok no deja que otros programas lean el chat de un directo. Por eso Vortexs Live usa <b>Euler Stream</b>, un servicio que se conecta a tu directo y le pasa el chat. Su plan <b>Community</b> es gratis (sin tarjeta) y sobra para tu directo.</p>
     <ol>
       <li>Crea una cuenta en <a href="https://www.eulerstream.com">eulerstream.com</a> y, en su panel, copia tu <b>API Key</b>.</li>
-      <li>En StreamDelay, pestaña <b>Chat</b>: escribe tu <code>@usuario</code> de TikTok, pulsa <b>Clave Euler Stream</b>, pega la clave y <b>Guardar</b>. El botón pasa a decir <b>Clave puesta ✓</b>.</li>
+      <li>En Vortexs Live, pestaña <b>Chat</b>: escribe tu <code>@usuario</code> de TikTok, pulsa <b>Clave Euler Stream</b>, pega la clave y <b>Guardar</b>. El botón pasa a decir <b>Clave puesta ✓</b>.</li>
       <li>Con el chat <b>Activado</b>, en cuanto empiezas el directo en TikTok verás sus mensajes, regalos, suscripciones, follows y espectadores (también en el overlay de espectadores, pestaña <b>Overlays</b>).</li>
     </ol>
     <ul>
       <li>Solo se <b>lee</b>: TikTok no deja escribir en su chat ni moderar desde otros programas. Los comandos (<code>!delay</code>…) no se contestan en TikTok.</li>
       <li>Los regalos en racha (rosas…) salen una vez, al acabar la racha, con el total de diamantes.</li>
-      <li>Mientras no estés en directo, StreamDelay vuelve a mirar cada 2 minutos (cada 5 tras media hora) para gastar poco del plan gratuito.</li>
-      <li>La clave se guarda cifrada en <code>StreamDelay.ini</code>. Es como una contraseña: <b>no la compartas</b>.</li>
+      <li>Mientras no estés en directo, Vortexs Live vuelve a mirar cada 2 minutos (cada 5 tras media hora) para gastar poco del plan gratuito.</li>
+      <li>La clave se guarda cifrada en <code>VortexsLive.ini</code>. Es como una contraseña: <b>no la compartas</b>.</li>
     </ul>
     <ul style="margin-top:12px">
       <li>El chat va <b>en tiempo real</b>, sin delay: así ves lo que escribe la gente al momento (ellos reaccionan a lo que vieron hace X segundos).</li>
       <li>Los emotes de 7TV/BTTV/FFZ de tu canal de Twitch se usan también en Kick y YouTube; los de 7TV de Kick y YouTube se añaden si los tienes.</li>
       <li>Los mensajes borrados y los usuarios baneados desaparecen también del chat conjunto.</li>
       <li><b>Ocultar o ver los espectadores:</b> pulsa el total de arriba para ocultarlos o verlos todos, o pulsa una plataforma para ocultar solo la suya (el total se marca con * si falta alguna). Cada uno lo elige en su navegador o panel de OBS y se recuerda. Con <code>?espectadores=0</code> en la URL empiezan ocultos.</li>
-      <li>Funciona aunque el delay esté apagado y se activa solo al abrir StreamDelay si lo dejaste activado.</li>
+      <li>Funciona aunque el delay esté apagado y se activa solo al abrir Vortexs Live si lo dejaste activado.</li>
       <li>Ajustes de la URL (se añaden al final): <code>?size=18</code> tamaño de letra · <code>?eventos=0</code> sin avisos · <code>?ocultar=youtube</code> no mostrar una plataforma · <code>?moderar=0</code> sin botones de moderar. El tamaño, la duración y el resto del aspecto se eligen en <b>Personalizar chat</b>.</li>
     </ul>
     <h3 style="margin:18px 0 8px">Follows de Twitch y donaciones</h3>
@@ -304,7 +304,7 @@
       <li>Las donaciones salen en el chat con su importe y su mensaje.</li>
       <li>Si no conectas Twitch pero usas StreamElements o Streamlabs, sus avisos de follow de Twitch se usan en su lugar.</li>
       <li>El botón muestra cuántos avisos están funcionando. Si pone <b>revisar</b>, mira la pestaña <b>Registro</b>: dice qué falla (token incorrecto, falta permiso…).</li>
-      <li>Los tokens se guardan cifrados en <code>StreamDelay.ini</code>. Son como contraseñas: <b>no los compartas</b>.</li>
+      <li>Los tokens se guardan cifrados en <code>VortexsLive.ini</code>. Son como contraseñas: <b>no los compartas</b>.</li>
     </ul>
     <h3 style="margin:18px 0 8px">Escribir en todas las plataformas a la vez</h3>
     <p style="margin-top:0">Abajo de la página del chat (en el navegador o en el panel de OBS) hay una caja para escribir. Lo que escribas se envía <b>con tu cuenta</b> al chat de cada plataforma marcada.</p>
@@ -321,7 +321,7 @@
 
   <section id="overlay">
     <h2><span class="n">9</span>Pestaña Overlays: delay, espectadores y chat <span class="tag">NUEVO</span></h2>
-    <p style="margin-top:0">Todos los overlays para OBS se gestionan desde la pestaña <b>Overlays</b> de StreamDelay (o pulsando el recuadro <b>OVERLAYS OBS</b> de la pestaña Directo). Cada uno tiene <b>Copiar URL</b> y <b>Vista previa</b>. Lo que cambies ahí (tamaño, qué mostrar, posición) <b>se aplica al momento en OBS</b>, sin tocar la URL.</p>
+    <p style="margin-top:0">Todos los overlays para OBS se gestionan desde la pestaña <b>Overlays</b> de Vortexs Live (o pulsando el recuadro <b>OVERLAYS OBS</b> de la pestaña Directo). Cada uno tiene <b>Copiar URL</b> y <b>Vista previa</b>. Lo que cambies ahí (tamaño, qué mostrar, posición) <b>se aplica al momento en OBS</b>, sin tocar la URL.</p>
     <h3>Cómo añadir cualquiera a OBS</h3>
     <ol>
       <li>En la pestaña <b>Overlays</b>, pulsa <b>Copiar URL</b> en el que quieras.</li>
@@ -337,13 +337,13 @@
     <ul style="margin-top:12px">
       <li>Al <b>activar o subir el delay</b> en directo, el de delay muestra “ACTIVANDO DELAY” con una barra que se llena durante esos segundos; al quitarlo, “DELAY QUITADO · En directo” unos segundos. Como el overlay también va con delay, tu público ve la barra justo después de la repetición: así entiende qué ha pasado.</li>
       <li>Los overlays van dentro del vídeo, así que también pasan por el delay: tu público los ve sincronizados con lo que está viendo.</li>
-      <li>Si cierras StreamDelay, los overlays desaparecen. Si el puerto 8935 estaba ocupado, la URL usa otro: vuelve a copiarla desde la pestaña Overlays.</li>
+      <li>Si cierras Vortexs Live, los overlays desaparecen. Si el puerto 8935 estaba ocupado, la URL usa otro: vuelve a copiarla desde la pestaña Overlays.</li>
       <li>Las opciones por URL siguen funcionando y mandan sobre las de la app: delay <code>?escala=1.3</code>, <code>?sin_delay=0</code>, <code>?texto=Retraso</code>; espectadores <code>?pos=bl</code>, <code>?vertical=1</code>, <code>?escala=1.2</code>.</li>
     </ul>
     <h3 style="margin:18px 0 8px">Dales tu estilo <span class="tag">NUEVO</span></h3>
     <p style="margin-top:0">En los recuadros de delay y espectadores de la pestaña Overlays pulsa <b>Personalizar →</b>. El estilo es el mismo para los dos, para que todo vaya con tu marca, y <b>se ve al momento en OBS</b> mientras lo cambias (con <b>Cancelar</b> vuelve a como estaba).</p>
     <ul>
-      <li><b>Estilos listos:</b> Directo (el rojo de siempre), StreamDelay, Neón, Fuego, Hielo, Minimal, Retro y Claro. Elige uno y retócalo.</li>
+      <li><b>Estilos listos:</b> Directo (el rojo de siempre), Vortexs Live, Neón, Fuego, Hielo, Minimal, Retro y Claro. Elige uno y retócalo.</li>
       <li><b>Colores:</b> principal y segundo (borde, brillo, punto y barra, con degradado o de un solo color), fondo y texto. Pulsa cada color para cambiarlo.</li>
       <li><b>Fondo</b> (de opaco a transparente), <b>borde</b> (sin borde, fino o grueso) y <b>brillo</b>.</li>
       <li><b>Forma:</b> redondeada, píldora, recta o <b>círculo</b> (el círculo es para el overlay de delay; los espectadores lo muestran en píldora).</li>
@@ -367,7 +367,7 @@
 
   <section id="avisos">
     <h2><span class="n">10</span>Avisos y comandos en el chat <span class="tag">NUEVO</span></h2>
-    <p style="margin-top:0">Opcional: StreamDelay escribe un mensaje en los chats que elijas cuando activas o desactivas el delay (por ejemplo <i>“⏱️ Delay activado: el directo va con 30 s de retraso.”</i>).</p>
+    <p style="margin-top:0">Opcional: Vortexs Live escribe un mensaje en los chats que elijas cuando activas o desactivas el delay (por ejemplo <i>“⏱️ Delay activado: el directo va con 30 s de retraso.”</i>).</p>
     <ol>
       <li>Pestaña <b>Chat</b> → <b>Avisos de delay y comandos del chat</b>.</li>
       <li>Activa <b>Mandar el aviso automáticamente</b>, marca en qué chats (Twitch, Kick, YouTube) y, si quieres, cambia los textos. <code>{s}</code> se cambia por los segundos de delay.</li>
@@ -378,13 +378,13 @@
       <li>Con <b>Solo si estoy en directo</b> no se manda nada mientras no estés emitiendo. Si cambias el delay varias veces seguidas, espera 3 s y manda un único aviso con el valor final. También avisa si cambias los segundos con el delay ya activado.</li>
     </ul>
     <h3 style="margin:18px 0 8px">Comandos (!delay, !web…)</h3>
-    <p style="margin-top:0">En la misma ventana, tarjeta <b>Comandos del chat</b>: StreamDelay contesta solo cuando alguien escribe un comando, en la misma plataforma donde lo escribió. Uno por línea, así:</p>
+    <p style="margin-top:0">En la misma ventana, tarjeta <b>Comandos del chat</b>: Vortexs Live contesta solo cuando alguien escribe un comando, en la misma plataforma donde lo escribió. Uno por línea, así:</p>
     <pre style="background:#0e0e13;border:1px solid #26262e;border-radius:10px;padding:10px 14px;overflow:auto">!delay = ⏱️ {delay}
 !web = 🌐 www.vortexs.es
 !horario = 📅 Directos de lunes a viernes a las 18:00, {user}</pre>
     <ul>
       <li><code>{delay}</code> se cambia por “El directo va con 30 s de delay.” o “Ahora mismo no hay delay…”; <code>{s}</code> por los segundos; <code>{user}</code> por quien lo pregunta; <code>{plataforma}</code> por Twitch, Kick o YouTube.</li>
-      <li><code>!guardar</code> viene incluido y <b>solo funciona si lo escribes tú</b> (el dueño del canal, en Twitch, Kick o YouTube): guarda los últimos 60 s en tu PC sin escribir nada en el chat (sale en el Registro). Si lo escribe otra persona, no pasa nada. <code>!clip</code> no es de StreamDelay: déjaselo a tu bot de clips de Twitch (StreamElements, Nightbot…).</li>
+      <li><code>!guardar</code> viene incluido y <b>solo funciona si lo escribes tú</b> (el dueño del canal, en Twitch, Kick o YouTube): guarda los últimos 60 s en tu PC sin escribir nada en el chat (sale en el Registro). Si lo escribe otra persona, no pasa nada. <code>!clip</code> no es de Vortexs Live: déjaselo a tu bot de clips de Twitch (StreamElements, Nightbot…).</li>
       <li>Cada comando contesta como mucho una vez cada 20 s por plataforma (así no se llena el chat). Los mensajes antiguos que llegan al conectar el chat no se contestan.</li>
       <li>Hace falta el chat activado y la cuenta de esa plataforma conectada en <b>Título</b>. En YouTube cada respuesta gasta cupo de la API (50 de 10.000 diarias).</li>
     </ul>
@@ -420,7 +420,7 @@
       <li>Tu cuenta conectada en <b>Título</b>; tienes que ser el dueño del canal o moderador.</li>
       <li><b>Twitch:</b> desde la 3.5 hay un permiso nuevo para los modos del chat. Vuelve a conectar Twitch una vez en <b>Título</b> (desconectar y conectar).</li>
       <li><b>Kick:</b> en tu app de Kick (kick.com → Ajustes → Desarrollador) marca también <code>moderation:ban</code> y <code>moderation:chat_message:manage</code>, guarda y vuelve a conectar Kick en <b>Título</b>. Kick no deja cambiar el modo lento ni los modos del chat desde otros programas.</li>
-      <li><b>YouTube:</b> funciona con la conexión que ya tienes. Para borrar, StreamDelay busca el mensaje entre los últimos del chat; cada acción gasta algo de cupo de la API. Solo se pueden deshacer los bans puestos desde StreamDelay mientras está abierto.</li>
+      <li><b>YouTube:</b> funciona con la conexión que ya tienes. Para borrar, Vortexs Live busca el mensaje entre los últimos del chat; cada acción gasta algo de cupo de la API. Solo se pueden deshacer los bans puestos desde Vortexs Live mientras está abierto.</li>
       <li>Los botones no salen en el chat en pantalla. Para quitarlos también del panel, añade <code>?moderar=0</code> a la URL.</li>
     </ul>
   </section>
@@ -447,7 +447,7 @@
     <p class="note">“Cortar ya” desde el Stream Deck corta al momento, sin preguntar. Ponlo en un botón apartado.</p>
     <h3 style="margin:18px 0 8px">Avisos si algo falla</h3>
     <ul>
-      <li>Si una plataforma se cae mientras emites, StreamDelay <b>pita</b>, <b>parpadea en la barra de tareas</b>, lo pone en <b>rojo abajo en Directo</b> y en el mando, y avisa cuando vuelve. Mientras tanto reintenta solo.</li>
+      <li>Si una plataforma se cae mientras emites, Vortexs Live <b>pita</b>, <b>parpadea en la barra de tareas</b>, lo pone en <b>rojo abajo en Directo</b> y en el mando, y avisa cuando vuelve. Mientras tanto reintenta solo.</li>
       <li>También avisa si tu <b>subida no da para enviar todo</b> (la cola de envío de un destino no para de crecer): baja el bitrate en OBS o quita un destino.</li>
       <li>Si OBS deja de enviar, lo apunta sin pitar (al acabar el directo es normal).</li>
       <li>Cada aviso se puede activar o quitar en la tarjeta <b>Avisos si algo falla</b>; <b>Probar aviso</b> te enseña cómo suena.</li>
@@ -458,19 +458,19 @@
     <h2>Si algo falla</h2>
     <table>
       <tr><th>Problema</th><th>Solución</th></tr>
-      <tr><td>No sale 1080p (Kick, Twitch…)</td><td>StreamDelay te avisa al conectar OBS, antes de que acabe el delay. En OBS → Ajustes → Vídeo pon <b>Resolución de salida (escalada)</b> en <code>1920x1080</code>. Con Transmisión mejorada, pon además <b>Ancho de banda máximo</b> en Auto (Twitch decide las calidades según tu PC y ese límite).</td></tr>
-      <tr><td>Chat de Kick: “Kick ha bloqueado la consulta del canal”</td><td>Kick tiene una protección anti-bots que a veces rechaza programas que no son un navegador. StreamDelay reintenta solo; si dura más de unos minutos, cierra y abre StreamDelay. El resto de chats siguen funcionando.</td></tr>
-      <tr><td>El móvil no abre el mando</td><td>Activa “Permitir desde el móvil”, que el móvil esté en la misma wifi (no con datos) y que Windows tenga la red como <b>privada</b> y StreamDelay permitido en el firewall. Vuelve a escanear el QR.</td></tr>
+      <tr><td>No sale 1080p (Kick, Twitch…)</td><td>Vortexs Live te avisa al conectar OBS, antes de que acabe el delay. En OBS → Ajustes → Vídeo pon <b>Resolución de salida (escalada)</b> en <code>1920x1080</code>. Con Transmisión mejorada, pon además <b>Ancho de banda máximo</b> en Auto (Twitch decide las calidades según tu PC y ese límite).</td></tr>
+      <tr><td>Chat de Kick: “Kick ha bloqueado la consulta del canal”</td><td>Kick tiene una protección anti-bots que a veces rechaza programas que no son un navegador. Vortexs Live reintenta solo; si dura más de unos minutos, cierra y abre Vortexs Live. El resto de chats siguen funcionando.</td></tr>
+      <tr><td>El móvil no abre el mando</td><td>Activa “Permitir desde el móvil”, que el móvil esté en la misma wifi (no con datos) y que Windows tenga la red como <b>privada</b> y Vortexs Live permitido en el firewall. Vuelve a escanear el QR.</td></tr>
       <tr><td>Moderar da “falta permiso”</td><td>Twitch: vuelve a conectar en Título. Kick: marca moderation:ban y moderation:chat_message:manage en tu app de Kick y vuelve a conectar. Tienes que ser el dueño o moderador del canal.</td></tr>
       <tr><td>El overlay de espectadores no sale</td><td>Activa el chat (pestaña Chat) con los nombres de tus canales y marca al menos una opción en Overlays → Espectadores. Una plataforma solo aparece mientras está en directo.</td></tr>
       <tr><td>El aviso de delay no llega al chat</td><td>Conecta esa cuenta en la pestaña Título (con permiso de chat) y mira el Registro: dice en qué chat se mandó y el motivo si falló. Con “Solo si estoy en directo” no se manda fuera de directo.</td></tr>
-      <tr><td>El overlay de delay no se ve</td><td>Comprueba que StreamDelay está abierto, que la fuente Navegador mide 1920x1080 y está encima de las demás. Copia de nuevo la URL desde la pestaña Overlays (si el puerto 8935 estaba ocupado, la URL usa otro).</td></tr>
+      <tr><td>El overlay de delay no se ve</td><td>Comprueba que Vortexs Live está abierto, que la fuente Navegador mide 1920x1080 y está encima de las demás. Copia de nuevo la URL desde la pestaña Overlays (si el puerto 8935 estaba ocupado, la URL usa otro).</td></tr>
       <tr><td>“sesión caducada: vuelve a conectar”</td><td>En la pestaña Título pulsa Desconectar y Conectar otra vez en esa plataforma.</td></tr>
       <tr><td>YouTube: “no hay ningún directo en curso ni programado”</td><td>Empieza el directo (o prográmalo en YouTube Studio) y vuelve a pulsar Actualizar.</td></tr>
       <tr><td>“Solo 1080p · Transmisión mejorada off” en Twitch</td><td>OBS no está usando la Transmisión mejorada: revisa el paso 2 (servicio <b>Twitch</b>, servidor personalizado y la casilla activada).</td></tr>
-      <tr><td>“Falta la clave”</td><td>Pon tu clave de Twitch en OBS (paso 2) o escríbela en StreamDelay → Ajustes.</td></tr>
+      <tr><td>“Falta la clave”</td><td>Pon tu clave de Twitch en OBS (paso 2) o escríbela en Vortexs Live → Ajustes.</td></tr>
       <tr><td>“La plataforma no aceptó la emisión (¿clave incorrecta o caducada?)”</td><td>Vuelve a copiar la clave. Con Transmisión mejorada, detén e inicia de nuevo la transmisión en OBS para que Twitch genere una clave nueva.</td></tr>
-      <tr><td>“El puerto 1935 está ocupado”</td><td>Hay otro programa usando ese puerto, o tienes StreamDelay abierto dos veces. Cambia el <b>Puerto</b> (por ejemplo a 1936) y copia de nuevo el servidor en OBS.</td></tr>
+      <tr><td>“El puerto 1935 está ocupado”</td><td>Hay otro programa usando ese puerto, o tienes Vortexs Live abierto dos veces. Cambia el <b>Puerto</b> (por ejemplo a 1936) y copia de nuevo el servidor en OBS.</td></tr>
       <tr><td>OBS no conecta</td><td>Comprueba que pulsaste “Iniciar servicio”, que el servidor en OBS empieza por <code>rtmp://</code> (sin s) y que el puerto coincide.</td></tr>
       <tr><td>Algo no va con el emisor nuevo</td><td>Activa <b>Modo clásico con ffmpeg</b> en Ajustes: envía como la versión anterior (una sola calidad, necesita ffmpeg).</td></tr>
       <tr><td>“Control inteligente de aplicaciones bloqueó…”</td><td>Windows 11 bloquea algunos programas nuevos sin firma digital. Puedes desactivarlo en <i>Seguridad de Windows → Control de aplicaciones y navegador</i>, pero es una decisión de seguridad tuya: en muchas versiones no se puede volver a activar sin reinstalar Windows.</td></tr>
