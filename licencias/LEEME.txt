@@ -57,6 +57,13 @@ anular una: añade su número a "Revoked" en src/License.cs y saca versión.
 
 3. SUSCRIPCIONES (Polar)
 
+Al pagar (o canjear un regalo), Polar lleva al cliente a
+www.vortexs.es/vortexs-live/activar (repo vortexs, public/vortexs-live/activar).
+Esa página lee su clave y el botón "Activar en Vortexs Live" la manda al
+programa (http://127.0.0.1:8935/licencia?key=...), que la activa sola. No
+tiene que copiar nada ni entrar en Polar. Si el programa estaba cerrado, lo
+abre y vuelve a pulsar; la página también enseña la clave para copiarla.
+
 Renovación: cada mes Polar cobra solo y la clave del cliente sigue siendo
 la MISMA (no tiene que meter nada). Si cancela, la clave vale hasta el
 final del mes pagado y luego se anula. Si falla el cobro, la clave se

@@ -76,6 +76,10 @@ namespace StreamDelay
 		// Estilo propio del chat (fuente, tamaño, colores, fondo…), lo lee la página del chat.
 		public Func<string> OnChatStyle = () => "{}";
 
+		// Activar una licencia desde la página de compra (vortexs.es/vortexs-live/activar): devuelve la
+		// página que ve el navegador.
+		public Func<string, string> OnLicense = (string key) => "";
+
 		private readonly string secret = Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N");
 
 		public Func<Dictionary<string, object>> OnInfo = () => new Dictionary<string, object>();
@@ -450,6 +454,15 @@ namespace StreamDelay
 						cs = "{}";
 					}
 					Respond(stream, "200 OK", "application/json; charset=utf-8", cs);
+					break;
+				}
+				case "/licencia":
+				case "/activar":
+				{
+					Dictionary<string, string> lq = Query(request.Path);
+					string lk2;
+					lq.TryGetValue("key", out lk2);
+					Respond(stream, "200 OK", "text/html; charset=utf-8", OnLicense((lk2 ?? "").Trim()));
 					break;
 				}
 				case "/delay.json":
