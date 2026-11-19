@@ -16,7 +16,7 @@ OBS envía el directo a Vortexs Live, que lo retrasa los segundos que elijas y l
 
 ## Precios
 
-**3 días de prueba gratis con todo**, sin tarjeta. Después, mes a mes (se cancela cuando quieras):
+**3 días de prueba gratis con todo**, sin tarjeta (una prueba por PC; la primera vez hace falta internet). Después, mes a mes (se cancela cuando quieras):
 
 | Plan | Precio | Qué incluye |
 |---|---|---|
@@ -29,6 +29,7 @@ La licencia se activa en el programa: botón del plan, arriba (debajo de «Engli
 
 - **Delay dinámico**: elige los segundos y cámbialos en directo. Al subirlo se repiten los últimos segundos emitidos; al bajarlo, el stream salta hacia delante. Atajos de teclado globales.
 - **Multistream**: Twitch, Kick, YouTube y otro destino a la vez, con el mismo delay. OBS codifica una sola vez.
+- **Clips**: guarda los últimos 60 s que ha visto el público con el botón Clip, `Ctrl+Alt+C`, el Mando o `!guardar` en el chat (tú y, si quieres, tus moderadores o personas concretas como tu editor), en la carpeta que elijas (también una de Google Drive, OneDrive o Dropbox para compartirlos).
 - **Varias calidades en Twitch** (Transmisión mejorada de OBS).
 - **Chat conjunto** de Twitch, Kick, YouTube y TikTok (TikTok con una clave gratuita de [Euler Stream](https://www.eulerstream.com)) con emotes de 7TV, BetterTTV y FrankerFaceZ, avisos de subs, regalos, raids, bits, Super Chats, follows y donaciones (StreamElements y Streamlabs), espectadores de cada plataforma, escribir en todos los chats a la vez, moderar (borrar, expulsar, banear y deshacer, modo lento, borrar el chat) y moderación automática (palabras prohibidas, enlaces, spam, bots).
 - **Mando** desde el móvil, el Stream Deck o un panel de OBS.
