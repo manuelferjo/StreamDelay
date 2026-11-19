@@ -140,6 +140,12 @@ namespace StreamDelay
 			Place(this, clip, 260f, buttonsTop, 62f, 46f, PageLive);
 			clip.Click += delegate
 			{
+				if (!ClipsAllowed())
+				{
+					I18n.Show(this, "Los clips (últimos 60 s) son del plan Completo.", "Licencia", MessageBoxButtons.OK, MessageBoxIcon.Information);
+					LicenseDialog();
+					return;
+				}
 				if (SaveClip("botón Clip", null))
 				{
 					clip.Text = "…";

@@ -1,8 +1,9 @@
 // Licencias: qué plan tiene esta copia de Vortexs Live.
 //
 //   Prueba    3 días con todo, desde la primera vez que se abre (no hace falta nada).
-//   Básico    5 €/mes: delay dinámico y multistream (pestañas Directo, Ajustes y Registro).
-//   Completo  8 €/mes: todo (además Chat, Overlays, Mando y Título).
+//   Básico    5 €/mes: delay dinámico, multistream y título (pestañas Directo, Ajustes, Título y
+//             Registro), con los avisos del delay en el chat.
+//   Completo  8 €/mes: todo (además clips, Chat, Overlays y Mando).
 //
 // Hay dos tipos de clave, y las dos se pegan en el mismo sitio (botón del plan, arriba):
 //

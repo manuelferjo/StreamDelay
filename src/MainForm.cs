@@ -128,7 +128,7 @@ namespace StreamDelay
 
 		// ---------- Constantes ----------
 
-		private const string Version = "4.4";
+		private const string Version = "4.5";
 
 		private const string TikTokName = "TikTok";
 
@@ -465,7 +465,7 @@ namespace StreamDelay
 
 		private void ShowPage(int p)
 		{
-			// Chat, Overlays, Mando y Título sin el plan Completo: se enseña el aviso en su lugar.
+			// Chat, Overlays y Mando sin el plan Completo: se enseña el aviso en su lugar.
 			if (!PageAllowed(p))
 			{
 				lockedPage = p;

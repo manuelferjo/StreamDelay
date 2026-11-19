@@ -1,7 +1,15 @@
-VORTEXS LIVE 4.4 - delay dinámico y multistream para OBS (by Vortexs)
+VORTEXS LIVE 4.5 - delay dinámico y multistream para OBS (by Vortexs)
 =====================================================================
 
 Abre GUIA.html (doble clic) para ver la guía completa.
+
+Novedades de la 4.5
+- Planes nuevos:
+    Básico    5 €/mes  delay dinámico, multistream, título y categoría,
+                       y avisos del delay en el chat (Título -> «Avisos del
+                       delay»).
+    Completo  8 €/mes  todo: además clips (botón Clip, Ctrl+Alt+C, !guardar),
+                       chat conjunto, overlays y Mando.
 
 Novedades de la 4.4
 - !guardar también para quien tú quieras: Registro -> Clips -> "Quién puede

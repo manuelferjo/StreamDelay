@@ -56,6 +56,16 @@ namespace StreamDelay
 		// Devuelve false si no se empieza (ya se está guardando o se acaba de guardar uno).
 		private bool SaveClip(string who, Action<bool, string> done)
 		{
+			// Los clips son del plan Completo.
+			if (!ClipsAllowed())
+			{
+				AppendLog("Clips: son del plan Completo. Botón del plan, arriba.");
+				if (done != null)
+				{
+					done(false, "Los clips (últimos 60 s) son del plan Completo.");
+				}
+				return false;
+			}
 			lock (this)
 			{
 				if (clipBusy || (DateTime.UtcNow - lastClipAt).TotalSeconds < ClipCooldownSec)

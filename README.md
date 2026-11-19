@@ -20,8 +20,8 @@ OBS envía el directo a Vortexs Live, que lo retrasa los segundos que elijas y l
 
 | Plan | Precio | Qué incluye |
 |---|---|---|
-| **Básico** | 5 €/mes | Delay dinámico y multistream (pestañas Directo y Ajustes), clips y overlay del delay |
-| **Completo** | 8 €/mes | Todo: además chat conjunto con moderación, overlays, Mando y título y categoría |
+| **Básico** | 5 €/mes | Delay dinámico, multistream y título y categoría (pestañas Directo, Ajustes y Título), con avisos del delay en el chat |
+| **Completo** | 8 €/mes | Todo: además clips de 60 s, chat conjunto con moderación, overlays y Mando |
 
 La licencia se activa en el programa: botón del plan, arriba (debajo de «English»). Las versiones hasta la 3.5 eran gratuitas y siguen funcionando igual.
 

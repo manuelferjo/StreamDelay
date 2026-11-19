@@ -53,6 +53,10 @@ namespace StreamDelay
 				Title = "Título y categoría"
 			};
 			Place(this, titleCard, 20f, y0, 420f, 236f, PageTitle);
+			// Los avisos del delay en el chat usan estas cuentas: son del plan Básico.
+			VButton annLink = new VButton { Kind = ButtonKind.Link, Text = "Avisos del delay →", FontSize = 8.5f };
+			Place(titleCard, annLink, 230f, 13f, 170f, 24f);
+			annLink.Click += delegate { AnnounceDialog(); };
 			Label(titleCard, "TÍTULO", 20f, 44f, 120f);
 			btnRecent = new VButton
 			{
