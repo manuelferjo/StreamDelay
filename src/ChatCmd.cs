@@ -86,7 +86,7 @@ namespace StreamDelay
 			string cmd = ((sp < 0) ? text : text.Substring(0, sp)).ToLowerInvariant();
 			if (cmd == ClipCommand)
 			{
-				// Comando fijo: guarda los últimos 60 s en tu PC, solo si lo escribe el dueño del canal.
+				// Comando fijo: guarda los últimos 60 s en tu PC (el dueño del canal y a quien él permita).
 				ChatClip(it, (it.p == "twitch") ? "Twitch" : ((it.p == "kick") ? "Kick" : ((it.p == "tiktok") ? "TikTok" : "YouTube")));
 				return;
 			}

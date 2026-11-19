@@ -128,7 +128,7 @@ namespace StreamDelay
 
 		// ---------- Constantes ----------
 
-		private const string Version = "4.3";
+		private const string Version = "4.4";
 
 		private const string TikTokName = "TikTok";
 
@@ -1020,6 +1020,8 @@ namespace StreamDelay
 			slider.Value = 30;
 			engine.TargetMs = 30000;
 			clipDirCustom = "";
+			clipMods = false;
+			clipUsers = "";
 			tgDelay.Checked = true;
 			Dictionary<string, string> raw = new Dictionary<string, string>();
 			// Antes se llamaba StreamDelay: si aún no hay VortexsLive.ini, se leen los ajustes de StreamDelay.ini
@@ -1077,6 +1079,12 @@ namespace StreamDelay
 						case "clip_dir":
 							clipDirCustom = value.Trim();
 							break;
+						case "clip_mods":
+							clipMods = value == "1";
+							break;
+						case "clip_users":
+							clipUsers = value.Trim();
+							break;
 						}
 					}
 					catch
@@ -1108,7 +1116,9 @@ namespace StreamDelay
 					"ffmpeg=" + (tgFfmpeg.Checked ? "1" : "0"),
 					"lang=" + I18n.Lang,
 					"tiktok_vertical=" + (tiktokVertical ? "1" : "0"),
-					"clip_dir=" + clipDirCustom
+					"clip_dir=" + clipDirCustom,
+					"clip_mods=" + (clipMods ? "1" : "0"),
+					"clip_users=" + clipUsers
 				};
 				SaveDestinations(lines);
 				SaveTitleConfig(lines);

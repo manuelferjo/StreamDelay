@@ -30,6 +30,12 @@ namespace StreamDelay
 		// Carpeta elegida por el usuario (vacía = la de siempre). Se guarda en VortexsLive.ini (clip_dir).
 		private static string clipDirCustom = "";
 
+		// Quién más puede usar !guardar (además del dueño del canal): los moderadores (clip_mods) y
+		// una lista de nombres de Twitch o Kick (clip_users), p. ej. el editor, desde cualquier sitio.
+		private bool clipMods;
+
+		private string clipUsers = "";
+
 		private static string ClipFolder
 		{
 			get
@@ -163,6 +169,9 @@ namespace StreamDelay
 				};
 				menu.Items.Add(reset);
 			}
+			ToolStripMenuItem who = new ToolStripMenuItem(I18n.Tr("Quién puede usar !guardar…"));
+			who.Click += delegate { ClipAccessDialog(); };
+			menu.Items.Add(who);
 			ToolStripMenuItem where = new ToolStripMenuItem(ClipFolder)
 			{
 				Enabled = false
@@ -212,16 +221,70 @@ namespace StreamDelay
 			}
 		}
 
-		// !guardar en el chat: solo el dueño del canal (en Twitch, Kick o YouTube). Los espectadores no
-		// pueden, para que nadie llene tu PC de vídeos. No contesta en el chat: queda en el Registro.
+		// !guardar en el chat: el dueño del canal y, si él quiere, sus moderadores y las personas de su
+		// lista (el editor, aunque esté en otra casa). El resto de espectadores no puede, para que nadie
+		// llene el PC de vídeos. No contesta en el chat: queda en el Registro.
+		// La lista solo vale en Twitch y Kick, donde el nombre es único (en YouTube y TikTok cualquiera
+		// podría ponerse el mismo nombre visible).
 		// (!clip no es de Vortexs Live: es para el bot que hace clips de Twitch, como StreamElements.)
 		private void ChatClip(ChatItem it, string plat)
 		{
-			if (it.roles == null || Array.IndexOf(it.roles, "broadcaster") < 0)
+			bool owner = it.roles != null && Array.IndexOf(it.roles, "broadcaster") >= 0;
+			bool mod = clipMods && it.roles != null && Array.IndexOf(it.roles, "mod") >= 0;
+			bool listed = (it.p == "twitch" || it.p == "kick") && ClipUserAllowed(it.user);
+			if (!owner && !mod && !listed)
 			{
 				return;
 			}
-			SaveClip(ClipCommand + " en " + plat, null);
+			SaveClip(ClipCommand + " en " + plat + (owner ? "" : (" (" + it.user + ")")), null);
+		}
+
+		private bool ClipUserAllowed(string user)
+		{
+			if (string.IsNullOrEmpty(user) || clipUsers.Length == 0)
+			{
+				return false;
+			}
+			string u = user.Trim().TrimStart('@');
+			foreach (string part in clipUsers.Split(new char[3] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries))
+			{
+				if (string.Equals(part.Trim().TrimStart('@'), u, StringComparison.OrdinalIgnoreCase))
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+
+		// Ventana «Quién puede usar !guardar» (Registro → Clips).
+		private void ClipAccessDialog()
+		{
+			Form f = DarkForm("Quién puede usar !guardar", 460, 372);
+			Card c = new Card();
+			c.Title = "!guardar desde el chat";
+			c.Subtitle = "Guarda los últimos 60 s en tu carpeta de clips.";
+			Place(f, c, 20f, 18f, 420f, 270f);
+			Toggle tMods = new Toggle { Text = "También mis moderadores", Checked = clipMods };
+			Place(c, tMods, 18f, 58f, 384f, 28f);
+			Label(c, "Y ESTAS PERSONAS (NOMBRE DE TWITCH O KICK, CON COMAS)", 20f, 98f, 380f);
+			Field fUsers = new Field();
+			Place(c, fUsers, 20f, 116f, 380f, 34f);
+			fUsers.Box.Text = clipUsers;
+			Box(c, 20f, 158f, 380f, 104f, delegate(Graphics g, Rectangle r)
+			{
+				Theme.DrawWrapped(g, "Por ejemplo tu editor: escribe !guardar en tu chat desde donde esté y el clip se guarda en tu PC. Si la carpeta de clips es de Google Drive, OneDrive o Dropbox compartida con él, le llega solo. La lista solo vale en Twitch y Kick (en YouTube y TikTok el nombre se puede copiar). Entre un clip y otro hay unos segundos de espera.", Theme.Body(7.5f), Theme.Muted, r);
+			});
+			VButton ok = new VButton { Kind = ButtonKind.Primary, Text = "Guardar", FontSize = 10f };
+			Place(f, ok, 20f, 302f, 420f, 44f);
+			ok.Click += delegate
+			{
+				clipMods = tMods.Checked;
+				clipUsers = fUsers.Box.Text.Replace("\r", " ").Replace("\n", " ").Trim();
+				SaveConfig();
+				AppendLog("!guardar: tú" + (clipMods ? ", tus moderadores" : "") + (clipUsers.Length > 0 ? (" y " + clipUsers) : "") + ".");
+				f.Close();
+			};
+			f.ShowDialog(this);
 		}
 	}
 }

@@ -1,7 +1,13 @@
-VORTEXS LIVE 4.3 - delay dinámico y multistream para OBS (by Vortexs)
+VORTEXS LIVE 4.4 - delay dinámico y multistream para OBS (by Vortexs)
 =====================================================================
 
 Abre GUIA.html (doble clic) para ver la guía completa.
+
+Novedades de la 4.4
+- !guardar también para quien tú quieras: Registro -> Clips -> "Quién puede
+  usar !guardar…". Puedes dejar a tus moderadores y a personas concretas
+  de Twitch o Kick (por ejemplo tu editor, desde su casa). Con la carpeta
+  de clips en Google Drive/OneDrive/Dropbox compartida, le llega solo.
 
 Novedades de la 4.3
 - Icono nuevo de Vortexs Live.
