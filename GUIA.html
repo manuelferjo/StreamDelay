@@ -59,7 +59,7 @@
     <img src="res/logo.png" alt="">
     <div>
       <h1>Vortexs <span>Live</span></h1>
-      <div class="by">by Vortexs · v4.4</div>
+      <div class="by">by Vortexs · v4.5</div>
     </div>
   </header>
   <p class="sub"><b>Antes se llamaba StreamDelay.</b> Delay dinámico y multistream para tus directos con OBS: cámbialo, actívalo o desactívalo sin cortar el stream. Ahora conserva todas las calidades de la <b>Transmisión mejorada</b> de Twitch.</p>
@@ -100,8 +100,8 @@
     <p style="margin-top:0">Al abrir Vortexs Live por primera vez tienes <b>3 días de prueba gratis con todo</b>, sin tarjeta, y una ventana de bienvenida te lo explica. La prueba es una por PC y se apunta en vortexs.es, así que la primera vez hace falta internet para empezarla. Te avisa también cuando queda menos de 1 día y cuando la prueba termina (nunca en pleno directo). Después hay dos planes, que se pagan <b>mes a mes</b> y se cancelan cuando quieras:</p>
     <table>
       <tr><th>Plan</th><th>Precio</th><th>Qué incluye</th></tr>
-      <tr><td><b>Básico</b></td><td>5 €/mes</td><td>Delay dinámico y multistream: pestañas <b>Directo</b>, <b>Ajustes</b> y <b>Registro</b>, clips, atajos de teclado y el overlay del delay.</td></tr>
-      <tr><td><b>Completo</b></td><td>8 €/mes</td><td>Todo: además <b>Chat</b> conjunto con moderación, <b>Overlays</b>, <b>Mando</b> (móvil, Stream Deck, panel de OBS) y <b>Título</b> y categoría.</td></tr>
+      <tr><td><b>Básico</b></td><td>5 €/mes</td><td>Delay dinámico, multistream y título: pestañas <b>Directo</b>, <b>Ajustes</b>, <b>Título</b> y <b>Registro</b>, atajos de teclado del delay y avisos del delay en el chat.</td></tr>
+      <tr><td><b>Completo</b></td><td>8 €/mes</td><td>Todo: además <b>clips</b> de los últimos 60 s (botón Clip, <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>C</kbd>, <code>!guardar</code>), <b>Chat</b> conjunto con moderación y comandos, <b>Overlays</b> y <b>Mando</b> (móvil, Stream Deck, panel de OBS).</td></tr>
     </table>
     <ol>
       <li>Arriba, debajo de <b>English</b>, está el botón del plan: pone <b>Prueba · N días</b>, <b>Plan Básico</b>, <b>Plan Completo</b> o <b>Activar licencia</b>. Púlsalo para abrir la ventana <b>Licencia</b>.</li>
@@ -214,7 +214,7 @@
       <tr><td>Otro valor</td><td>Barra y después <b>Aplicar</b></td></tr>
       <tr><td>Activar / desactivar</td><td>Interruptor “Activado”, o <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>D</kbd></td></tr>
       <tr><td>Sumar / restar 5 s</td><td><kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>↑</kbd> / <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>↓</kbd></td></tr>
-      <tr><td>Guardar un clip</td><td>Botón <b>Clip</b> de Directo, <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>C</kbd>, el Mando o <code>!guardar</code> en el chat (tú y quien permitas). Guarda los <b>últimos 60 s que ha visto el público</b> (con el delay ya aplicado) en <b>Vídeos\Vortexs Live</b> o en la carpeta que elijas, en MP4 si tienes ffmpeg y si no en FLV (se abre con VLC). Registro → <b>Clips</b> abre la carpeta o te deja elegir otra.</td></tr>
+      <tr><td>Guardar un clip <small>(plan Completo)</small></td><td>Botón <b>Clip</b> de Directo, <kbd>Ctrl</kbd>+<kbd>Alt</kbd>+<kbd>C</kbd>, el Mando o <code>!guardar</code> en el chat (tú y quien permitas). Guarda los <b>últimos 60 s que ha visto el público</b> (con el delay ya aplicado) en <b>Vídeos\Vortexs Live</b> o en la carpeta que elijas, en MP4 si tienes ffmpeg y si no en FLV (se abre con VLC). Registro → <b>Clips</b> abre la carpeta o te deja elegir otra.</td></tr>
       <tr><td>Ventana encima del juego</td><td>Ajustes → “Ventana siempre visible”</td></tr>
       <tr><td>Desde el móvil o el Stream Deck</td><td>Pestaña <b>Mando</b> (apartado 11)</td></tr>
     </table>
@@ -483,7 +483,7 @@
       <tr><td>Alguien escribe <code>!guardar</code> y no pasa nada</td><td>Comprueba que esté en Registro → Clips → «Quién puede usar !guardar…» (nombre de Twitch o Kick; en YouTube y TikTok solo valen tus moderadores si lo activas), que «Contestar a los comandos» esté activado y que no se acabe de guardar otro clip (hay unos segundos de espera).</td></tr>
       <tr><td>La clave no se activa</td><td>Cópiala entera, sin espacios. Las de suscripción necesitan internet la primera vez. Cada licencia vale en <b>un solo PC</b>: si dice que ya está activada en otro equipo, quítala de ese PC (Licencia → Quitar clave) o desde <b>Gestionar o cancelar mi suscripción</b>.</td></tr>
       <tr><td>“Tu licencia ya no está activa”</td><td>Si has <b>cambiado de plan</b> (de Completo a Básico o al revés), Polar te da una clave nueva y anula la vieja: está en el correo de Polar y en tu cuenta de cliente; pégala en Licencia. Si no se pudo cobrar el mes, en cuanto se cobre tu misma clave vuelve a funcionar sola. La renovación normal de cada mes no cambia la clave.</td></tr>
-      <tr><td>Chat, Overlays, Mando o Título salen bloqueados</td><td>Son del plan Completo. Con el Básico tienes el delay y el multistream.</td></tr>
+      <tr><td>Chat, Overlays o Mando salen bloqueados, o el botón Clip no guarda</td><td>Son del plan Completo. Con el Básico tienes el delay, el multistream, el título y los avisos del delay en el chat.</td></tr>
 </table>
     <p>La pestaña <b>Registro</b> muestra lo que va pasando. <b>Si pides ayuda, copia ese texto</b>: no contiene tu clave.</p>
     <p class="note ok">Antes del primer directo de verdad, haz una prueba corta: en OBS añade <code>?bandwidthtest=true</code> al final de tu clave de Twitch y la prueba no se emitirá en público.</p>

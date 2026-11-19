@@ -326,7 +326,7 @@ namespace StreamDelay
 			}
 			if (before == Plan.Full && plan != Plan.Full)
 			{
-				AppendLog(plan == Plan.Basic ? "Licencia: ahora tienes el plan Básico. Chat, Overlays, Mando y Título son del plan Completo." : "Licencia: " + (planInfo.Error.Length > 0 ? planInfo.Error : "no hay ningún plan activo") + ". Elige un plan con el botón de arriba.");
+				AppendLog(plan == Plan.Basic ? "Licencia: ahora tienes el plan Básico. Clips, Chat, Overlays y Mando son del plan Completo." : "Licencia: " + (planInfo.Error.Length > 0 ? planInfo.Error : "no hay ningún plan activo") + ". Elige un plan con el botón de arriba.");
 				if (chatHub != null)
 				{
 					StopChat();
@@ -401,7 +401,7 @@ namespace StreamDelay
 			{
 				MarkSeen("h");
 				if (Notice("Bienvenido a Vortexs Live", "3 días gratis con todo",
-					"Durante 3 días puedes usar Vortexs Live completo: delay dinámico, multistream, chat conjunto, overlays, Mando y título.\n\nDespués elige un plan, mes a mes y sin permanencia:\n•  Básico, " + License.PriceBasic + ": delay dinámico y multistream.\n•  Completo, " + License.PriceFull + ": todo.\n\nLos días que te quedan se ven arriba, debajo de «English». Si ya tienes una clave, pégala en «Ver planes o activar una clave».",
+					"Durante 3 días puedes usar Vortexs Live completo: delay dinámico, multistream, título, clips, chat conjunto, overlays y Mando.\n\nDespués elige un plan, mes a mes y sin permanencia:\n•  Básico, " + License.PriceBasic + ": delay dinámico, multistream y título.\n•  Completo, " + License.PriceFull + ": todo, también clips, chat, overlays y Mando.\n\nLos días que te quedan se ven arriba, debajo de «English». Si ya tienes una clave, pégala en «Ver planes o activar una clave».",
 					"Empezar la prueba", "Ver planes o activar una clave"))
 				{
 					return;
@@ -413,7 +413,7 @@ namespace StreamDelay
 			{
 				MarkSeen("a");
 				if (!Notice("Prueba", "Te queda " + License.Left(planInfo.Expires, now) + " de prueba",
-					"Cuando termine, para seguir emitiendo con delay necesitarás un plan:\n•  Básico, " + License.PriceBasic + ": delay dinámico y multistream.\n•  Completo, " + License.PriceFull + ": todo.\n\nSi te suscribes ahora no pierdes nada: el plan empieza a contar desde que pagas.",
+					"Cuando termine, para seguir emitiendo con delay necesitarás un plan:\n•  Básico, " + License.PriceBasic + ": delay dinámico, multistream y título.\n•  Completo, " + License.PriceFull + ": todo, también clips, chat, overlays y Mando.\n\nSi te suscribes ahora no pierdes nada: el plan empieza a contar desde que pagas.",
 					"Ver planes", "Ahora no"))
 				{
 					return;
@@ -425,7 +425,7 @@ namespace StreamDelay
 			{
 				MarkSeen("f");
 				if (!Notice("Prueba", "La prueba de 3 días ha terminado",
-					"Gracias por probar Vortexs Live. Para seguir usándolo elige un plan, mes a mes y sin permanencia:\n•  Básico, " + License.PriceBasic + ": delay dinámico y multistream.\n•  Completo, " + License.PriceFull + ": todo, también chat, overlays, Mando y título.\n\nTus ajustes se quedan guardados.",
+					"Gracias por probar Vortexs Live. Para seguir usándolo elige un plan, mes a mes y sin permanencia:\n•  Básico, " + License.PriceBasic + ": delay dinámico, multistream y título.\n•  Completo, " + License.PriceFull + ": todo, también clips, chat, overlays y Mando.\n\nTus ajustes se quedan guardados.",
 					"Ver planes", "Ahora no"))
 				{
 					return;
@@ -751,14 +751,21 @@ namespace StreamDelay
 
 		// ---------- Qué deja hacer cada plan ----------
 
-		// Chat, Overlays, Mando y Título son del plan Completo.
+		// Chat, Overlays y Mando son del plan Completo (y los clips: ClipsAllowed). El Básico tiene
+		// Directo, Ajustes, Título y Registro.
 		private bool PageAllowed(int p)
 		{
 			if (plan == Plan.Full)
 			{
 				return true;
 			}
-			return p != PageChat && p != PageOverlays && p != PageMando && p != PageTitle;
+			return p != PageChat && p != PageOverlays && p != PageMando;
+		}
+
+		// Clips (botón Clip, Ctrl+Alt+C, !guardar y el Mando): plan Completo.
+		private bool ClipsAllowed()
+		{
+			return plan == Plan.Full;
 		}
 
 		// Para Iniciar hace falta algún plan (prueba, Básico o Completo).
@@ -768,7 +775,7 @@ namespace StreamDelay
 			{
 				return true;
 			}
-			I18n.Show(this, "No hay ningún plan activo" + (planInfo.Error.Length > 0 ? ": " + planInfo.Error : "") + ".\n\nCon el plan Básico (" + License.PriceBasic + ") tienes el delay dinámico y el multistream. Con el Completo (" + License.PriceFull + "), todo.", "Licencia", MessageBoxButtons.OK, MessageBoxIcon.Information);
+			I18n.Show(this, "No hay ningún plan activo" + (planInfo.Error.Length > 0 ? ": " + planInfo.Error : "") + ".\n\nCon el plan Básico (" + License.PriceBasic + ") tienes el delay dinámico, el multistream y el título. Con el Completo (" + License.PriceFull + "), todo.", "Licencia", MessageBoxButtons.OK, MessageBoxIcon.Information);
 			LicenseDialog();
 			return plan != Plan.None;
 		}
@@ -826,7 +833,7 @@ namespace StreamDelay
 			Theme.DrawText(g, "PLAN COMPLETO", Theme.Mono(8f), Theme.Violet, new RectangleF(0f, S(40f), r.Width, S(20f)), StringAlignment.Center, StringAlignment.Center);
 			Theme.DrawText(g, tab, Theme.Display(20f), Theme.Text, new RectangleF(0f, S(64f), r.Width, S(40f)), StringAlignment.Center, StringAlignment.Center);
 			Theme.DrawWrapped(g, what, Theme.Body(9.5f), Theme.Muted, new RectangleF(S(40f), S(118f), r.Width - S(80f), S(70f)));
-			string now = (plan == Plan.Basic) ? "Tienes el plan Básico (delay dinámico y multistream)." : ("No hay ningún plan activo" + (planInfo.Error.Length > 0 ? ": " + planInfo.Error : "") + ".");
+			string now = (plan == Plan.Basic) ? "Tienes el plan Básico (delay dinámico, multistream y título)." : ("No hay ningún plan activo" + (planInfo.Error.Length > 0 ? ": " + planInfo.Error : "") + ".");
 			Theme.DrawWrapped(g, now + " El plan Completo cuesta " + License.PriceFull + " y se cancela cuando quieras.", Theme.Body(8.5f), Theme.Dim, new RectangleF(S(40f), S(196f), r.Width - S(80f), S(50f)));
 		}
 
@@ -849,8 +856,8 @@ namespace StreamDelay
 				Subtitle = "Pago mes a mes. Se cancela cuando quieras."
 			};
 			Place(f, plans, 20f, 116f, 420f, 220f);
-			PlanRow(plans, 54f, "Básico", License.PriceBasic, "Delay dinámico y multistream: Twitch, Kick, YouTube, TikTok y otros a la vez, con clips.", License.BuyBasicUrl, plan == Plan.Basic && planInfo.Source != "prueba");
-			PlanRow(plans, 134f, "Completo", License.PriceFull, "Todo: además, chat conjunto con moderación, overlays, Mando (móvil y Stream Deck) y título y categoría.", License.BuyFullUrl, plan == Plan.Full && planInfo.Source != "prueba");
+			PlanRow(plans, 54f, "Básico", License.PriceBasic, "Delay dinámico, multistream (Twitch, Kick, YouTube, TikTok y otros a la vez), avisos del delay en el chat y título y categoría.", License.BuyBasicUrl, plan == Plan.Basic && planInfo.Source != "prueba");
+			PlanRow(plans, 134f, "Completo", License.PriceFull, "Todo: además, clips de los últimos 60 s, chat conjunto con moderación, overlays y Mando (móvil y Stream Deck).", License.BuyFullUrl, plan == Plan.Full && planInfo.Source != "prueba");
 
 			Card act = new Card
 			{

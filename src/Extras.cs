@@ -316,12 +316,19 @@ namespace StreamDelay
 			Place(f, c2, 20f, 346f, 420f, 230f);
 			Toggle tCmd = new Toggle { Text = "Contestar a los comandos", Checked = cmdOn };
 			Place(c2, tCmd, 18f, 56f, 384f, 28f);
+			// Los comandos van con el chat conjunto: plan Completo. Los avisos del delay, también el Básico.
+			if (plan != Plan.Full)
+			{
+				c2.Subtitle = "Comandos del chat: plan Completo";
+				tCmd.Enabled = false;
+			}
 			Field fCmd = new Field();
 			fCmd.Box.Multiline = true;
 			fCmd.Box.AcceptsReturn = true;
 			fCmd.Box.ScrollBars = ScrollBars.Vertical;
 			fCmd.Box.Text = cmdText;
 			Place(c2, fCmd, 20f, 90f, 380f, 98f);
+			fCmd.Box.ReadOnly = plan != Plan.Full;
 			Box(c2, 20f, 194f, 380f, 30f, delegate(Graphics g, Rectangle r)
 			{
 				Theme.DrawWrapped(g, "{delay} = si hay delay y cuánto · {s} segundos · {user} quién pregunta. Contesta en la plataforma donde se escribe (como mucho una vez cada 20 s). !guardar (tú y quien permitas en Registro → Clips) guarda los últimos 60 s en tu PC. !clip no es de Vortexs Live: déjaselo a tu bot de clips de Twitch.", Theme.Body(7.25f), Theme.Muted, r);
