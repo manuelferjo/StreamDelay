@@ -19,6 +19,26 @@ namespace StreamDelay
 		// Locked: bloqueado por ahora (en gris, como los canales con el chat encendido).
 		private bool locked;
 
+		// Emojis en color (como en Twitch o Kick): mientras no se escribe, el texto se dibuja con
+		// ColorText en vez del TextBox (que solo sabe ponerlos en gris).
+		private bool colorEmoji;
+
+		// Si se enseña el TextBox (Box.Visible también dice false cuando la pestaña está oculta).
+		private bool boxShown = true;
+
+		public bool ColorEmoji
+		{
+			get
+			{
+				return colorEmoji;
+			}
+			set
+			{
+				colorEmoji = value;
+				SyncEmoji();
+			}
+		}
+
 		public bool ReadOnly
 		{
 			get
@@ -71,7 +91,16 @@ namespace StreamDelay
 			Box.LostFocus += delegate
 			{
 				focused = false;
+				// Cuando Windows haya terminado de mover el foco.
+				if (IsHandleCreated)
+				{
+					BeginInvoke((Action)SyncEmoji);
+				}
 				Invalidate();
+			};
+			Box.TextChanged += delegate
+			{
+				SyncEmoji();
 			};
 			Cursor = Cursors.IBeam;
 		}
@@ -83,9 +112,33 @@ namespace StreamDelay
 			Box.ForeColor = (locked ? Theme.Dim : (fixedRo ? Theme.VioletLight : Theme.Text));
 		}
 
+		// Con emojis y sin escribir, el TextBox se esconde y se dibuja el texto en color.
+		private void SyncEmoji()
+		{
+			bool show = !colorEmoji || Box.Focused || !ColorText.HasEmoji(Box.Text) || !ColorText.Available;
+			if (boxShown != show)
+			{
+				boxShown = show;
+				Box.Visible = show;
+			}
+			Invalidate();
+		}
+
+		// Escribir otra vez: vuelve el TextBox (con el cursor al final).
+		public void EditNow()
+		{
+			if (!boxShown)
+			{
+				boxShown = true;
+				Box.Visible = true;
+				Box.SelectionStart = Box.TextLength;
+			}
+			Box.Focus();
+		}
+
 		protected override void OnClick(EventArgs e)
 		{
-			Box.Focus();
+			EditNow();
 			base.OnClick(e);
 		}
 
@@ -116,6 +169,17 @@ namespace StreamDelay
 				using (Pen pen = new Pen(focused ? Theme.Violet : OnHover(Theme.Border, Theme.BorderHi), focused ? 1.5f : 1f))
 				{
 					graphics.DrawPath(pen, path);
+				}
+			}
+			if (!boxShown && Box.Text.Length > 0)
+			{
+				Font font = Box.Font;
+				float px = (font.Unit == GraphicsUnit.Pixel) ? font.Size : (font.SizeInPoints * 96f / 72f * Theme.Scale);
+				Rectangle area = new Rectangle(Box.Left + 1, 0, Box.Width - 1, base.Height);
+				if (!ColorText.Draw(graphics, Box.Text, "Segoe UI", px, false, Box.ForeColor, area))
+				{
+					boxShown = true;
+					Box.Visible = true;
 				}
 			}
 		}

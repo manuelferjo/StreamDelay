@@ -76,9 +76,24 @@ namespace StreamDelay
 				int max = TitleMax();
 				Theme.DrawText(g, length + "/" + max, Theme.Mono(7f), (length > max) ? Theme.Red : Theme.Dim, r, StringAlignment.Far, StringAlignment.Center);
 			});
-			fldTitle = new Field();
-			Place(titleCard, fldTitle, 20f, 62f, 380f, 36f);
+			fldTitle = new Field
+			{
+				ColorEmoji = true
+			};
+			Place(titleCard, fldTitle, 20f, 62f, 330f, 36f);
 			fldTitle.Box.MaxLength = 200;
+			// 😊: abre el panel de emojis de Windows (el mismo de Win + .), que los pone en el título.
+			VButton emojiBtn = new VButton
+			{
+				Kind = ButtonKind.Ghost,
+				Text = "😊",
+				FontSize = 11f
+			};
+			Place(titleCard, emojiBtn, 356f, 62f, 44f, 36f);
+			emojiBtn.Click += delegate
+			{
+				OpenEmojiPanel(fldTitle);
+			};
 			fldTitle.Box.TextChanged += delegate
 			{
 				titleCounter.Invalidate();
