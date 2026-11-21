@@ -9,7 +9,7 @@ namespace StreamDelay
 {
 	internal class TwitchPlatform : Platform
 	{
-		private const string Scopes = "channel:manage:broadcast moderator:read:followers user:write:chat moderator:manage:chat_messages moderator:manage:banned_users moderator:manage:chat_settings";
+		private const string Scopes = "channel:manage:broadcast moderator:read:followers user:write:chat moderator:manage:chat_messages moderator:manage:banned_users moderator:manage:chat_settings user:read:emotes";
 
 		public static string IdBase = "https://id.twitch.tv";
 
@@ -304,6 +304,102 @@ namespace StreamDelay
 				}
 				throw;
 			}
+		}
+
+		// Emotes de Twitch para el botón 😊 del chat, en tres grupos: los del canal, los de otros
+		// canales que puedes usar (tus suscripciones) y los globales. Con el permiso user:read:emotes
+		// salen todos los tuyos; con una conexión antigua, solo los del canal y los globales
+		// (all = false: conviene volver a conectar Twitch).
+		public void ChatEmotes(string channelLogin, List<Dictionary<string, object>> channel, List<Dictionary<string, object>> others, List<Dictionary<string, object>> globals, out bool all)
+		{
+			string chId = BroadcasterId(channelLogin);
+			all = false;
+			try
+			{
+				List<Dictionary<string, object>> mine = new List<Dictionary<string, object>>();
+				List<Dictionary<string, object>> rest = new List<Dictionary<string, object>>();
+				List<Dictionary<string, object>> glob = new List<Dictionary<string, object>>();
+				string cursor = "";
+				for (int page = 0; page < 30; page++)
+				{
+					Dictionary<string, object> d = Api("GET", ApiBase + "/chat/emotes/user?user_id=" + userId + "&broadcaster_id=" + chId + ((cursor.Length > 0) ? ("&after=" + Uri.EscapeDataString(cursor)) : ""), H(), null);
+					string template = Http.Str(d, "template");
+					foreach (Dictionary<string, object> e in Http.Arr(d, "data"))
+					{
+						string owner = Http.Str(e, "owner_id");
+						Dictionary<string, object> item = EmoteItem(e, template);
+						if (owner == chId)
+						{
+							mine.Add(item);
+						}
+						else if (Http.Str(e, "emote_type") == "globals" || owner == "0" || owner.Length == 0)
+						{
+							glob.Add(item);
+						}
+						else
+						{
+							rest.Add(item);
+						}
+					}
+					object pg;
+					cursor = (d.TryGetValue("pagination", out pg) && pg is Dictionary<string, object>) ? Http.Str((Dictionary<string, object>)pg, "cursor") : "";
+					if (cursor.Length == 0)
+					{
+						break;
+					}
+				}
+				channel.AddRange(mine);
+				others.AddRange(rest);
+				globals.AddRange(glob);
+				all = true;
+				return;
+			}
+			catch (ApiException ex)
+			{
+				// Sin el permiso nuevo: 401. Cualquier otro error, igual: se prueba lo básico.
+				if (ex.Status != 401 && ex.Status != 403)
+				{
+					throw;
+				}
+			}
+			Dictionary<string, object> ch = Api("GET", ApiBase + "/chat/emotes?broadcaster_id=" + chId, H(), null);
+			foreach (Dictionary<string, object> e in Http.Arr(ch, "data"))
+			{
+				channel.Add(EmoteItem(e, Http.Str(ch, "template")));
+			}
+			Dictionary<string, object> gl = Api("GET", ApiBase + "/chat/emotes/global", H(), null);
+			foreach (Dictionary<string, object> e in Http.Arr(gl, "data"))
+			{
+				globals.Add(EmoteItem(e, Http.Str(gl, "template")));
+			}
+		}
+
+		// { "n": nombre, "u": imagen } (animada si la hay, en tema oscuro).
+		private static Dictionary<string, object> EmoteItem(Dictionary<string, object> e, string template)
+		{
+			string id = Http.Str(e, "id");
+			bool animated = false;
+			object f;
+			if (e.TryGetValue("format", out f) && f is IEnumerable && !(f is string))
+			{
+				foreach (object x in (IEnumerable)f)
+				{
+					if ("animated".Equals(x))
+					{
+						animated = true;
+					}
+				}
+			}
+			if (template.Length == 0)
+			{
+				template = "https://static-cdn.jtvnw.net/emoticons/v2/{{id}}/{{format}}/{{theme_mode}}/{{scale}}";
+			}
+			string url = template.Replace("{{id}}", id).Replace("{{format}}", animated ? "animated" : "static").Replace("{{theme_mode}}", "dark").Replace("{{scale}}", "2.0");
+			return new Dictionary<string, object>
+			{
+				{ "n", Http.Str(e, "name") },
+				{ "u", url }
+			};
 		}
 
 		private static Dictionary<string, object> ChatModes(Dictionary<string, object> d)

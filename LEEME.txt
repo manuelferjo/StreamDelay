@@ -1,7 +1,17 @@
-VORTEXS LIVE 4.6 - delay dinámico y multistream para OBS (by Vortexs)
+VORTEXS LIVE 4.7 - delay dinámico y multistream para OBS (by Vortexs)
 =====================================================================
 
 Abre GUIA.html (doble clic) para ver la guía completa.
+
+Novedades de la 4.7
+- Chat: botón 😊 de emotes junto a la caja de escribir. Salen los de tu
+  canal de Twitch (también los personalizados), los de tus suscripciones,
+  los globales de Twitch y los de 7TV, BTTV y FFZ, con buscador y los
+  últimos que usaste. Para ver los de tus suscripciones, vuelve a conectar
+  Twitch una vez en la pestaña Título (permiso nuevo).
+- Animaciones suaves: botones e interruptores cambian poco a poco al pasar
+  el ratón o pulsarlos, y el resalte de las pestañas se desliza.
+- Registro: fuera el botón Clips (los clips tienen su pestaña).
 
 Novedades de la 4.6
 - Pestaña Clips nueva (plan Completo):

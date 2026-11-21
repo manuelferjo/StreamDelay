@@ -45,11 +45,13 @@ namespace StreamDelay
 			Graphics graphics = e.Graphics;
 			Theme.Quality(graphics);
 			RectangleF rect = new RectangleF(0.5f, 0.5f, (float)base.Width - 1.5f, (float)base.Height - 1.5f);
-			// Al pulsarlo se encoge un poco.
-			if (pressed)
+			// Al pulsarlo se encoge un poco (con transición).
+			if (pressT > 0f)
 			{
-				rect.Inflate(-1f, -1f);
+				float shrink = 1.5f * Ease(pressT);
+				rect.Inflate(0f - shrink, 0f - shrink);
 			}
+			float h = Ease(hoverT);
 			float radius = ((Kind == ButtonKind.Pill) ? (rect.Height / 2f) : ((float)Theme.S(12f)));
 			Color c = Theme.Text;
 			Font f = ((Kind == ButtonKind.Pill) ? Theme.Mono(FontSize) : Theme.BodyBold(FontSize));
@@ -74,15 +76,15 @@ namespace StreamDelay
 						c = (base.Enabled ? Theme.Muted : Theme.Dim);
 						break;
 					}
-					if (hover)
+					if (h > 0.01f)
 					{
-						// Halo violeta de tres capas alrededor.
+						// Halo violeta de tres capas alrededor (aparece poco a poco).
 						for (int ring = 3; ring >= 1; ring--)
 						{
 							RectangleF r = RectangleF.Inflate(rect, ring * 2, ring * 2);
 							using (GraphicsPath path2 = Theme.Round(r, radius + (float)(ring * 2)))
 							{
-								using (SolidBrush brush6 = new SolidBrush(Color.FromArgb(18, Theme.Violet)))
+								using (SolidBrush brush6 = new SolidBrush(Color.FromArgb((int)(18f * h), Theme.Violet)))
 								{
 									graphics.FillPath(brush6, path2);
 								}
@@ -98,11 +100,11 @@ namespace StreamDelay
 				}
 				case ButtonKind.Danger:
 				{
-					using (SolidBrush brush2 = new SolidBrush(hover ? Color.FromArgb(40, Theme.Red) : Color.FromArgb(18, Theme.Red)))
+					using (SolidBrush brush2 = new SolidBrush(OnHover(Color.FromArgb(18, Theme.Red), Color.FromArgb(40, Theme.Red))))
 					{
 						graphics.FillPath(brush2, path);
 					}
-					using (Pen pen2 = new Pen(Color.FromArgb(hover ? 230 : 150, Theme.Red), 1.2f))
+					using (Pen pen2 = new Pen(Color.FromArgb((int)(150f + 80f * h), Theme.Red), 1.2f))
 					{
 						graphics.DrawPath(pen2, path);
 					}
@@ -124,28 +126,28 @@ namespace StreamDelay
 					}
 					else
 					{
-						using (SolidBrush brush4 = new SolidBrush((hover && base.Enabled) ? Theme.Elevated : Theme.Input))
+						using (SolidBrush brush4 = new SolidBrush(OnHover(Theme.Input, Theme.Elevated)))
 						{
 							graphics.FillPath(brush4, path);
 						}
-						using (Pen pen4 = new Pen((hover && base.Enabled) ? Theme.BorderHi : Theme.Border))
+						using (Pen pen4 = new Pen(OnHover(Theme.Border, Theme.BorderHi)))
 						{
 							graphics.DrawPath(pen4, path);
 						}
-						c = ((!base.Enabled) ? Theme.Dim : (hover ? Theme.Text : Theme.Muted));
+						c = ((!base.Enabled) ? Theme.Dim : OnHover(Theme.Muted, Theme.Text));
 					}
 					break;
 				case ButtonKind.Link:
-					c = (hover ? Theme.VioletLight : Theme.Violet);
+					c = OnHover(Theme.Violet, Theme.VioletLight);
 					f = Theme.BodySemi(FontSize);
 					break;
 				default:
 				{
-					using (SolidBrush brush = new SolidBrush(hover ? Color.FromArgb(32, 32, 42) : Theme.Elevated))
+					using (SolidBrush brush = new SolidBrush(OnHover(Theme.Elevated, Color.FromArgb(32, 32, 42))))
 					{
 						graphics.FillPath(brush, path);
 					}
-					using (Pen pen = new Pen(hover ? Theme.BorderHi : Theme.Border))
+					using (Pen pen = new Pen(OnHover(Theme.Border, Theme.BorderHi)))
 					{
 						graphics.DrawPath(pen, path);
 					}

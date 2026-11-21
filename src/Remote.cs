@@ -510,6 +510,7 @@ namespace StreamDelay
 			};
 			chatServer.OnInfo = ChatSendInfo;
 			chatServer.OnSend = ChatSendAll;
+			chatServer.OnEmotes = ChatEmotes;
 			chatServer.OnDelayState = DelayStateJson;
 			chatServer.OnViewersState = ViewersStateJson;
 			chatServer.OnStyleState = delegate { return ovStyle.ToJson(); };

@@ -113,7 +113,7 @@ namespace StreamDelay
 				{
 					graphics.FillPath(brush, path);
 				}
-				using (Pen pen = new Pen(focused ? Theme.Violet : (hover ? Theme.BorderHi : Theme.Border), focused ? 1.5f : 1f))
+				using (Pen pen = new Pen(focused ? Theme.Violet : OnHover(Theme.Border, Theme.BorderHi), focused ? 1.5f : 1f))
 				{
 					graphics.DrawPath(pen, path);
 				}

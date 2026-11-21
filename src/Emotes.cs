@@ -137,6 +137,24 @@ namespace StreamDelay
             catch { return 0; }
         }
 
+        // Para el botón de emotes del chat: los de los canales (Twitch, Kick y YouTube) o los globales.
+        public List<KeyValuePair<string, string>> List(bool channel)
+        {
+            var r = new List<KeyValuePair<string, string>>();
+            lock (lk)
+            {
+                if (channel)
+                {
+                    var seen = new HashSet<string>();
+                    foreach (var d in new[] { twitchCh, kickCh, ytCh })
+                        foreach (var kv in d) if (seen.Add(kv.Key)) r.Add(kv);
+                }
+                else r.AddRange(global);
+            }
+            r.Sort((a, b) => string.Compare(a.Key, b.Key, StringComparison.OrdinalIgnoreCase));
+            return r;
+        }
+
         // Añade texto a las partes, cambiando por imagen las palabras que sean emotes de 7TV/BTTV/FFZ.
         public static void AddText(List<ChatPart> parts, string text, Dictionary<string, string> map)
         {
