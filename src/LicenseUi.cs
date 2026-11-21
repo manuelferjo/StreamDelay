@@ -759,7 +759,7 @@ namespace StreamDelay
 			{
 				return true;
 			}
-			return p != PageChat && p != PageOverlays && p != PageMando;
+			return p != PageChat && p != PageOverlays && p != PageMando && p != PageClips;
 		}
 
 		// Clips (botón Clip, Ctrl+Alt+C, !guardar y el Mando): plan Completo.
@@ -813,7 +813,7 @@ namespace StreamDelay
 		private void PaintLocked(Graphics g, Rectangle r)
 		{
 			Card.Glow(g, new RectangleF(r.Width * 0.1f, -r.Height * 0.2f, r.Width * 0.8f, r.Height * 0.8f), Color.FromArgb(40, Theme.Violet));
-			string tab = (lockedPage == PageChat) ? "Chat" : ((lockedPage == PageOverlays) ? "Overlays" : ((lockedPage == PageMando) ? "Mando" : "Título"));
+			string tab = (lockedPage == PageChat) ? "Chat" : ((lockedPage == PageOverlays) ? "Overlays" : ((lockedPage == PageMando) ? "Mando" : ((lockedPage == PageClips) ? "Clips" : "Título")));
 			string what;
 			switch (lockedPage)
 			{
@@ -825,6 +825,9 @@ namespace StreamDelay
 				break;
 			case PageMando:
 				what = "Controla el delay desde el móvil, el Stream Deck o un panel de OBS.";
+				break;
+			case PageClips:
+				what = "Guarda los últimos 60 s del directo con un botón, Ctrl+Alt+C o !guardar en el chat, y gestiona tus clips desde aquí.";
 				break;
 			default:
 				what = "Cambia el título y la categoría en Twitch, Kick y YouTube a la vez, y conecta tus cuentas para escribir y moderar en el chat.";

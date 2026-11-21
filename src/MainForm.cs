@@ -128,7 +128,7 @@ namespace StreamDelay
 
 		// ---------- Constantes ----------
 
-		private const string Version = "4.5";
+		private const string Version = "4.6";
 
 		private const string TikTokName = "TikTok";
 
@@ -155,6 +155,9 @@ namespace StreamDelay
 		private const int PageOverlays = 5;
 
 		private const int PageMando = 6;
+
+		// (La 7 es PageLocked, en LicenseUi.cs.)
+		private const int PageClips = 8;
 
 		// Modificadores de RegisterHotKey.
 		private const uint MOD_ALT = 1u;
@@ -234,7 +237,7 @@ namespace StreamDelay
 		private PaintBox destStrip;
 
 		// Página que muestra cada pestaña: Directo, Chat, Overlays, Mando, Título, Ajustes, Registro.
-		private static readonly int[] TabPages = new int[7] { PageLive, PageChat, PageOverlays, PageMando, PageTitle, PageSettings, PageLog };
+		private static readonly int[] TabPages = new int[8] { PageLive, PageChat, PageOverlays, PageMando, PageClips, PageTitle, PageSettings, PageLog };
 
 		// ---------- Pestaña Chat ----------
 
@@ -282,8 +285,9 @@ namespace StreamDelay
 
 		// Controles de cada página, para enseñar solo los de la pestaña elegida.
 		// La 8.ª (PageLocked) es el aviso de las pestañas del plan Completo (LicenseUi.cs).
-		private readonly List<Control>[] pages = new List<Control>[8]
+		private readonly List<Control>[] pages = new List<Control>[9]
 		{
+			new List<Control>(),
 			new List<Control>(),
 			new List<Control>(),
 			new List<Control>(),
@@ -389,7 +393,7 @@ namespace StreamDelay
 			header = Box(this, 0f, 0f, formWidth, 70f, PaintHeader);
 			tabs = new Tabs
 			{
-				Items = new string[7] { "Directo", "Chat", "Overlays", "Mando", "Título", "Ajustes", "Registro" }
+				Items = new string[8] { "Directo", "Chat", "Overlays", "Mando", "Clips", "Título", "Ajustes", "Registro" }
 			};
 			Place(this, tabs, 20f, 72f, 420f, 36f);
 			tabs.SelectedChanged += delegate
@@ -431,6 +435,7 @@ namespace StreamDelay
 			// Overlays y Mando se construyen después de cargar la configuración porque la necesitan.
 			BuildOverlays(pageTop);
 			BuildMando(pageTop);
+			BuildClips(pageTop);
 			RefreshPresetButtons();
 			fldObs.Box.Text = ObsServer;
 			ShowPage(PageLive);
@@ -484,6 +489,10 @@ namespace StreamDelay
 				}
 			}
 			ResumeLayout();
+			if (p == PageClips)
+			{
+				RefreshClipList();
+			}
 			if (p == PageLog)
 			{
 				tbLog.SelectionStart = tbLog.TextLength;
@@ -885,7 +894,7 @@ namespace StreamDelay
 			Place(this, clips, 234f, y0 + 452, 99f, 40f, PageLog);
 			clips.Click += delegate
 			{
-				ShowClipMenu(clips);
+				GoPage(PageClips);
 			};
 			VButton upd = new VButton
 			{

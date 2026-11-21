@@ -1,7 +1,7 @@
 // Clips: guarda los últimos 60 s que ha visto el público (con el delay ya aplicado) en
 // Vídeos\Vortexs Live o en la carpeta que elija el usuario (botón Clips de Registro).
 // Se pide con el botón Clip de Directo, Ctrl+Alt+C, el Mando, el Stream Deck
-// o !guardar en el chat (solo el dueño del canal). Si hay ffmpeg en el PC, el clip se pasa a MP4
+// o !guardar en el chat (el dueño del canal y quien se elija en la pestaña Clips). Si hay ffmpeg en el PC, el clip se pasa a MP4
 // (sin volver a codificar); si no, se queda en FLV (se abre con VLC).
 using System;
 using System.Collections.Generic;
@@ -99,6 +99,14 @@ namespace StreamDelay
 				}
 				clipBusy = false;
 				LogLater(message + " (" + who + ")");
+				// La pestaña Clips enseña el nuevo.
+				try
+				{
+					BeginInvoke((Action)RefreshClipList);
+				}
+				catch
+				{
+				}
 				if (done != null)
 				{
 					done(ok, message);
@@ -158,7 +166,7 @@ namespace StreamDelay
 			return null;
 		}
 
-		// Menú del botón Clips: abrir la carpeta, elegir otra o volver a la de siempre.
+		// Menú del botón Carpeta (pestaña Clips): abrir la carpeta, elegir otra o volver a la de siempre.
 		private void ShowClipMenu(Control anchor)
 		{
 			ContextMenuStrip menu = DarkMenu();
@@ -176,12 +184,10 @@ namespace StreamDelay
 					clipDirCustom = "";
 					SaveConfig();
 					AppendLog("Los clips se guardan en " + ClipFolder + ".");
+					RefreshClipList();
 				};
 				menu.Items.Add(reset);
 			}
-			ToolStripMenuItem who = new ToolStripMenuItem(I18n.Tr("Quién puede usar !guardar…"));
-			who.Click += delegate { ClipAccessDialog(); };
-			menu.Items.Add(who);
 			ToolStripMenuItem where = new ToolStripMenuItem(ClipFolder)
 			{
 				Enabled = false
@@ -212,6 +218,7 @@ namespace StreamDelay
 				clipDirCustom = dlg.SelectedPath;
 				SaveConfig();
 				AppendLog("Los clips se guardan en " + ClipFolder + ".");
+				RefreshClipList();
 			}
 		}
 
@@ -264,37 +271,6 @@ namespace StreamDelay
 				}
 			}
 			return false;
-		}
-
-		// Ventana «Quién puede usar !guardar» (Registro → Clips).
-		private void ClipAccessDialog()
-		{
-			Form f = DarkForm("Quién puede usar !guardar", 460, 372);
-			Card c = new Card();
-			c.Title = "!guardar desde el chat";
-			c.Subtitle = "Guarda los últimos 60 s en tu carpeta de clips.";
-			Place(f, c, 20f, 18f, 420f, 270f);
-			Toggle tMods = new Toggle { Text = "También mis moderadores", Checked = clipMods };
-			Place(c, tMods, 18f, 58f, 384f, 28f);
-			Label(c, "Y ESTAS PERSONAS (NOMBRE DE TWITCH O KICK, CON COMAS)", 20f, 98f, 380f);
-			Field fUsers = new Field();
-			Place(c, fUsers, 20f, 116f, 380f, 34f);
-			fUsers.Box.Text = clipUsers;
-			Box(c, 20f, 158f, 380f, 104f, delegate(Graphics g, Rectangle r)
-			{
-				Theme.DrawWrapped(g, "Por ejemplo tu editor: escribe !guardar en tu chat desde donde esté y el clip se guarda en tu PC. Si la carpeta de clips es de Google Drive, OneDrive o Dropbox compartida con él, le llega solo. La lista solo vale en Twitch y Kick (en YouTube y TikTok el nombre se puede copiar). Entre un clip y otro hay unos segundos de espera.", Theme.Body(7.5f), Theme.Muted, r);
-			});
-			VButton ok = new VButton { Kind = ButtonKind.Primary, Text = "Guardar", FontSize = 10f };
-			Place(f, ok, 20f, 302f, 420f, 44f);
-			ok.Click += delegate
-			{
-				clipMods = tMods.Checked;
-				clipUsers = fUsers.Box.Text.Replace("\r", " ").Replace("\n", " ").Trim();
-				SaveConfig();
-				AppendLog("!guardar: tú" + (clipMods ? ", tus moderadores" : "") + (clipUsers.Length > 0 ? (" y " + clipUsers) : "") + ".");
-				f.Close();
-			};
-			f.ShowDialog(this);
 		}
 	}
 }
