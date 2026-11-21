@@ -11,6 +11,9 @@ namespace StreamDelay
 	{
 		private bool on;
 
+		// Posición de la bolita: 0 = apagado, 1 = encendido (se desliza).
+		private float onT;
+
 		public string Hint = "";
 
 		public bool Checked
@@ -24,6 +27,15 @@ namespace StreamDelay
 				if (on != value)
 				{
 					on = value;
+					// Al cargar la ventana (aún sin dibujar) va directo; luego, deslizándose.
+					if (IsHandleCreated && Visible)
+					{
+						StartAnimation();
+					}
+					else
+					{
+						onT = on ? 1f : 0f;
+					}
 					Invalidate();
 					if (this.CheckedChanged != null)
 					{
@@ -58,6 +70,14 @@ namespace StreamDelay
 			base.OnKeyDown(e);
 		}
 
+		protected override bool Animate(float dt)
+		{
+			bool more = base.Animate(dt);
+			float target = on ? 1f : 0f;
+			onT = Approach(onT, target, dt / 0.16f);
+			return more || onT != target;
+		}
+
 		protected override void OnTextChanged(EventArgs e)
 		{
 			Invalidate();
@@ -73,31 +93,36 @@ namespace StreamDelay
 			// Con Hint, el interruptor va arriba; sin él, centrado.
 			float top = ((Hint.Length > 0) ? ((float)Theme.S(2f)) : (((float)base.Height - height) / 2f));
 			RectangleF track = new RectangleF(1f, top, width, height);
+			float t = Ease(onT);
 			using (GraphicsPath path = Theme.Round(track, height / 2f))
 			{
-				if (on)
+				// Apagado (gris) debajo y el degradado encima, que aparece al encenderse.
+				if (t < 1f)
 				{
-					using (LinearGradientBrush brush = Theme.Brand(track, false))
-					{
-						graphics.FillPath(brush, path);
-					}
-				}
-				else
-				{
-					using (SolidBrush brush2 = new SolidBrush(hover ? Color.FromArgb(44, 44, 56) : Color.FromArgb(36, 36, 46)))
+					using (SolidBrush brush2 = new SolidBrush(OnHover(Color.FromArgb(36, 36, 46), Color.FromArgb(44, 44, 56))))
 					{
 						graphics.FillPath(brush2, path);
 					}
-					using (Pen pen = new Pen(Theme.BorderHi))
+					using (Pen pen = new Pen(Color.FromArgb((int)(255f * (1f - t)), Theme.BorderHi)))
 					{
 						graphics.DrawPath(pen, path);
 					}
 				}
+				if (t > 0f)
+				{
+					RectangleF g = new RectangleF(track.X - 1f, track.Y - 1f, track.Width + 2f, track.Height + 2f);
+					using (LinearGradientBrush brush = new LinearGradientBrush(g, Color.FromArgb((int)(255f * t), Theme.Violet), Color.FromArgb((int)(255f * t), Theme.Yellow), 20f))
+					{
+						graphics.FillPath(brush, path);
+					}
+				}
 			}
-			// Bolita: a la derecha si está activado.
+			// Bolita: se desliza a la derecha al activarse.
 			float knob = height - (float)Theme.S(6f);
-			RectangleF knobRect = new RectangleF(on ? (track.Right - knob - (float)Theme.S(3f)) : (track.X + (float)Theme.S(3f)), top + (float)Theme.S(3f), knob, knob);
-			using (SolidBrush brush3 = new SolidBrush(on ? Color.FromArgb(14, 14, 18) : Theme.Muted))
+			float left = track.X + (float)Theme.S(3f);
+			float right = track.Right - knob - (float)Theme.S(3f);
+			RectangleF knobRect = new RectangleF(left + (right - left) * t, top + (float)Theme.S(3f), knob, knob);
+			using (SolidBrush brush3 = new SolidBrush(Theme.Mix(Theme.Muted, Color.FromArgb(14, 14, 18), t)))
 			{
 				graphics.FillEllipse(brush3, knobRect);
 			}

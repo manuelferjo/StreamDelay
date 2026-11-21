@@ -409,6 +409,13 @@ namespace StreamDelay
 			"Volver a la carpeta de siempre", "Back to the default folder",
 			"Carpeta donde se guardan los clips (últimos 60 s)", "Folder where clips are saved (last 60 s)",
 			"^Los clips se guardan en ", "Clips are saved to ",
+			// Emotes del chat (botón 😊)
+			"Tu canal de Twitch", "Your Twitch channel",
+			"Tus suscripciones", "Your subscriptions",
+			"7TV · BTTV · FFZ del canal", "7TV · BTTV · FFZ (channel)",
+			"Para ver también los emotes de tus suscripciones, vuelve a conectar Twitch en la pestaña Título.", "To also see your subscription emotes, reconnect Twitch in the Title tab.",
+			"Conecta Twitch en la pestaña Título para ver los emotes de tu canal.", "Connect Twitch in the Title tab to see your channel's emotes.",
+			"No se pudieron cargar los emotes de Twitch: ", "Couldn't load the Twitch emotes: ",
 			// Pestaña Clips
 			"Guarda los últimos 60 s del directo con un botón, Ctrl+Alt+C o !guardar en el chat, y gestiona tus clips desde aquí.", "Save the last 60 s of the stream with a button, Ctrl+Alt+C or !guardar in chat, and manage your clips here.",
 			"Clips guardados", "Saved clips",

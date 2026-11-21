@@ -98,6 +98,31 @@
   #count { margin-left: auto; font-family: Consolas, monospace; }
   #count.over { color: var(--red); }
   .row { display: flex; gap: 8px; }
+  /* ---------- Botón 😊 y panel de emotes ---------- */
+  #emo-btn { flex: none; width: 40px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--muted); cursor: pointer; font-size: 18px; line-height: 1; transition: border-color .15s, background .15s, transform .12s; }
+  #emo-btn:hover, #emo-btn.on { border-color: var(--violet); background: rgba(192,154,253,.1); }
+  #emo-btn:active { transform: scale(.92); }
+  #emo { display: none; flex: none; flex-direction: column; height: 270px; border-top: 1px solid var(--border); background: var(--surface); }
+  body.overlay #emo, body.noinput #emo { display: none !important; }
+  #emo.open { display: flex; animation: emoIn .18s ease-out; }
+  @keyframes emoIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  #emo-top { display: flex; gap: 6px; padding: 8px 10px 6px; }
+  #emo-q { flex: 1; min-width: 0; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font: inherit; font-size: .9em; outline: none; transition: border-color .15s; }
+  #emo-q:focus { border-color: var(--violet); }
+  #emo-tabs { display: flex; gap: 4px; padding: 0 10px 6px; overflow-x: auto; scrollbar-width: none; }
+  #emo-tabs button { flex: none; font: inherit; font-size: .75em; padding: 2px 9px; border-radius: 999px; border: 1px solid var(--border); background: var(--elev); color: var(--muted); cursor: pointer; white-space: nowrap; transition: color .15s, border-color .15s, background .15s; }
+  #emo-tabs button:hover { color: var(--text); }
+  #emo-tabs button.on { color: var(--text); border-color: var(--violet); background: rgba(192,154,253,.14); }
+  #emo-grid { flex: 1; overflow-y: auto; padding: 0 10px 8px; }
+  .emo-h { font-size: .7em; letter-spacing: .1em; text-transform: uppercase; color: var(--dim); margin: 8px 0 4px; }
+  .emo-g { display: grid; grid-template-columns: repeat(auto-fill, minmax(40px, 1fr)); gap: 3px; }
+  .emo-i { height: 40px; display: flex; align-items: center; justify-content: center; padding: 3px; border-radius: 8px; border: 1px solid transparent; background: none; cursor: pointer; transition: background .12s, border-color .12s, transform .12s; }
+  .emo-i:hover { background: var(--elev); border-color: var(--border); transform: scale(1.1); }
+  .emo-i:active { transform: scale(.95); }
+  .emo-i img { max-width: 32px; max-height: 32px; }
+  .emo-msg { color: var(--muted); font-size: .85em; padding: 14px 2px; text-align: center; }
+  #emo-hint { font-size: .75em; color: var(--muted); padding: 0 10px 8px; }
+  #emo-hint:empty { display: none; }
   #msg { flex: 1; min-width: 0; padding: 9px 12px; border-radius: 10px; border: 1px solid var(--border); background: var(--bg); color: var(--text); font: inherit; outline: none; }
   #msg:focus { border-color: var(--violet); }
   #msg:disabled { opacity: .5; }
@@ -155,10 +180,17 @@
   <div id="modstate"></div>
 </div>
 <div id="list"><div id="empty">Esperando mensajes…<br><small>Activa el chat en Vortexs Live → pestaña Chat.</small></div></div>
+<div id="emo">
+  <div id="emo-top"><input id="emo-q" type="text" placeholder="Buscar emote…" autocomplete="off"></div>
+  <div id="emo-tabs"></div>
+  <div id="emo-grid"></div>
+  <div id="emo-hint"></div>
+</div>
 <div id="composer">
   <div id="targets"><span>Enviar a:</span><span id="tgts"></span><span id="count"></span></div>
   <div class="row">
     <input id="msg" type="text" maxlength="500" placeholder="Escribe en el chat de todas tus plataformas…" autocomplete="off">
+    <button id="emo-btn" title="Emotes">😊</button>
     <button id="send">Enviar</button>
   </div>
   <div id="result"></div>
@@ -179,6 +211,12 @@
     'Enviar a:': 'Send to:',
     'Escribe en el chat de todas tus plataformas…': 'Write in the chat of all your platforms…',
     'Enviar': 'Send',
+    'Buscar emote…': 'Search emotes…',
+    'Recientes': 'Recent',
+    'Cargando emotes…': 'Loading emotes…',
+    'No hay emotes que coincidan.': 'No matching emotes.',
+    'No se pudieron cargar los emotes.': 'Couldn\'t load the emotes.',
+    'Aún no hay emotes: activa el chat y conecta Twitch en la pestaña Título.': 'No emotes yet: turn on the chat and connect Twitch in the Title tab.',
     '↓ Nuevos mensajes': '↓ New messages',
     'Sin conexión con Vortexs Live…': 'No connection to Vortexs Live…',
     'no configurado': 'not set up',
@@ -478,6 +516,103 @@
       .catch(function () { result.innerHTML = '<span class="bad">' + T('No se pudo contactar con Vortexs Live.') + '</span>'; })
       .then(function () { input.disabled = false; input.focus(); updateCount(); });
   }
+  // ---------- Emotes: botón 😊 ----------
+  // Pone el nombre del emote donde esté el cursor. Los de Twitch los convierte Twitch al enviarlos;
+  // los de 7TV/BTTV/FFZ se ven aquí y para quien tenga esas extensiones.
+  var emo = document.getElementById('emo'), emoBtn = document.getElementById('emo-btn'), emoQ = document.getElementById('emo-q');
+  var emoTabs = document.getElementById('emo-tabs'), emoGrid = document.getElementById('emo-grid'), emoHint = document.getElementById('emo-hint');
+  var emoData = null, emoAt = 0, emoBusy = false;
+  function recent() { try { return JSON.parse(localStorage.getItem('sd-emotes-recientes')) || []; } catch (x) { return []; } }
+  function remember(it) {
+    var r = recent().filter(function (x) { return x.n !== it.n; });
+    r.unshift({ n: it.n, u: it.u });
+    try { localStorage.setItem('sd-emotes-recientes', JSON.stringify(r.slice(0, 24))); } catch (x) {}
+  }
+  function insertEmote(it) {
+    var v = input.value, a = input.selectionStart == null ? v.length : input.selectionStart, b = input.selectionEnd == null ? a : input.selectionEnd;
+    var before = v.slice(0, a), after = v.slice(b);
+    var add = (before && !/\s$/.test(before) ? ' ' : '') + it.n + (after && /^\s/.test(after) ? '' : ' ');
+    input.value = before + add + after;
+    var pos = (before + add).length;
+    input.focus(); input.setSelectionRange(pos, pos);
+    remember(it); updateCount();
+  }
+  function emoItem(it) {
+    var b = document.createElement('button');
+    b.className = 'emo-i'; b.title = it.n;
+    b.innerHTML = '<img loading="lazy" alt="' + esc(it.n) + '" src="' + esc(it.u) + '">';
+    b.onclick = function () { insertEmote(it); };
+    return b;
+  }
+  function emoGroups() {
+    var g = [];
+    var r = recent();
+    if (r.length) g.push({ name: T('Recientes'), items: r });
+    return g.concat((emoData && emoData.groups) || []);
+  }
+  function renderEmotes() {
+    var q = emoQ.value.trim().toLowerCase();
+    emoGrid.innerHTML = ''; emoTabs.innerHTML = '';
+    if (!emoData) { emoGrid.innerHTML = '<div class="emo-msg">' + T(emoBusy ? 'Cargando emotes…' : 'No se pudieron cargar los emotes.') + '</div>'; return; }
+    var groups = emoGroups();
+    if (q) {
+      var seen = {}, hits = [];
+      groups.forEach(function (gr) { gr.items.forEach(function (it) { if (!seen[it.n] && it.n.toLowerCase().indexOf(q) >= 0) { seen[it.n] = 1; hits.push(it); } }); });
+      groups = hits.length ? [{ name: '', items: hits }] : [];
+    }
+    if (!groups.length) {
+      emoGrid.innerHTML = '<div class="emo-msg">' + T(q ? 'No hay emotes que coincidan.' : 'Aún no hay emotes: activa el chat y conecta Twitch en la pestaña Título.') + '</div>';
+    }
+    groups.forEach(function (gr, i) {
+      var h = document.createElement('div');
+      h.className = 'emo-h'; h.textContent = gr.name;
+      if (gr.name) emoGrid.appendChild(h);
+      var grid = document.createElement('div');
+      grid.className = 'emo-g';
+      gr.items.forEach(function (it) { grid.appendChild(emoItem(it)); });
+      emoGrid.appendChild(grid);
+      if (!q && gr.name) {
+        var t = document.createElement('button');
+        t.textContent = gr.name;
+        if (i === 0) t.className = 'on';
+        t.onclick = function () { emoGrid.scrollTo({ top: h.offsetTop - emoGrid.offsetTop - 4, behavior: 'smooth' }); };
+        t._h = h;
+        emoTabs.appendChild(t);
+      }
+    });
+    emoHint.textContent = (emoData && emoData.hint) || '';
+  }
+  // La pestaña de arriba se marca según la parte de la lista que se ve.
+  emoGrid.addEventListener('scroll', function () {
+    var tabs = emoTabs.querySelectorAll('button'), cur = 0;
+    for (var i = 0; i < tabs.length; i++) if (tabs[i]._h.offsetTop - emoGrid.offsetTop - 8 <= emoGrid.scrollTop) cur = i;
+    for (var j = 0; j < tabs.length; j++) tabs[j].classList.toggle('on', j === cur);
+  });
+  function loadEmotes() {
+    if (emoBusy || (emoData && Date.now() - emoAt < 120000)) { renderEmotes(); return; }
+    emoBusy = true; renderEmotes();
+    fetch('/api/emotes', { headers: { 'X-SD-Secret': SECRET } }).then(function (r) { return r.json(); })
+      .then(function (d) { emoData = d || { groups: [] }; emoAt = Date.now(); })
+      .catch(function () {})
+      .then(function () { emoBusy = false; renderEmotes(); });
+  }
+  function toggleEmotes(open) {
+    if (open === undefined) open = !emo.classList.contains('open');
+    emo.classList.toggle('open', open);
+    emoBtn.classList.toggle('on', open);
+    if (open) { emoQ.value = ''; loadEmotes(); }
+  }
+  emoBtn.onclick = function () { toggleEmotes(); };
+  emoQ.addEventListener('input', renderEmotes);
+  emoQ.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') { toggleEmotes(false); input.focus(); }
+    if (e.key === 'Enter') { e.preventDefault(); var first = emoGrid.querySelector('.emo-i'); if (first) first.click(); }
+  });
+  input.addEventListener('keydown', function (e) { if (e.key === 'Escape' && emo.classList.contains('open')) toggleEmotes(false); });
+  document.addEventListener('mousedown', function (e) {
+    if (emo.classList.contains('open') && !emo.contains(e.target) && e.target !== emoBtn && e.target !== input) toggleEmotes(false);
+  });
+
   input.addEventListener('input', updateCount);
   input.addEventListener('keydown', function (e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(); } });
   sendBtn.onclick = send;

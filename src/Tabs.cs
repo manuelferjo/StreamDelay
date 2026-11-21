@@ -15,6 +15,21 @@ namespace StreamDelay
 
 		private int hot = -1;
 
+		// El resalte se desliza de la pestaña de antes a la nueva: slideFrom es dónde estaba
+		// (posición en pestañas, puede ser 2,4…) y slideT va de 0 a 1.
+		private float slideFrom;
+
+		private float slideT = 1f;
+
+		// Dónde está ahora el resalte (en pestañas).
+		private float Pos
+		{
+			get
+			{
+				return slideFrom + ((float)sel - slideFrom) * Ease(slideT);
+			}
+		}
+
 		public int Selected
 		{
 			get
@@ -25,7 +40,10 @@ namespace StreamDelay
 			{
 				if (sel != value)
 				{
+					slideFrom = Pos;
+					slideT = IsHandleCreated ? 0f : 1f;
 					sel = value;
+					StartAnimation();
 					Invalidate();
 					if (this.SelectedChanged != null)
 					{
@@ -106,6 +124,13 @@ namespace StreamDelay
 			base.OnMouseLeave(e);
 		}
 
+		protected override bool Animate(float dt)
+		{
+			bool more = base.Animate(dt);
+			slideT = Approach(slideT, 1f, dt / 0.22f);
+			return more || slideT < 1f;
+		}
+
 		protected override void OnMouseClick(MouseEventArgs e)
 		{
 			Selected = At(e.X);
@@ -129,24 +154,32 @@ namespace StreamDelay
 				}
 			}
 			RectangleF[] cells = Cells();
+			float pos = Pos;
+			// Resalte: entre las dos pestañas por las que pasa, mezclando su posición y su ancho.
+			if (cells.Length > 0)
+			{
+				int a = Math.Max(0, Math.Min(cells.Length - 1, (int)Math.Floor(pos)));
+				int b = Math.Min(cells.Length - 1, a + 1);
+				float f = pos - (float)a;
+				RectangleF pill = new RectangleF(cells[a].X + (cells[b].X - cells[a].X) * f, cells[a].Y, cells[a].Width + (cells[b].Width - cells[a].Width) * f, cells[a].Height);
+				using (GraphicsPath path2 = Theme.Round(pill, pill.Height / 2f))
+				{
+					using (SolidBrush brush2 = new SolidBrush(Color.FromArgb(34, Theme.Violet)))
+					{
+						graphics.FillPath(brush2, path2);
+					}
+					using (Pen pen2 = new Pen(Color.FromArgb(120, Theme.Violet)))
+					{
+						graphics.DrawPath(pen2, path2);
+					}
+				}
+			}
 			for (int i = 0; i < Items.Length; i++)
 			{
 				RectangleF cell = cells[i];
-				if (i == sel)
-				{
-					using (GraphicsPath path2 = Theme.Round(cell, cell.Height / 2f))
-					{
-						using (SolidBrush brush2 = new SolidBrush(Color.FromArgb(34, Theme.Violet)))
-						{
-							graphics.FillPath(brush2, path2);
-						}
-						using (Pen pen2 = new Pen(Color.FromArgb(120, Theme.Violet)))
-						{
-							graphics.DrawPath(pen2, path2);
-						}
-					}
-				}
-				Color c = ((i == sel) ? Theme.VioletPale : ((i == hot) ? Theme.Text : Theme.Muted));
+				// El texto se ilumina según lo cerca que esté el resalte.
+				float near = Math.Max(0f, 1f - Math.Abs(pos - (float)i));
+				Color c = Theme.Mix((i == hot) ? Theme.Text : Theme.Muted, Theme.VioletPale, near);
 				Theme.DrawText(graphics, Items[i], Theme.BodySemi(8.5f), c, cell, StringAlignment.Center, StringAlignment.Center);
 			}
 		}

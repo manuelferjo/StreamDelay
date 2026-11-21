@@ -86,6 +86,9 @@ namespace StreamDelay
 
 		public Func<string, string[], Dictionary<string, object>> OnSend = (string t, string[] to) => new Dictionary<string, object>();
 
+		// Emotes para el botón 😊 de la página del chat: { "groups": [{ "name", "items": [{ "n", "u" }] }], "hint" }.
+		public Func<Dictionary<string, object>> OnEmotes = () => new Dictionary<string, object>();
+
 		public int Port { get; private set; }
 
 		public bool Running
@@ -516,6 +519,18 @@ namespace StreamDelay
 				if (p == "/api/info" && req.Method == "GET")
 				{
 					o = OnInfo();
+				}
+				else if (p == "/api/emotes" && req.Method == "GET")
+				{
+					// Sin TrValues: los nombres de los emotes no se traducen.
+					Dictionary<string, object> em = OnEmotes();
+					object hint;
+					if (em.TryGetValue("hint", out hint) && hint is string)
+					{
+						em["hint"] = I18n.Tr((string)hint);
+					}
+					Respond(s, "200 OK", "application/json; charset=utf-8", Web.ToJson(em));
+					return;
 				}
 				else
 				{
