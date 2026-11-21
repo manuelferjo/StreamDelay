@@ -669,6 +669,23 @@ namespace StreamDelay
 			{
 				json = "{\"error\":" + Web.ToJson(ex.Message) + "}";
 			}
+			// Abierto en una pestaña del navegador (p. ej. el Stream Deck sin «Acceder en segundo plano»):
+			// la acción ya está hecha; se explica cómo evitar la pestaña y se intenta cerrar sola.
+			if (Header(req, "sec-fetch-mode") == "navigate")
+			{
+				string done = "";
+				try
+				{
+					done = J.S(Web.Parse(json), "msg");
+				}
+				catch
+				{
+				}
+				string title = I18n.Tr("Hecho") + (done.Length > 0 ? (": " + I18n.Tr(done)) : "");
+				string tip = I18n.Tr("Puedes cerrar esta pestaña. Para que el Stream Deck no abra el navegador, usa la acción «Tecla de acceso rápido» con el atajo de Vortexs Live (pestaña Mando → Stream Deck) o, en «Sitio web», marca «Acceder en segundo plano».");
+				Respond(s, "200 OK", "text/html; charset=utf-8", "<!doctype html><meta charset=utf-8><meta name=viewport content='width=device-width'><title>Vortexs Live</title><body style='background:#09090c;color:#f4f4f5;font:16px system-ui;padding:24px;max-width:560px'><h2 style='margin:0 0 8px'>✓ " + WebUtility.HtmlEncode(title) + "</h2><p style='color:#a1a1aa;line-height:1.5'>" + WebUtility.HtmlEncode(tip) + "</p><script>setTimeout(function(){window.close()},1500)</script>");
+				return;
+			}
 			Respond(s, "200 OK", "application/json; charset=utf-8", json);
 		}
 

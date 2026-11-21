@@ -128,7 +128,7 @@ namespace StreamDelay
 
 		// ---------- Constantes ----------
 
-		private const string Version = "4.7";
+		private const string Version = "4.8";
 
 		private const string TikTokName = "TikTok";
 
@@ -163,6 +163,47 @@ namespace StreamDelay
 		private const uint MOD_ALT = 1u;
 
 		private const uint MOD_CTRL = 2u;
+
+		private const uint MOD_SHIFT = 4u;
+
+		// Atajos con Ctrl+Alt+Mayús para el resto de acciones del Mando (para la acción «Tecla de
+		// acceso rápido» del Stream Deck, que no abre el navegador). Id del atajo 5…: acción, tecla.
+		private static readonly string[][] DeckHotkeys = new string[9][]
+		{
+			new string[2] { "on", "A" },
+			new string[2] { "off", "Q" },
+			new string[2] { "preset&n=1", "D1" },
+			new string[2] { "preset&n=2", "D2" },
+			new string[2] { "preset&n=3", "D3" },
+			new string[2] { "preset&n=4", "D4" },
+			new string[2] { "preset&n=5", "D5" },
+			new string[2] { "preset&n=6", "D6" },
+			new string[2] { "cortar", "X" }
+		};
+
+		// Texto del atajo de una acción del Mando ("" si no tiene).
+		private static string HotkeyFor(string action)
+		{
+			switch (action)
+			{
+			case "toggle":
+				return "Ctrl+Alt+D";
+			case "mas":
+				return "Ctrl+Alt+↑";
+			case "menos":
+				return "Ctrl+Alt+↓";
+			case "clip":
+				return "Ctrl+Alt+C";
+			}
+			foreach (string[] h in DeckHotkeys)
+			{
+				if (h[0] == action)
+				{
+					return "Ctrl+Alt+Mayús+" + h[1].Replace("D", "");
+				}
+			}
+			return "";
+		}
 
 		private const uint MOD_NOREPEAT = 16384u;
 
@@ -929,7 +970,7 @@ namespace StreamDelay
 			}
 		}
 
-		// ---------- Atajos de teclado (Ctrl+Alt+D, Ctrl+Alt+↑, Ctrl+Alt+↓, Ctrl+Alt+C) ----------
+		// ---------- Atajos de teclado (Ctrl+Alt+D, ↑, ↓, C y Ctrl+Alt+Mayús+… para el Stream Deck) ----------
 
 		[DllImport("user32.dll")]
 		private static extern bool RegisterHotKey(IntPtr hWnd, int id, uint mods, uint vk);
@@ -960,6 +1001,14 @@ namespace StreamDelay
 				{
 					pendingLog.Enqueue("Aviso: Ctrl+Alt+C ya lo usa otro programa.");
 				}
+				for (int i = 0; i < DeckHotkeys.Length; i++)
+				{
+					Keys key = (Keys)Enum.Parse(typeof(Keys), DeckHotkeys[i][1]);
+					if (!RegisterHotKey(base.Handle, 5 + i, mods | MOD_SHIFT, (uint)key))
+					{
+						pendingLog.Enqueue("Aviso: " + HotkeyFor(DeckHotkeys[i][0]) + " ya lo usa otro programa.");
+					}
+				}
 			}
 		}
 
@@ -982,6 +1031,22 @@ namespace StreamDelay
 				case 4:
 					SaveClip("Ctrl+Alt+C", null);
 					break;
+				default:
+				{
+					// Ctrl+Alt+Mayús+…: como pulsar la acción en el Mando.
+					int i = msg.WParam.ToInt32() - 5;
+					if (i >= 0 && i < DeckHotkeys.Length)
+					{
+						string[] parts = DeckHotkeys[i][0].Split('&');
+						Dictionary<string, string> q = new Dictionary<string, string>();
+						if (parts.Length > 1)
+						{
+							q["n"] = parts[1].Substring(2);
+						}
+						RemoteAction(parts[0], q);
+					}
+					break;
+				}
 				}
 			}
 			base.WndProc(ref msg);
@@ -996,7 +1061,7 @@ namespace StreamDelay
 				e.Cancel = true;
 				return;
 			}
-			for (int i = 1; i <= 4; i++)
+			for (int i = 1; i <= 4 + DeckHotkeys.Length; i++)
 			{
 				UnregisterHotKey(base.Handle, i);
 			}
