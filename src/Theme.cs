@@ -245,6 +245,16 @@ namespace StreamDelay
 		public static void DrawText(Graphics g, string s, Font f, Color c, RectangleF r, StringAlignment h, StringAlignment v)
 		{
 			s = I18n.Tr(s);
+			// Con emojis, en color (DirectWrite); si no se puede, como siempre.
+			if (ColorText.HasEmoji(s) && f.Unit == GraphicsUnit.Pixel)
+			{
+				Rectangle box = Rectangle.Round(r);
+				box.Offset((int)g.Transform.OffsetX, (int)g.Transform.OffsetY);
+				if (ColorText.Draw(g, s, f.FontFamily.Name, f.Size, f.Bold, c, box, h, v))
+				{
+					return;
+				}
+			}
 			using (StringFormat format = new StringFormat())
 			{
 				using (SolidBrush brush = new SolidBrush(c))

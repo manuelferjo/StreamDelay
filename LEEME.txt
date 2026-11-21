@@ -1,7 +1,14 @@
-VORTEXS LIVE 4.8 - delay dinámico y multistream para OBS (by Vortexs)
+VORTEXS LIVE 4.9 - delay dinámico y multistream para OBS (by Vortexs)
 =====================================================================
 
 Abre GUIA.html (doble clic) para ver la guía completa.
+
+Novedades de la 4.9
+- Título con emojis en color, como se ven en Twitch o Kick (antes salían
+  en gris). Mientras escribes se ven como siempre; al salir del campo,
+  en color.
+- Botón 😊 junto al título: abre el panel de emojis de Windows (el de
+  Win + .) y pone el que elijas en el título.
 
 Novedades de la 4.8
 - Stream Deck sin abrir el navegador: cada acción del Mando tiene ahora un
