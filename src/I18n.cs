@@ -417,6 +417,12 @@ namespace StreamDelay
 			"Conecta Twitch en la pestaña Título para ver los emotes de tu canal.", "Connect Twitch in the Title tab to see your channel's emotes.",
 			"No se pudieron cargar los emotes de Twitch: ", "Couldn't load the Twitch emotes: ",
 			// Pestaña Clips
+			"Cada clip son los últimos 60 s que ha visto el público (con el delay).", "Each clip is the last 60 s your viewers saw (with the delay).",
+			"CARPETA", "FOLDER",
+			"Cambiar", "Change",
+			"Botón Clip", "Clip button",
+			"!guardar en el chat", "!guardar in chat",
+			"Mando · Stream Deck", "Remote · Stream Deck",
 			"Guarda los últimos 60 s del directo con un botón, Ctrl+Alt+C o !guardar en el chat, y gestiona tus clips desde aquí.", "Save the last 60 s of the stream with a button, Ctrl+Alt+C or !guardar in chat, and manage your clips here.",
 			"Clips guardados", "Saved clips",
 			"Los últimos 60 s del directo, el más nuevo arriba.", "The last 60 s of the stream, newest first.",

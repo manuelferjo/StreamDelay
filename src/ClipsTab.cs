@@ -23,6 +23,9 @@ namespace StreamDelay
 
 		private Toggle tgClipMods;
 
+		// Línea «CARPETA …» de la pestaña (se repinta al cambiar de carpeta).
+		private PaintBox clipFolderBox;
+
 		// Los nombres de clip_users, uno por elemento (sin @ y sin repetir).
 		private List<string> ClipUserList()
 		{
@@ -50,11 +53,39 @@ namespace StreamDelay
 			Card c1 = new Card
 			{
 				Title = "Clips guardados",
-				Subtitle = "Los últimos 60 s del directo, el más nuevo arriba."
+				Subtitle = "Cada clip son los últimos " + ClipSeconds + " s que ha visto el público (con el delay)."
 			};
-			Place(this, c1, 20f, y0, 420f, 268f, PageClips);
+			Place(this, c1, 20f, y0, 420f, 290f, PageClips);
+			// Cómo se guarda uno: las cuatro formas, en pastillas.
+			Box(c1, 20f, 58f, 380f, 26f, PaintClipWays);
+			// Dónde se guardan, con «Cambiar» (abrir, elegir otra carpeta o volver a la de siempre).
+			clipFolderBox = Box(c1, 20f, 90f, 300f, 22f, delegate(Graphics g, Rectangle r)
+			{
+				Theme.DrawText(g, "CARPETA", Theme.Mono(7f), Theme.Muted, new RectangleF(r.X, r.Y, S(58f), r.Height), StringAlignment.Near, StringAlignment.Center);
+				// La ruta no se traduce: se dibuja tal cual, con «…» en medio si es larga.
+				using (StringFormat format = new StringFormat())
+				{
+					format.Trimming = StringTrimming.EllipsisPath;
+					format.FormatFlags = StringFormatFlags.NoWrap;
+					format.LineAlignment = StringAlignment.Center;
+					using (SolidBrush brush = new SolidBrush(Theme.Text))
+					{
+						g.DrawString(ClipFolder, Theme.Body(8f), brush, new RectangleF(r.X + S(60f), r.Y, r.Width - S(60f), r.Height), format);
+					}
+				}
+			});
+			clipFolderBox.Cursor = Cursors.Hand;
+			clipFolderBox.Click += delegate { OpenClipFolder(); };
+			VButton change = new VButton
+			{
+				Kind = ButtonKind.Link,
+				Text = "Cambiar",
+				FontSize = 8.5f
+			};
+			Place(c1, change, 322f, 89f, 78f, 24f);
+			change.Click += delegate { ShowClipMenu(change); };
 			clipList = new ClipList();
-			Place(c1, clipList, 16f, 60f, 388f, 148f);
+			Place(c1, clipList, 16f, 120f, 388f, 116f);
 			string[] names = new string[4] { "Ver", "Carpeta", "Renombrar", "Borrar" };
 			VButton[] buttons = new VButton[4];
 			for (int i = 0; i < 4; i++)
@@ -65,7 +96,7 @@ namespace StreamDelay
 					Text = names[i],
 					FontSize = 9f
 				};
-				Place(c1, buttons[i], 16f + (float)i * 99f, 218f, 91f, 36f);
+				Place(c1, buttons[i], 16f + (float)i * 99f, 242f, 91f, 34f);
 			}
 			buttons[0].Click += delegate { OpenClip(clipList.SelectedFile); };
 			buttons[1].Click += delegate { ShowClipMenu(buttons[1]); };
@@ -84,35 +115,34 @@ namespace StreamDelay
 			sync(null, EventArgs.Empty);
 
 			// --- Quién puede usar !guardar ---
-			int y2 = y0 + 278;
+			int y2 = y0 + 298;
 			Card c2 = new Card
 			{
-				Title = "Quién puede usar " + ClipCommand,
-				Subtitle = "Lo escriben en tu chat y se guardan los últimos 60 s."
+				Title = "Quién puede usar " + ClipCommand
 			};
-			Place(this, c2, 20f, y2, 420f, 226f, PageClips);
+			Place(this, c2, 20f, y2, 420f, 210f, PageClips);
 			tgClipMods = new Toggle
 			{
 				Text = "También los moderadores",
 				Checked = clipMods
 			};
-			Place(c2, tgClipMods, 20f, 58f, 380f, 30f);
+			Place(c2, tgClipMods, 20f, 44f, 380f, 30f);
 			tgClipMods.CheckedChanged += delegate
 			{
 				clipMods = tgClipMods.Checked;
 				SaveConfig();
 				RebuildClipPills();
 			};
-			Label(c2, "AÑADIR A ALGUIEN (NOMBRE DE TWITCH O KICK)", 20f, 92f, 380f);
+			Label(c2, "AÑADIR A ALGUIEN (NOMBRE DE TWITCH O KICK)", 20f, 78f, 380f);
 			fldClipUser = new Field();
-			Place(c2, fldClipUser, 20f, 110f, 290f, 34f);
+			Place(c2, fldClipUser, 20f, 96f, 290f, 34f);
 			VButton add = new VButton
 			{
 				Kind = ButtonKind.Primary,
 				Text = "Añadir",
 				FontSize = 9f
 			};
-			Place(c2, add, 318f, 110f, 82f, 34f);
+			Place(c2, add, 318f, 96f, 82f, 34f);
 			Action addUser = delegate
 			{
 				// Se pueden pegar varios a la vez, separados por comas o espacios.
@@ -139,7 +169,7 @@ namespace StreamDelay
 					addUser();
 				}
 			};
-			clipPills = Box(c2, 20f, 152f, 380f, 62f, delegate { });
+			clipPills = Box(c2, 20f, 138f, 380f, 62f, delegate { });
 			RebuildClipPills();
 		}
 
@@ -229,9 +259,56 @@ namespace StreamDelay
 			clipPills.Invalidate();
 		}
 
+		// Las formas de guardar un clip, en pastillas: atajo, botón de Directo, comando del chat y
+		// el Mando / Stream Deck. Si no caben, la letra se hace un poco más pequeña.
+		private void PaintClipWays(Graphics g, Rectangle r)
+		{
+			Theme.Quality(g);
+			string[] ways = new string[4] { "Ctrl+Alt+C", "Botón Clip", ClipCommand + " en el chat", "Mando · Stream Deck" };
+			float gap = S(6f);
+			float size = 7.5f;
+			float[] w = new float[ways.Length];
+			for (int pass = 0; pass < 3; pass++)
+			{
+				float total = gap * (float)(ways.Length - 1);
+				for (int i = 0; i < ways.Length; i++)
+				{
+					w[i] = (float)TextRenderer.MeasureText(I18n.Tr(ways[i]), Theme.Mono(size)).Width + S(14f);
+					total += w[i];
+				}
+				if (total <= (float)r.Width)
+				{
+					break;
+				}
+				size -= 0.5f;
+			}
+			float x = r.X;
+			for (int i = 0; i < ways.Length; i++)
+			{
+				RectangleF chip = new RectangleF(x, (float)r.Y + 0.5f, Math.Min(w[i], (float)r.Right - x - 1f), (float)r.Height - 1.5f);
+				using (System.Drawing.Drawing2D.GraphicsPath path = Theme.Round(chip, chip.Height / 2f))
+				{
+					using (SolidBrush brush = new SolidBrush(Theme.Input))
+					{
+						g.FillPath(brush, path);
+					}
+					using (Pen pen = new Pen(Theme.Border))
+					{
+						g.DrawPath(pen, path);
+					}
+				}
+				Theme.DrawText(g, ways[i], Theme.Mono(size), Theme.Text, chip, StringAlignment.Center, StringAlignment.Center);
+				x += w[i] + gap;
+			}
+		}
+
 		// Vuelve a leer la carpeta de clips (al abrir la pestaña y al guardar uno).
 		private void RefreshClipList()
 		{
+			if (clipFolderBox != null)
+			{
+				clipFolderBox.Invalidate();
+			}
 			if (clipList == null)
 			{
 				return;

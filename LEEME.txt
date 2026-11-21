@@ -1,7 +1,13 @@
-VORTEXS LIVE 4.9 - delay dinámico y multistream para OBS (by Vortexs)
+VORTEXS LIVE 4.10 - delay dinámico y multistream para OBS (by Vortexs)
 =====================================================================
 
 Abre GUIA.html (doble clic) para ver la guía completa.
+
+Novedades de la 4.10
+- Pestaña Clips: arriba se ve cómo guardar un clip (Ctrl+Alt+C, botón
+  Clip de Directo, !guardar en el chat, Mando y Stream Deck), que cada
+  clip son los últimos 60 s que vio el público y en qué carpeta se
+  guardan, con «Cambiar» para elegir otra.
 
 Novedades de la 4.9
 - Título con emojis en color, como se ven en Twitch o Kick (antes salían
