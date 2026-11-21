@@ -43,12 +43,48 @@ namespace StreamDelay
 			base.TabStop = false;
 		}
 
+		// Celdas de las pestañas: cada una mide lo que su texto (en el idioma de la ventana) más
+		// un reparto igual del sitio que sobra, para que quepan 8 aunque unas sean más largas.
+		private RectangleF[] Cells()
+		{
+			float pad = Theme.S(4f);
+			RectangleF[] cells = new RectangleF[Items.Length];
+			if (Items.Length == 0)
+			{
+				return cells;
+			}
+			float[] widths = new float[Items.Length];
+			float total = 0f;
+			// (Theme guarda las fuentes: no se liberan.)
+			Font font = Theme.BodySemi(8.5f);
+			for (int i = 0; i < Items.Length; i++)
+			{
+				widths[i] = TextRenderer.MeasureText(I18n.Tr(Items[i]), font).Width;
+				total += widths[i];
+			}
+			float room = (float)base.Width - 2f * pad;
+			float extra = (room - total) / (float)Items.Length;
+			float x = pad;
+			for (int i = 0; i < Items.Length; i++)
+			{
+				// Si ni así cabe, todas iguales.
+				float w = (extra >= 0f) ? (widths[i] + extra) : (room / (float)Items.Length);
+				cells[i] = new RectangleF(x, pad, w, (float)base.Height - 2f * pad);
+				x += w;
+			}
+			return cells;
+		}
+
 		// Pestaña que hay en la posición x (-1 si no hay pestañas).
 		private int At(int x)
 		{
-			if (Items.Length != 0)
+			RectangleF[] cells = Cells();
+			for (int i = 0; i < cells.Length; i++)
 			{
-				return Math.Max(0, Math.Min(Items.Length - 1, (x - Theme.S(4f)) * Items.Length / Math.Max(1, base.Width - Theme.S(8f))));
+				if ((float)x < cells[i].Right || i == cells.Length - 1)
+				{
+					return i;
+				}
 			}
 			return -1;
 		}
@@ -92,11 +128,10 @@ namespace StreamDelay
 					graphics.DrawPath(pen, path);
 				}
 			}
-			float pad = Theme.S(4f);
-			float tabWidth = ((float)base.Width - 2f * pad) / (float)Math.Max(1, Items.Length);
+			RectangleF[] cells = Cells();
 			for (int i = 0; i < Items.Length; i++)
 			{
-				RectangleF cell = new RectangleF(pad + (float)i * tabWidth, pad, tabWidth, (float)base.Height - 2f * pad);
+				RectangleF cell = cells[i];
 				if (i == sel)
 				{
 					using (GraphicsPath path2 = Theme.Round(cell, cell.Height / 2f))

@@ -331,7 +331,7 @@ namespace StreamDelay
 			fCmd.Box.ReadOnly = plan != Plan.Full;
 			Box(c2, 20f, 194f, 380f, 30f, delegate(Graphics g, Rectangle r)
 			{
-				Theme.DrawWrapped(g, "{delay} = si hay delay y cuánto · {s} segundos · {user} quién pregunta. Contesta en la plataforma donde se escribe (como mucho una vez cada 20 s). !guardar (tú y quien permitas en Registro → Clips) guarda los últimos 60 s en tu PC. !clip no es de Vortexs Live: déjaselo a tu bot de clips de Twitch.", Theme.Body(7.25f), Theme.Muted, r);
+				Theme.DrawWrapped(g, "{delay} = si hay delay y cuánto · {s} segundos · {user} quién pregunta. Contesta en la plataforma donde se escribe (como mucho una vez cada 20 s). !guardar (tú y quien permitas en la pestaña Clips) guarda los últimos 60 s en tu PC. !clip no es de Vortexs Live: déjaselo a tu bot de clips de Twitch.", Theme.Body(7.25f), Theme.Muted, r);
 			});
 
 			VButton test = new VButton { Kind = ButtonKind.Ghost, Text = "Probar aviso ahora", FontSize = 9.5f };

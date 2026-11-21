@@ -1,7 +1,19 @@
-VORTEXS LIVE 4.5 - delay dinámico y multistream para OBS (by Vortexs)
+VORTEXS LIVE 4.6 - delay dinámico y multistream para OBS (by Vortexs)
 =====================================================================
 
 Abre GUIA.html (doble clic) para ver la guía completa.
+
+Novedades de la 4.6
+- Pestaña Clips nueva (plan Completo):
+    · Todos tus clips, el más nuevo arriba: verlos, renombrarlos y
+      mandarlos a la papelera (se pueden recuperar). Doble clic para
+      verlo, Supr para borrarlo.
+    · Carpeta: abrirla o elegir dónde se guardan.
+    · Quién puede usar !guardar, a la vista: tú siempre, tus moderadores
+      si lo activas y la lista de nombres de Twitch o Kick (Añadir, y ✕
+      para quitar a alguien).
+- Las pestañas se ajustan a su texto para que quepan las 8.
+- Registro -> Clips lleva a la pestaña Clips.
 
 Novedades de la 4.5
 - Planes nuevos:
