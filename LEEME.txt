@@ -1,7 +1,22 @@
-VORTEXS LIVE 4.7 - delay dinámico y multistream para OBS (by Vortexs)
+VORTEXS LIVE 4.8 - delay dinámico y multistream para OBS (by Vortexs)
 =====================================================================
 
 Abre GUIA.html (doble clic) para ver la guía completa.
+
+Novedades de la 4.8
+- Stream Deck sin abrir el navegador: cada acción del Mando tiene ahora un
+  atajo de teclado. En el Stream Deck usa la acción «Tecla de acceso
+  rápido» (Sistema) y pulsa el atajo (pestaña Mando -> Stream Deck):
+    Ctrl+Alt+D          activar / quitar delay
+    Ctrl+Alt+Mayús+A    activar delay
+    Ctrl+Alt+Mayús+Q    quitar delay
+    Ctrl+Alt+↑ / ↓      subir / bajar 5 s
+    Ctrl+Alt+Mayús+1…6  delays guardados 1 a 6
+    Ctrl+Alt+C          guardar clip
+    Ctrl+Alt+Mayús+X    cortar ya (sin confirmación)
+- Si una URL del Stream Deck abre el navegador (falta marcar «Acceder en
+  segundo plano»), la acción se hace igual y la pestaña explica cómo
+  evitarlo.
 
 Novedades de la 4.7
 - Chat: botón 😊 de emotes junto a la caja de escribir. Salen los de tu

@@ -997,11 +997,13 @@ namespace StreamDelay
 			}
 		}
 
+		// Ventana «Stream Deck»: cada acción con su atajo de teclado (para la acción «Tecla de acceso
+		// rápido», que no abre nada) y su URL (para «Sitio web», que abre el navegador si no se marca
+		// «Acceder en segundo plano»).
 		private void StreamDeckDialog()
 		{
-			string[][] rows = new string[10][]
+			string[][] rows = new string[13][]
 			{
-				new string[2] { "Guardar clip (últimos 60 s)", "clip" },
 				new string[2] { "Activar / quitar delay", "toggle" },
 				new string[2] { "Activar delay", "on" },
 				new string[2] { "Quitar delay", "off" },
@@ -1010,30 +1012,47 @@ namespace StreamDelay
 				new string[2] { "Delay guardado 1 (" + PresetLabel(0) + ")", "preset&n=1" },
 				new string[2] { "Delay guardado 2 (" + PresetLabel(1) + ")", "preset&n=2" },
 				new string[2] { "Delay guardado 3 (" + PresetLabel(2) + ")", "preset&n=3" },
+				new string[2] { "Delay guardado 4 (" + PresetLabel(3) + ")", "preset&n=4" },
+				new string[2] { "Delay guardado 5 (" + PresetLabel(4) + ")", "preset&n=5" },
+				new string[2] { "Delay guardado 6 (" + PresetLabel(5) + ")", "preset&n=6" },
+				new string[2] { "Guardar clip (últimos 60 s)", "clip" },
 				new string[2] { "Cortar ya (¡sin confirmación!)", "cortar" }
 			};
-			Form f = DarkForm("Stream Deck", 460, 120 + rows.Length * 42 + 70);
-			Box(f, 22f, 14f, 416f, 96f, delegate(Graphics g, Rectangle r)
+			float rowH = 36f;
+			float top = 150f;
+			Form f = DarkForm("Stream Deck", 560, (int)(top + (float)rows.Length * rowH + 74f));
+			Box(f, 22f, 14f, 516f, 128f, delegate(Graphics g, Rectangle r)
 			{
-				Theme.DrawText(g, "En el Stream Deck: arrastra la acción «Sitio web» (Sistema) a un botón, pega la URL y marca «GET request in background» / «Acceder en segundo plano». Funciona en este PC. Los delays 4–6 son igual cambiando n=4, 5 o 6.", Theme.Body(8.5f), Theme.Muted, r, StringAlignment.Near, StringAlignment.Near);
+				Theme.DrawText(g, "RECOMENDADO · NO ABRE NADA", Theme.Mono(7.5f), Theme.Violet, new RectangleF(r.X, r.Y, r.Width, S(16f)), StringAlignment.Near, StringAlignment.Center);
+				Theme.DrawWrapped(g, "Arrastra la acción «Tecla de acceso rápido» (Sistema) a un botón y pulsa el atajo de la lista. Funciona aunque estés en el juego.", Theme.Body(8.5f), Theme.Text, new RectangleF(r.X, r.Y + S(18f), r.Width, S(40f)));
+				Theme.DrawText(g, "CON URL", Theme.Mono(7.5f), Theme.Muted, new RectangleF(r.X, r.Y + S(64f), r.Width, S(16f)), StringAlignment.Near, StringAlignment.Center);
+				Theme.DrawWrapped(g, "Acción «Sitio web»: pega la URL y marca «Acceder en segundo plano» (GET request in background). Si no la marcas, se abre una pestaña del navegador cada vez.", Theme.Body(8.5f), Theme.Muted, new RectangleF(r.X, r.Y + S(82f), r.Width, S(44f)));
 			});
 			for (int i = 0; i < rows.Length; i++)
 			{
 				string url = ActionUrl(rows[i][1]);
 				string label = rows[i][0];
-				Box(f, 22f, 118f + (float)i * 42f, 300f, 34f, delegate(Graphics g, Rectangle r)
+				string keys = HotkeyFor(rows[i][1]);
+				float y = top + (float)i * rowH;
+				Box(f, 22f, y, 250f, 30f, delegate(Graphics g, Rectangle r)
 				{
-					Theme.DrawText(g, label, Theme.BodySemi(8.75f), Theme.Text, r, StringAlignment.Near, StringAlignment.Center);
+					Theme.DrawText(g, label, Theme.BodySemi(8.5f), Theme.Text, r, StringAlignment.Near, StringAlignment.Center);
 				});
-				VButton b = new VButton { Kind = ButtonKind.Ghost, Text = "Copiar URL", FontSize = 8.5f };
-				Place(f, b, 324f, 118f + (float)i * 42f, 116f, 34f);
+				VButton k = new VButton { Kind = ButtonKind.Pill, Text = keys, FontSize = 7.5f, Selected = true };
+				Place(f, k, 276f, y + 2f, 150f, 26f);
+				k.Click += delegate
+				{
+					CopyText(keys, k, keys);
+				};
+				VButton b = new VButton { Kind = ButtonKind.Ghost, Text = "Copiar URL", FontSize = 8f };
+				Place(f, b, 434f, y, 104f, 30f);
 				b.Click += delegate
 				{
 					CopyText(url, b, "Copiar URL");
 				};
 			}
 			VButton ok = new VButton { Kind = ButtonKind.Primary, Text = "Cerrar", FontSize = 10f };
-			Place(f, ok, 20f, 118f + (float)rows.Length * 42f + 12f, 420f, 44f);
+			Place(f, ok, 20f, top + (float)rows.Length * rowH + 14f, 520f, 44f);
 			ok.Click += delegate
 			{
 				f.Close();
